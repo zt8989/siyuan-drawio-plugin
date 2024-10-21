@@ -17,12 +17,23 @@ async function uploadFileToSiyuan(file, assetsDirPath) {
         body: formData
     });
 
-    return response.ok
+    return response
 }
 
-async function saveFileToSiyuan(file) {
+async function saveFileToSiyuan(file, fileName) {
     const assetsDirPath = "/assets/drawio/";
-    return await uploadFileToSiyuan(file, assetsDirPath);
+    const response = await uploadFileToSiyuan(file, assetsDirPath);
+    
+    if (response.ok) {
+        const data = await response.json();
+        if (data.code === 0 && data.data && data.data.succMap) {
+            const newFilePath = data.data.succMap[fileName];
+            const newTitle = newFilePath.split('/').pop();
+            return { success: true, newTitle };
+        }
+    }
+    
+    return { success: false };
 }
 
 (async function()
@@ -85,7 +96,14 @@ async function saveFileToSiyuan(file) {
                 let content = (binary) ? this.ui.base64ToBlob(data, 'image/png') : data
                 const blob = new Blob([content], { type: fileType.mimeType });
                 const file = new File([blob], title, { type: fileType.mimeType });
-                saveFileToSiyuan(file).then(done).catch(errorWrapper)
+                saveFileToSiyuan(file, title).then(result => {
+    if (result.success) {
+        this.title = result.newTitle;
+        done();
+    } else {
+        errorWrapper(new Error('Failed to save file to SiYuan'));
+    }
+}).catch(errorWrapper)
             });
             
             if (binary)
