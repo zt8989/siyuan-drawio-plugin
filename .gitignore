@@ -9,3 +9,5 @@ dev
 dist
 build
 tmp
+.auto-coder-chat-lite/
+output.txt
