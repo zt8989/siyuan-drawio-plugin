@@ -91,7 +91,7 @@ export default class PluginSample extends Plugin {
         this.customTab = this.addTab({
             type: TAB_TYPE,
             init() {
-                this.element.innerHTML = '<p>Hello</p>'
+                this.element.innerHTML = '<iframe class="siyuan-drawio-plugin__custom-tab" src="/plugins/siyuan-drawio-plugin/webapp/index.html?offline=1"></iframe>'
             }
         });
 
