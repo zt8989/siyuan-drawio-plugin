@@ -12,6 +12,7 @@
     "build": "cross-env NODE_ENV=production vite build",
     "prebuild-win": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/copy_webapp_build.ps1",
     "build-win": "pnpm run build",
+    "postbuild-win": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/copy_and_bundle_build.ps1",
     "make-link": "node --no-warnings ./scripts/make_dev_link.js",
     "make-link-win": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/elevate.ps1 -scriptPath ./scripts/make_dev_link.js",
     "make-install": "pnpm run build && node --no-warnings ./scripts/make_install.js",
@@ -32,5 +33,10 @@
     "vite": "^5.2.9",
     "vite-plugin-static-copy": "^1.0.2",
     "vite-plugin-zip-pack": "^1.0.5"
+  },
+  "dependencies": {
+    "workbox-routing": "^7.1.0",
+    "workbox-strategies": "^7.1.0",
+    "workbox-window": "^7.1.0"
   }
 }

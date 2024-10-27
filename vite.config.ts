@@ -16,6 +16,7 @@ const outputDir = isDev ? "dev" : "dist";
 console.log("isDev=>", isDev);
 console.log("isSrcmap=>", isSrcmap);
 console.log("outputDir=>", outputDir);
+console.log(resolve(__dirname, outputDir, "PostConfig.js"))
 
 export default defineConfig({
     resolve: {
@@ -37,9 +38,8 @@ export default defineConfig({
                 { src: "./plugin.json", dest: "./" },
                 { src: "./preview.png", dest: "./" },
                 { src: "./icon.png", dest: "./" },
-                { src: "./client/*.js", dest: "./webapp/js/" },
             ],
-        }),
+        })
     ],
 
     define: {
@@ -54,8 +54,13 @@ export default defineConfig({
         sourcemap: isSrcmap ? 'inline' : false,
 
         lib: {
-            entry: resolve(__dirname, "src/index.ts"),
-            fileName: "index",
+            entry: {
+                index: resolve(__dirname, "src/index.ts"),
+                PostConfig: resolve(__dirname, "client/PostConfig.js"),
+                PreConfig: resolve(__dirname, "client/PreConfig.js"),
+                'service-worker': resolve(__dirname, "client/service-worker.js"),
+            },
+            fileName: (fromat, entryName) => `${entryName}.js`,
             formats: ["cjs"],
         },
         rollupOptions: {
@@ -69,7 +74,7 @@ export default defineConfig({
                                 'public/i18n/**',
                                 './README*.md',
                                 './plugin.json',
-                                './client/*.js',
+                                // './client/*.js',
                             ]);
                             for (let file of files) {
                                 this.addWatchFile(file);
@@ -77,11 +82,11 @@ export default defineConfig({
                         }
                     }
                 ] : [
-                    zipPack({
-                        inDir: './dist',
-                        outDir: './',
-                        outFileName: 'package.zip'
-                    })
+                    // zipPack({
+                    //     inDir: './dist',
+                    //     outDir: './',
+                    //     outFileName: 'package.zip'
+                    // })
                 ])
             ],
 

@@ -53,7 +53,7 @@ export default class DrawioPlugin extends Plugin {
             type: TAB_TYPE,
             init() {
                 const urlObj = new URLSearchParams(this.data || {})
-                this.element.innerHTML = `<iframe class="siyuan-drawio-plugin__custom-tab" src="/plugins/siyuan-drawio-plugin/webapp/index.html?${urlObj.toString()}"></iframe>`
+                this.element.innerHTML = `<iframe class="siyuan-drawio-plugin__custom-tab" src="/plugins/siyuan-drawio-plugin/webapp/?${urlObj.toString()}"></iframe>`
             }
         });
 

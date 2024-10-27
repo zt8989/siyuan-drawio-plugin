@@ -22,3 +22,11 @@ urlParams["od"]=0 //: Disables the OneDrive integration.
 urlParams["tr"]=0 //: Disables the Trello integration.
 urlParams["gh"]=0 //: Disables the GitHub integration.
 urlParams["gl"]=0 //: Disables the GitLab integration.
+
+import {Workbox} from 'workbox-window';
+
+if ('serviceWorker' in navigator) {
+  const wb = new Workbox('service-worker.js');
+
+  wb.register();
+}

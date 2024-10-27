@@ -11,7 +11,6 @@ $copyItems = @(
     "resources/",
     "styles/",
     "templates/",
-    "js/",
     # "clear.html",
     # "dropbox.html",
     # "export3.html",
@@ -60,7 +59,7 @@ if (-not (Test-Path "./$targetDir/webapp/js")) {
 }
 $excludeFiles = @("integrate.min.js")  # List of files to exclude
 
-Get-ChildItem -Path "./drawio/src/main/webapp/js" -Filter "*.js" -Recurse -Depth 1 | ForEach-Object {
+Get-ChildItem -Path "./drawio/src/main/webapp/js" -Filter "*.js" | ForEach-Object {
     if ($excludeFiles -notcontains $_.Name) {
         $destinationPath = $_.FullName -replace [regex]::Escape("\drawio\src\main\webapp\js"), "\$targetDir\webapp\js"
         Write-Output $destinationPath
