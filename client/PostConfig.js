@@ -7,30 +7,42 @@ window.VSD_CONVERT_URL = null;
 window.EMF_CONVERT_URL = null;
 window.ICONSEARCH_PATH = null;
 
+const fetchPost = window.parent.fetchPost 
+const fetchSyncPost = window.parent.fetchSyncPost 
+
 async function uploadFileToSiyuan(file, assetsDirPath) {
     const formData = new FormData();
     formData.append("assetsDirPath", assetsDirPath);
     formData.append("file[]", file);
 
-    const response = await fetch("/api/asset/upload", {
+    return await fetch("/api/asset/upload", {
         method: "POST",
         body: formData
-    });
+    }).then(res => res.json());
+}
 
-    return response
+async function getFileContent(data) {
+    if(data.path) {
+        if(data.path.startsWith("/assets")) {
+            data.path =  "/data" + data.path
+        } else if (data.path.startsWith("assets")) {
+            data.path =  "/data/" + data.path
+        }
+    }
+    return fetch("/api/file/getFile", {
+        body: JSON.stringify(data),
+        method: "POST"
+    }).then(resonse => resonse.text());
 }
 
 async function saveFileToSiyuan(file, fileName) {
     const assetsDirPath = "/assets/drawio/";
-    const response = await uploadFileToSiyuan(file, assetsDirPath);
+    const data = await uploadFileToSiyuan(file, assetsDirPath);
     
-    if (response.ok) {
-        const data = await response.json();
-        if (data.code === 0 && data.data && data.data.succMap) {
-            const newFilePath = data.data.succMap[fileName];
-            const newTitle = newFilePath.split('/').pop();
-            return { success: true, newTitle };
-        }
+    if (data.code === 0 && data.data && data.data.succMap) {
+        const newFilePath = data.data.succMap[fileName];
+        const newTitle = newFilePath.split('/').pop();
+        return { success: true, newTitle };
     }
     
     return { success: false };
@@ -42,6 +54,205 @@ async function saveFileToSiyuan(file, fileName) {
     App.prototype.showSaveFilePicker = function(success, error, opts) {
         success(null, { name: opts.suggestedName })
     }
+
+    App.prototype.fetchAndShowNotification = function(){}
+
+    App.prototype.loadFile = function(id, sameWindow, file, success, force)
+    {
+        sameWindow = true;
+        
+        this.hideDialog();
+        
+        var fn2 = mxUtils.bind(this, function()
+        {
+            if (id == null || id.length == 0)
+            {
+                this.editor.setStatus('');
+                this.fileLoaded(null);
+            }
+            else if (this.spinner.spin(document.body, mxResources.get('loading')))
+            {
+                // Handles files from localStorage
+                if (file != null)
+                {
+                    // File already loaded
+                    this.spinner.stop();
+                    this.fileLoaded(file);
+
+                    if (success != null)
+                    {
+                        success();
+                    }
+                }
+                else if (id.charAt(0) == 'U')
+                {
+                    var url = decodeURIComponent(id.substring(1));
+                    
+                    var doFallback = mxUtils.bind(this, function()
+                    {
+                        // Fallback for non-public Google Drive files
+                        if (url.substring(0, 31) == 'https://drive.google.com/uc?id=' &&
+                            (this.drive != null || typeof window.DriveClient === 'function'))
+                        {
+                            this.hideDialog();
+                            
+                            var fallback = mxUtils.bind(this, function()
+                            {
+                                this.spinner.stop();
+                                
+                                if (this.drive != null)
+                                {
+                                    var tempId = url.substring(31, url.lastIndexOf('&ex'));
+                                    
+                                    this.loadFile('G' + tempId, sameWindow, null, mxUtils.bind(this, function()
+                                    {
+                                        var currentFile = this.getCurrentFile();
+                                        
+                                        if (currentFile != null && this.editor.chromeless && !this.editor.editable)
+                                        {
+                                            currentFile.getHash = function()
+                                            {
+                                                return 'G' + tempId;
+                                            };
+                                            
+                                            window.location.hash = '#' + currentFile.getHash();
+                                        }
+                                        
+                                        if (success != null)
+                                        {
+                                            success();
+                                        }
+                                    }));
+                                    
+                                    return true;
+                                }
+                                else
+                                {
+                                    return false;
+                                }
+                            });
+                            
+                            if (!fallback() && this.spinner.spin(document.body, mxResources.get('loading')))
+                            {
+                                this.addListener('clientLoaded', fallback);
+                            }
+                            
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    });
+                    
+                    getFileContent({ path: url }).then(mxUtils.bind(this, function(text)
+                    {
+                        this.spinner.stop();
+                        
+                        if (text != null && text.length > 0)
+                        {
+                            var filename = this.defaultFilename;
+                            
+                            // Tries to find name from URL with valid extensions
+                            if (urlParams['title'] == null && urlParams['notitle'] != '1')
+                            {
+                                var tmp = url;
+                                var dot = url.lastIndexOf('.');
+                                var slash = tmp.lastIndexOf('/');
+                                
+                                if (dot > slash && slash > 0)
+                                {
+                                    tmp = tmp.substring(slash + 1, dot);
+                                    var ext = url.substring(dot);
+                                    
+                                    if (!this.useCanvasForExport && ext == '.png')
+                                    {
+                                        ext = '.drawio';
+                                    }
+
+                                    if (ext === '.svg' || ext === '.xml' ||
+                                        ext === '.html' || ext === '.png'  ||
+                                        ext === '.drawio')
+                                    {
+                                        filename = tmp + ext;
+                                    }
+                                }
+                            }
+                            
+                            var tempFile = new LocalFile(this, text, (urlParams['title'] != null) ?
+                                decodeURIComponent(urlParams['title']) : filename, false);
+                            tempFile.getHash = function()
+                            {
+                                return id;
+                            };
+                            
+                            if (this.fileLoaded(tempFile, true))
+                            {
+                                if (success != null)
+                                {
+                                    success();
+                                }
+                            }
+                            else if (!doFallback())
+                            {
+                                this.handleError({message: mxResources.get('fileNotFound')},
+                                    mxResources.get('errorLoadingFile'));
+                            }
+                        }
+                        else if (!doFallback())
+                        {
+                            this.handleError({message: mxResources.get('fileNotFound')},
+                                mxResources.get('errorLoadingFile'));
+                        }
+                    }), mxUtils.bind(this, function(e)
+                    {
+                        console.log(e)
+                        if (!doFallback())
+                        {
+                            this.spinner.stop();
+                            this.handleError({message: mxResources.get('fileNotFound')},
+                                mxResources.get('errorLoadingFile'));
+                        }
+                    }), (urlParams['template-filename'] != null) ?
+                        decodeURIComponent(urlParams['template-filename']) : null);
+                }
+            }
+        });
+        
+        var currentFile = this.getCurrentFile();
+        
+        var fn = mxUtils.bind(this, function()
+        {
+            if (force || currentFile == null || !currentFile.isModified())
+            {
+                fn2();
+            }
+            else
+            {
+                this.confirm(mxResources.get('allChangesLost'), mxUtils.bind(this, function()
+                {
+                    if (currentFile != null)
+                    {
+                        window.location.hash = currentFile.getHash();
+                    }
+                }), fn2, mxResources.get('cancel'), mxResources.get('discardChanges'));
+            }
+        });
+        
+        if (id == null || id.length == 0)
+        {
+            fn();
+        }
+        else if (currentFile != null && !sameWindow)
+        {
+            this.showDialog(new PopupDialog(this, this.getUrl() + '#' + id,
+                null, fn).container, 320, 160, true, true);
+        }
+        else
+        {
+            fn();
+        }
+    };
 
     LocalFile.prototype.saveFile = function(title, revision, success, error, useCurrentData, unloading, overwrite) {
         if (title != this.title)
@@ -135,6 +346,21 @@ async function saveFileToSiyuan(file, fileName) {
 		{
 			editorUi.openLink('https://www.draw.io/')
 		}));
+
+        editorUi.actions.put("copyLink", new Action("copy as siyuan link", function() {
+            var file = editorUi.getCurrentFile();
+            var urlParams = new URLSearchParams({
+                icon: "iconDrawio",
+                title: file.getTitle(),
+                data: JSON.stringify({ url: '/assets/drawio/' + file.getTitle() })
+            })
+            var link = `[${file.getTitle()}](siyuan://plugins/siyuan-drawio-plugin?${urlParams.toString()})`
+            navigator.clipboard.writeText(link).then(() => {
+                console.log('Link copied to clipboard');
+            }).catch(err => {
+                console.error('Failed to copy link: ', err);
+            });
+        }),)
 		
 		this.put('openRecent', new Menu(function(menu, parent)
 		{
@@ -181,7 +407,7 @@ async function saveFileToSiyuan(file, fileName) {
 		// Replaces file menu to replace openFrom menu with open and rename downloadAs to export
 		this.put('file', new Menu(mxUtils.bind(this, function(menu, parent)
 		{
-			this.addMenuItems(menu, ['new', 'open'], parent);
+			this.addMenuItems(menu, ['new', 'open', 'copyLink'], parent);
 			this.addSubmenu('openRecent', menu, parent);
 			this.addMenuItems(menu, ['-', 'synchronize', '-', 'save', 'saveAs', '-', 'import'], parent);
 			this.addSubmenu('exportAs', menu, parent);

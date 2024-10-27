@@ -17,17 +17,24 @@ import {
     lockScreen,
     ICard,
     ICardData,
-    fetchPost
+    fetchPost,
+    fetchSyncPost,
+    IProtyle
 } from "siyuan";
 import "@/index.scss";
 
 
 import { SettingUtils } from "./libs/setting-utils";
+import { checkInvalidPathChar } from "./utils";
+import { upload } from "./api";
+import { blankDrawio, drawioPath } from "./constants";
+import { saveContentAsFile } from "./file";
+import { createLink, getTitleFromPath } from "./link";
 const STORAGE_NAME = "menu-config";
-const TAB_TYPE = "custom_tab";
+const TAB_TYPE = "drawio_tab";
 const DOCK_TYPE = "dock_tab";
 
-export default class PluginSample extends Plugin {
+export default class DrawioPlugin extends Plugin {
 
     customTab: () => IModel;
     private isMobile: boolean;
@@ -35,6 +42,12 @@ export default class PluginSample extends Plugin {
     private settingUtils: SettingUtils;
 
     async onload() {
+        window.fetchPost = fetchPost
+        window.fetchSyncPost = fetchSyncPost
+        this.eventBus.on("open-siyuan-url-plugin", this.onOpenTab.bind(this));
+
+        this.eventBus.on("loaded-protyle-static", this.bindEvent.bind(this))
+        console.log("onload", document)
         this.data[STORAGE_NAME] = { readonlyText: "Readonly" };
 
         console.log("loading plugin-sample", this.i18n);
@@ -91,7 +104,8 @@ export default class PluginSample extends Plugin {
         this.customTab = this.addTab({
             type: TAB_TYPE,
             init() {
-                this.element.innerHTML = '<iframe class="siyuan-drawio-plugin__custom-tab" src="/plugins/siyuan-drawio-plugin/webapp/index.html"></iframe>'
+                const urlObj = new URLSearchParams(this.data || {})
+                this.element.innerHTML = `<iframe class="siyuan-drawio-plugin__custom-tab" src="/plugins/siyuan-drawio-plugin/webapp/index.html?${urlObj.toString()}"></iframe>`
             }
         });
 
@@ -305,13 +319,12 @@ export default class PluginSample extends Plugin {
 
 
         this.protyleSlash = [{
-            filter: ["insert emoji 😊", "插入表情 😊", "crbqwx"],
-            html: `<div class="b3-list-item__first"><span class="b3-list-item__text">${this.i18n.insertEmoji}</span><span class="b3-list-item__meta">😊</span></div>`,
-            id: "insertEmoji",
-            callback(protyle: Protyle) {
-                protyle.insert("😊");
+            filter: ["drawio"],
+            id: "insertDrawio",
+            html: `<div class="b3-list-item__first"><div class="color__square">A</div><span class="b3-list-item__text">${this.i18n.insertDrawio}</span></div>`,
+            callback: this.showInsertDialog,
             }
-        }];
+        ];
 
         this.protyleOptions = {
             toolbar: ["block-ref",
@@ -350,14 +363,15 @@ export default class PluginSample extends Plugin {
 
     onLayoutReady() {
         // this.loadData(STORAGE_NAME);
-        this.settingUtils.load();
-        console.log(`frontend: ${getFrontend()}; backend: ${getBackend()}`);
-        console.log(
-            "Official settings value calling example:\n" +
-            this.settingUtils.get("InputArea") + "\n" +
-            this.settingUtils.get("Slider") + "\n" +
-            this.settingUtils.get("Select") + "\n"
-        );
+        // this.settingUtils.load();
+        // console.log(`frontend: ${getFrontend()}; backend: ${getBackend()}`);
+        // console.log(
+        //     "Official settings value calling example:\n" +
+        //     this.settingUtils.get("InputArea") + "\n" +
+        //     this.settingUtils.get("Slider") + "\n" +
+        //     this.settingUtils.get("Select") + "\n"
+        // );
+        console.log(this.app)
     }
 
     async onunload() {
@@ -416,6 +430,66 @@ export default class PluginSample extends Plugin {
                 detail.protyle.getInstance().transaction(doOperations);
             }
         });
+    }
+
+    private showInsertDialog(protyle: Protyle) {
+        const range = protyle.protyle.toolbar.range;
+        let nodeElement = protyle.hasClosestBlock(range.startContainer) as HTMLElement;
+        if (!nodeElement) {
+            return;
+        }
+        range.deleteContents()
+        // const prevBreadcrumb = protyle.protyle.breadcrumb
+        // protyle.protyle.selectElement
+        const dialog = new Dialog({
+            title: `创建drawio`,
+            content: `<div class="b3-dialog__content">
+        <label class="fn__flex b3-label config__item">
+                <div class="fn__flex-1">名称<div class="b3-label__text">名称为文件名，不可包含/,*,$等特殊字符</div>
+                </div><span class="fn__space"></span><input id="draw-name"
+                    class="b3-text-field fn__flex-center fn__size200" value="">
+            </label>
+            <div class="button-group" style="float: right; margin: 20px 0px 10px;"><button id="save-drawio"
+                    class="b3-button">保存</button></div>
+</div>`,
+            width: this.isMobile ? "92vw" : "560px",
+        });
+        dialog.bindInput(dialog.element.querySelector("#draw-name"), console.log)
+        const input: HTMLInputElement = dialog.element.querySelector("#draw-name")
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                event.stopPropagation();
+                this.onSave(dialog, input, protyle)
+            }
+        })
+        dialog.element.querySelector("#save-drawio").addEventListener("click", () => {
+            this.onSave(dialog, input, protyle)
+        })
+    }
+
+    private onSave(dialog: Dialog, input: HTMLInputElement, protyle: Protyle){
+        let value = input.value && input.value.trim()
+        if(!value || checkInvalidPathChar(value)) {
+            showMessage(`Drawio: 名称 ${value} 不合法`)
+            return
+        }
+        const drawio = ".drawio";
+        if(!value.endsWith(drawio)) {
+            value += drawio
+        }
+        upload(drawioPath, [saveContentAsFile(value, blankDrawio)]).then((data) => {
+            dialog.destroy()
+            // const textNode = document.createTextNode(createLink(data["succMap"][value]));
+            // range.insertNode(textNode);
+            // range.setEnd(textNode, value.length);
+            // range.collapse(false);
+            // focusByRange(range);
+            protyle.insert(createLink(data["succMap"][value]), true, true)
+        }).catch(e => {
+            console.error(e)
+            showMessage(e, 6000, "error")
+        })
     }
 
     private showDialog() {
@@ -894,6 +968,49 @@ export default class PluginSample extends Plugin {
                 y: rect.bottom,
                 isLeft: true,
             });
+        }
+    }
+
+    onOpenTab(data: CustomEvent<{ url: string }>) {
+        if (data.detail.url) {
+            const urlObj = new URL(data.detail.url)
+            this.openCustomTab(
+                urlObj.searchParams.get("title"),
+                urlObj.searchParams.get("icon"),
+                urlObj.searchParams.get("data") ? JSON.parse(urlObj.searchParams.get("data")) : {},
+            )
+        }
+    }
+
+    openCustomTab(title: string, icon?: string, data?: any,) {
+        openTab({
+            app: this.app,
+            custom: {
+                icon:  icon || "iconFace",
+                title: title || "drawio",
+                data: data,
+                id: this.name + TAB_TYPE
+            },
+        });
+    }
+
+    bindEvent(data: CustomEvent<{ protyle: IProtyle }>) {
+        if(data.detail.protyle) {
+            const element: HTMLElement = data.detail.protyle.wysiwyg.element
+            const list = element.querySelectorAll('[data-type="a"]')
+            list.forEach((item: HTMLElement) => {
+                if(item.dataset.href && item.dataset.href.endsWith(".drawio")) {
+                  item.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const target: HTMLElement = event.target as HTMLElement
+                    this.openCustomTab(getTitleFromPath(target.dataset.href), undefined, {
+                        url: target.dataset.href
+                    })
+                  })
+                }
+            })
+            console.log(list)
         }
     }
 }
