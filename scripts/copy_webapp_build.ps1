@@ -58,12 +58,15 @@ $copyJsItems = @(
 if (-not (Test-Path "./$targetDir/webapp/js")) {
     New-Item -Path "./$targetDir/webapp/js" -ItemType Directory
 }
-# Copy all .js files from "./drawio/src/main/webapp/js" to "./$targetDir/webapp/js"
-Get-ChildItem -Path "./drawio/src/main/webapp/js" -Filter "*.js" | ForEach-Object {
-    $destinationPath = $_.FullName -replace [regex]::Escape("\drawio\src\main\webapp\js"), "\$targetDir\webapp\js"
-    Write-Output $destinationPath
-    if ($_.FullName -ne $destinationPath) {
-        Copy-Item -Path $_.FullName -Destination $destinationPath
+$excludeFiles = @("integrate.min.js")  # List of files to exclude
+
+Get-ChildItem -Path "./drawio/src/main/webapp/js" -Filter "*.js" -Recurse -Depth 1 | ForEach-Object {
+    if ($excludeFiles -notcontains $_.Name) {
+        $destinationPath = $_.FullName -replace [regex]::Escape("\drawio\src\main\webapp\js"), "\$targetDir\webapp\js"
+        Write-Output $destinationPath
+        if ($_.FullName -ne $destinationPath) {
+            Copy-Item -Path $_.FullName -Destination $destinationPath
+        }
     }
 }
 
