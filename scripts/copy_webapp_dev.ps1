@@ -1,4 +1,4 @@
-# 源目录和目标目录
+# Source and target directories
 $targetDir = "dev"
 
 $copyItems = @(
@@ -11,7 +11,6 @@ $copyItems = @(
     "resources/",
     "styles/",
     "templates/",
-    "js/",
     # "clear.html",
     # "dropbox.html",
     # "export3.html",
@@ -38,6 +37,11 @@ if (-not (Test-Path "./$targetDir")) {
     New-Item -Path "./$targetDir" -ItemType Directory
 }
 
+# Create the ./$targetDir/webapp directory if it doesn't exist
+if (-not (Test-Path "./$targetDir/webapp")) {
+    New-Item -Path "./$targetDir/webapp" -ItemType Directory
+}
+
 foreach ($item in $copyItems) {
     if ($item -like "*/*") {
         # Copy directory recursively
@@ -45,6 +49,40 @@ foreach ($item in $copyItems) {
     } else {
         # Copy file
         Copy-Item -Path "./drawio/src/main/webapp/$item" -Destination "./$targetDir/webapp/$item"
+    }
+}
+
+$copyJsItems = @(
+    "diagramly",
+    "jszip",
+    "mermaid"
+)
+
+# Create the ./$targetDir/webapp directory if it doesn't exist
+if (-not (Test-Path "./$targetDir/webapp/js")) {
+    New-Item -Path "./$targetDir/webapp/js" -ItemType Directory
+}
+# Copy all .js files from "./drawio/src/main/webapp/js" to "./$targetDir/webapp/js"
+Get-ChildItem -Path "./drawio/src/main/webapp/js" -Filter "*.js" | ForEach-Object {
+    $destinationPath = $_.FullName -replace [regex]::Escape("\drawio\src\main\webapp\js"), "\$targetDir\webapp\js"
+    Write-Output $destinationPath
+    if ($_.FullName -ne $destinationPath) {
+        Copy-Item -Path $_.FullName -Destination $destinationPath
+    }
+}
+
+# Copy all .min.js files from specific directories under "js" to the corresponding directories in the target directory
+foreach ($jsItem in $copyJsItems) {
+    # Create the ./$targetDir/webapp directory if it doesn't exist
+    if (-not (Test-Path "./$targetDir/webapp/js/$jsItem")) {
+        New-Item -Path "./$targetDir/webapp/js/$jsItem" -ItemType Directory
+    }
+    Get-ChildItem -Path "./drawio/src/main/webapp/js/$jsItem" -Filter "*.min.js" | ForEach-Object {
+        $destinationPath = $_.FullName -replace [regex]::Escape("\drawio\src\main\webapp\js\$jsItem"), "\$targetDir\webapp\js\$jsItem"
+        Write-Output $destinationPath
+        if ($_.FullName -ne $destinationPath) {
+            Copy-Item -Path $_.FullName -Destination $destinationPath
+        }
     }
 }
 

@@ -48,4 +48,38 @@ foreach ($item in $copyItems) {
     }
 }
 
+$copyJsItems = @(
+    "diagramly",
+    "jszip",
+    "mermaid"
+)
+
+# Create the ./$targetDir/webapp directory if it doesn't exist
+if (-not (Test-Path "./$targetDir/webapp/js")) {
+    New-Item -Path "./$targetDir/webapp/js" -ItemType Directory
+}
+# Copy all .js files from "./drawio/src/main/webapp/js" to "./$targetDir/webapp/js"
+Get-ChildItem -Path "./drawio/src/main/webapp/js" -Filter "*.js" | ForEach-Object {
+    $destinationPath = $_.FullName -replace [regex]::Escape("\drawio\src\main\webapp\js"), "\$targetDir\webapp\js"
+    Write-Output $destinationPath
+    if ($_.FullName -ne $destinationPath) {
+        Copy-Item -Path $_.FullName -Destination $destinationPath
+    }
+}
+
+# Copy all .min.js files from specific directories under "js" to the corresponding directories in the target directory
+foreach ($jsItem in $copyJsItems) {
+    # Create the ./$targetDir/webapp directory if it doesn't exist
+    if (-not (Test-Path "./$targetDir/webapp/js/$jsItem")) {
+        New-Item -Path "./$targetDir/webapp/js/$jsItem" -ItemType Directory
+    }
+    Get-ChildItem -Path "./drawio/src/main/webapp/js/$jsItem" -Filter "*.min.js" | ForEach-Object {
+        $destinationPath = $_.FullName -replace [regex]::Escape("\drawio\src\main\webapp\js\$jsItem"), "\$targetDir\webapp\js\$jsItem"
+        Write-Output $destinationPath
+        if ($_.FullName -ne $destinationPath) {
+            Copy-Item -Path $_.FullName -Destination $destinationPath
+        }
+    }
+}
+
 Write-Output "Directory copied successfully."
