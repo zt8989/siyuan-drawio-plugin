@@ -17,5 +17,7 @@
     },
     "hintTitle":"About",
     "hintDesc":"<a href='https://github.com/siyuan-note/plugin-sample-vite-svelte'>plugin-sample-vite-svelte</a><br>@frostime<br>@88250<br>@zxkmm",
-    "insertDrawio": "insert drawio"
+    "insertDrawio": "insert drawio",
+    "linkCopiedToClipboard": "Link copied to clipboard",
+    "copyAsSiYuanLink": "copy as siyuan link"
 }

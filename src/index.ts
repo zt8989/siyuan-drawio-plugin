@@ -42,8 +42,10 @@ export default class DrawioPlugin extends Plugin {
     private settingUtils: SettingUtils;
 
     async onload() {
+        window.drawioPlugin = this
         window.fetchPost = fetchPost
         window.fetchSyncPost = fetchSyncPost
+        window.showMessage = showMessage
         this.eventBus.on("open-siyuan-url-plugin", this.onOpenTab.bind(this));
 
         this.eventBus.on("loaded-protyle-static", this.bindEvent.bind(this))

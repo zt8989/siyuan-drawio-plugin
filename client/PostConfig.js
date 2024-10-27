@@ -347,7 +347,7 @@ async function saveFileToSiyuan(file, fileName) {
 			editorUi.openLink('https://www.draw.io/')
 		}));
 
-        editorUi.actions.put("copyLink", new Action("copy as siyuan link", function() {
+        editorUi.actions.put("copyLink", new Action(parent.drawioPlugin.i18n.copyAsSiYuanLink, function() {
             var file = editorUi.getCurrentFile();
             var urlParams = new URLSearchParams({
                 icon: "iconDrawio",
@@ -355,10 +355,11 @@ async function saveFileToSiyuan(file, fileName) {
                 data: JSON.stringify({ url: '/assets/drawio/' + file.getTitle() })
             })
             var link = `[${file.getTitle()}](siyuan://plugins/siyuan-drawio-plugin?${urlParams.toString()})`
-            navigator.clipboard.writeText(link).then(() => {
-                console.log('Link copied to clipboard');
+            parent.navigator.clipboard.writeText(link).then(() => {
+                parent.showMessage(parent.drawioPlugin.i18n.linkCopiedToClipboard)
             }).catch(err => {
                 console.error('Failed to copy link: ', err);
+                parent.showMessage(err, 6000, "error")
             });
         }),)
 		
