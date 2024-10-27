@@ -11,6 +11,7 @@ $copyItems = @(
     "resources/",
     "styles/",
     "templates/",
+    "js/",
     # "clear.html",
     # "dropbox.html",
     # "export3.html",

@@ -11,6 +11,7 @@ $copyItems = @(
     "resources/",
     "styles/",
     "templates/",
+    "js/",
     # "clear.html",
     # "dropbox.html",
     # "export3.html",
@@ -27,9 +28,9 @@ $copyItems = @(
     "vsdxImporter.html"
 )
 
-# Remove the ./$targetDir directory if it exists
-if (Test-Path "./$targetDir") {
-    Remove-Item -Path "./$targetDir" -Recurse -Force
+# Remove the $targetDir/webapp directory if it exists
+if (Test-Path "$targetDir/webapp") {
+    Remove-Item -Path "$targetDir/webapp" -Recurse -Force
 }
 
 # Create the ./$targetDir directory if it doesn't exist
