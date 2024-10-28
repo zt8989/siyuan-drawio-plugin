@@ -30,4 +30,4 @@ for file in "${filesToCopy[@]}"; do
 done
 
 # Compress the contents of the directory, excluding the dist directory itself
-# (cd "$outputDir" && zip -FSr "../$zipFilePath" *)
+(cd "$outputDir" && zip -FSr "../$zipFilePath" *)
