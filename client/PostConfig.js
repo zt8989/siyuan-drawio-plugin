@@ -1,55 +1,53 @@
-/**
- * Copyright (c) 2006-2024, JGraph Ltd
- * Copyright (c) 2006-2024, draw.io AG
- */
-// null'ing of global vars need to be after init.js
-window.VSD_CONVERT_URL = null;
-window.EMF_CONVERT_URL = null;
-window.ICONSEARCH_PATH = null;
+(async function() {
+    /**
+     * Copyright (c) 2006-2024, JGraph Ltd
+     * Copyright (c) 2006-2024, draw.io AG
+     */
+    // null'ing of global vars need to be after init.js
+    window.VSD_CONVERT_URL = null;
+    window.EMF_CONVERT_URL = null;
+    window.ICONSEARCH_PATH = null;
 
-const fetchPost = window.parent.fetchPost 
-const fetchSyncPost = window.parent.fetchSyncPost 
+    const fetchPost = window.parent.fetchPost 
+    const fetchSyncPost = window.parent.fetchSyncPost 
 
-async function uploadFileToSiyuan(file, assetsDirPath) {
-    const formData = new FormData();
-    formData.append("assetsDirPath", assetsDirPath);
-    formData.append("file[]", file);
+    async function uploadFileToSiyuan(file, assetsDirPath) {
+        const formData = new FormData();
+        formData.append("assetsDirPath", assetsDirPath);
+        formData.append("file[]", file);
 
-    return await fetch("/api/asset/upload", {
-        method: "POST",
-        body: formData
-    }).then(res => res.json());
-}
+        return await fetch("/api/asset/upload", {
+            method: "POST",
+            body: formData
+        }).then(res => res.json());
+    }
 
-async function getFileContent(data) {
-    if(data.path) {
-        if(data.path.startsWith("/assets")) {
-            data.path =  "/data" + data.path
-        } else if (data.path.startsWith("assets")) {
-            data.path =  "/data/" + data.path
+    async function getFileContent(data) {
+        if(data.path) {
+            if(data.path.startsWith("/assets")) {
+                data.path =  "/data" + data.path
+            } else if (data.path.startsWith("assets")) {
+                data.path =  "/data/" + data.path
+            }
         }
+        return fetch("/api/file/getFile", {
+            body: JSON.stringify(data),
+            method: "POST"
+        }).then(resonse => resonse.text());
     }
-    return fetch("/api/file/getFile", {
-        body: JSON.stringify(data),
-        method: "POST"
-    }).then(resonse => resonse.text());
-}
 
-async function saveFileToSiyuan(file, fileName) {
-    const assetsDirPath = "/assets/drawio/";
-    const data = await uploadFileToSiyuan(file, assetsDirPath);
-    
-    if (data.code === 0 && data.data && data.data.succMap) {
-        const newFilePath = data.data.succMap[fileName];
-        const newTitle = newFilePath.split('/').pop();
-        return { success: true, newTitle };
+    async function saveFileToSiyuan(file, fileName) {
+        const assetsDirPath = "/assets/drawio/";
+        const data = await uploadFileToSiyuan(file, assetsDirPath);
+        
+        if (data.code === 0 && data.data && data.data.succMap) {
+            const newFilePath = data.data.succMap[fileName];
+            const newTitle = newFilePath.split('/').pop();
+            return { success: true, newTitle };
+        }
+        
+        return { success: false };
     }
-    
-    return { success: false };
-}
-
-(async function()
-{
 
     App.prototype.showSaveFilePicker = function(success, error, opts) {
         success(null, { name: opts.suggestedName })
