@@ -295,14 +295,15 @@ export default class DrawioPlugin extends Plugin {
     }
 
     openCustomTab(title?: string, icon?: string, data?: any,) {
-        openTab({
+        return openTab({   
             app: this.app,
             custom: {
                 icon:  icon || "icon-drawio",
                 title: title || "drawio",
                 data: data,
-                id: this.name + TAB_TYPE
-            },
+                id: this.name + TAB_TYPE,
+               
+            }
         });
 
     }
