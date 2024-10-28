@@ -9,11 +9,14 @@
   "license": "MIT",
   "scripts": {
     "dev": "cross-env NODE_ENV=development VITE_SOURCEMAP=inline vite build --watch",
+    "prebuild": "sh -c ./scripts/copy_webapp_build.sh",
     "build": "cross-env NODE_ENV=production vite build",
+    "postbuild": "sh -c ./scripts/copy_and_bundle_build.sh",
     "prebuild-win": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/copy_webapp_build.ps1",
     "build-win": "pnpm run build",
     "postbuild-win": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/copy_and_bundle_build.ps1",
     "make-link": "node --no-warnings ./scripts/make_dev_link.js",
+    "make-build-link": "node --no-warnings ./scripts/make_build_link.js",
     "make-link-win": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/elevate.ps1 -scriptPath ./scripts/make_dev_link.js",
     "make-install": "pnpm run build && node --no-warnings ./scripts/make_install.js",
     "update-version": "node --no-warnings ./scripts/update_version.js"
