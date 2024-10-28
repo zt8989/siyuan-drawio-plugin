@@ -12,12 +12,8 @@ import {
     getFrontend
 } from "siyuan";
 import {
-    hasClosestBlock,
     hasClosestByAttribute,
-    hasClosestByClassName,
-    hasClosestByMatchTag,
-    hasTopClosestByClassName
-} from "@/protyle/util/hasClosest";
+    hasClosestByClassName} from "@/protyle/util/hasClosest";
 import {renderAssetsPreview} from "@/asset/renderAssets";
 import {upDownHint} from "@/util/upDownHint";
 
