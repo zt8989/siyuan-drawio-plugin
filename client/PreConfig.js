@@ -31,7 +31,6 @@ import {Workbox} from 'workbox-window';
   window.DRAWIO_LIGHTBOX_URL = "/plugins/siyuan-drawio-plugin/webapp"; // Replace with your lightbox URL, eg. https://www.example.com
   window.DRAW_MATH_URL = 'math/es5';
   window.DRAWIO_CONFIG = "/plugins/siyuan-drawio-plugin/webapp/"; // Replace with your custom draw.io configurations. For more details, https://www.drawio.com/doc/faq/configure-diagram-editor
-  urlParams['lang'] = getLang();
   urlParams['sync'] = 'manual';
   // urlParams['offline'] = '0';
   urlParams['mode'] = 'device'
@@ -47,5 +46,9 @@ import {Workbox} from 'workbox-window';
     const wb = new Workbox('service-worker.js');
 
     wb.register();
+  }
+
+  if(parent.siyuan) {
+    urlParams['lang'] = getLang();
   }
 })()

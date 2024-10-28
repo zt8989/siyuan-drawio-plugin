@@ -154,6 +154,13 @@ export default class DrawioPlugin extends Plugin {
                 id: this.name + TAB_TYPE
             },
         });
+
+    }
+
+    openCustomTabByPath(path: string) {
+        this.openCustomTab(getTitleFromPath(path), undefined, {
+            url: path
+        })
     }
 
     bindEvent(data: CustomEvent<{ protyle: IProtyle }>) {
@@ -166,9 +173,7 @@ export default class DrawioPlugin extends Plugin {
                     event.preventDefault();
                     event.stopPropagation();
                     const target: HTMLElement = event.target as HTMLElement
-                    this.openCustomTab(getTitleFromPath(target.dataset.href), undefined, {
-                        url: target.dataset.href
-                    })
+                    this.openCustomTabByPath(target.dataset.href)
                   })
                 }
             })
