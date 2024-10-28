@@ -7,11 +7,9 @@
     window.VSD_CONVERT_URL = null;
     window.EMF_CONVERT_URL = null;
     window.ICONSEARCH_PATH = null;
+    const assetsDirPath = "/assets/drawio/";
 
     if(window.parent.siyuan) {
-        const fetchPost = window.parent.fetchPost 
-        const fetchSyncPost = window.parent.fetchSyncPost 
-    
         async function uploadFileToSiyuan(file, assetsDirPath) {
             const formData = new FormData();
             formData.append("assetsDirPath", assetsDirPath);
@@ -38,9 +36,8 @@
         }
     
         async function saveFileToSiyuan(file, fileName) {
-            const assetsDirPath = "/assets/drawio/";
-            const data = await uploadFileToSiyuan(file, assetsDirPath);
             
+            const data = await uploadFileToSiyuan(file, assetsDirPath);
             if (data.code === 0 && data.data && data.data.succMap) {
                 const newFilePath = data.data.succMap[fileName];
                 const newTitle = newFilePath.split('/').pop();
@@ -48,6 +45,10 @@
             }
             
             return { success: false };
+        }
+
+        function loadFile(app, url) {
+            app.loadFile("U" + encodeURIComponent(url), true)
         }
     
         App.prototype.showSaveFilePicker = function(success, error, opts) {
@@ -361,48 +362,52 @@
                     parent.showMessage(err, 6000, "error")
                 });
             }),)
+
+            editorUi.actions.put("open",  new Action(mxResources.get('open'), function() {
+                parent.drawioPlugin.showOpenDialog(url => loadFile(editorUi, url))
+            }),)
             
-            this.put('openRecent', new Menu(function(menu, parent)
-            {
-                var recent = editorUi.getRecent();
+            // this.put('openRecent', new Menu(function(menu, parent)
+            // {
+            //     var recent = editorUi.getRecent();
     
-                if (recent != null)
-                {
-                    for (var i = 0; i < recent.length; i++)
-                    {
-                        (function(entry)
-                        {
-                            menu.addItem(entry.title, null, function()
-                            {
-                                function doOpenRecent()
-                                {
-                                    //Simulate opening a file via args
-                                    editorUi.loadArgs({args: [entry.id]});
-                                };
+            //     if (recent != null)
+            //     {
+            //         for (var i = 0; i < recent.length; i++)
+            //         {
+            //             (function(entry)
+            //             {
+            //                 menu.addItem(entry.title, null, function()
+            //                 {
+            //                     function doOpenRecent()
+            //                     {
+            //                         //Simulate opening a file via args
+            //                         editorUi.loadArgs({args: [entry.id]});
+            //                     };
                                 
-                                var file = editorUi.getCurrentFile();
+            //                     var file = editorUi.getCurrentFile();
                                 
-                                if (file != null && file.isModified())
-                                {
-                                    editorUi.confirm(mxResources.get('allChangesLost'), null, doOpenRecent,
-                                        mxResources.get('cancel'), mxResources.get('discardChanges'));
-                                }
-                                else
-                                {
-                                    doOpenRecent();
-                                }
-                            }, parent);
-                        })(recent[i]);
-                    }
+            //                     if (file != null && file.isModified())
+            //                     {
+            //                         editorUi.confirm(mxResources.get('allChangesLost'), null, doOpenRecent,
+            //                             mxResources.get('cancel'), mxResources.get('discardChanges'));
+            //                     }
+            //                     else
+            //                     {
+            //                         doOpenRecent();
+            //                     }
+            //                 }, parent);
+            //             })(recent[i]);
+            //         }
     
-                    menu.addSeparator(parent);
-                }
+            //         menu.addSeparator(parent);
+            //     }
     
-                menu.addItem(mxResources.get('reset'), null, function()
-                {
-                    editorUi.resetRecent();
-                }, parent);
-            }));
+            //     menu.addItem(mxResources.get('reset'), null, function()
+            //     {
+            //         editorUi.resetRecent();
+            //     }, parent);
+            // }));
             
             // Replaces file menu to replace openFrom menu with open and rename downloadAs to export
             this.put('file', new Menu(mxUtils.bind(this, function(menu, parent)
@@ -438,6 +443,11 @@
             const href = decodeURIComponent(location.hash).slice(2)
             parent.drawioPlugin.openCustomTabByPath(href)
         }
+
+        LocalFile.prototype.getPublicUrl = function(fn)
+        {
+            fn(assetsDirPath + this.title);
+        };
     }
 
 })();

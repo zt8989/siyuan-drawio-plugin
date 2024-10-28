@@ -12,14 +12,14 @@ const imageRoute = new Route(({ request }) => {
 // Handle scripts under /plugins/siyuan-drawio-plugin/webapp/:
 const scriptsRoute = new Route(({ request }) => {
   return request.destination === 'script' && request.url.includes('/plugins/siyuan-drawio-plugin/webapp/');
-}, new CacheFirst({
+}, new StaleWhileRevalidate({
   cacheName: 'scripts'
 }));
 
 // Handle styles under /plugins/siyuan-drawio-plugin/webapp/:
 const stylesRoute = new Route(({ request }) => {
   return request.destination === 'style' && request.url.includes('/plugins/siyuan-drawio-plugin/webapp/');
-}, new CacheFirst({
+}, new StaleWhileRevalidate({
   cacheName: 'styles'
 }));
 

@@ -104,3 +104,11 @@ interface Window {
     };
     Lute: any;
 }
+
+interface IPosition {
+    x: number,
+    y: number,
+    w?: number,
+    h?: number,
+    isLeft?: boolean
+}

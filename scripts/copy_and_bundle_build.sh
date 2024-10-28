@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Default behavior is to create a zip file
+createZip=true
+
+# Check if the flag is provided to not create a zip file
+if [ "$1" == "--no-zip" ]; then
+    createZip=false
+fi
+
 # Define source and destination directories
 outputDir="dist"
 webappJsDir="$outputDir/webapp/js"
@@ -29,5 +37,10 @@ for file in "${filesToCopy[@]}"; do
     fi
 done
 
-# Compress the contents of the directory, excluding the dist directory itself
-(cd "$outputDir" && zip -FSr "../$zipFilePath" *)
+# Create a zip file if the flag is not set to false
+if [ "$createZip" = true ]; then
+    (cd "$outputDir" && zip -FSr "../$zipFilePath" *)
+    echo "Zip file created successfully."
+else
+    echo "Directory copied successfully. No zip file created."
+fi

@@ -7,8 +7,21 @@ import {
     Protyle,
     fetchPost,
     fetchSyncPost,
-    IProtyle
+    IProtyle,
+    IWebSocketData,
+    getFrontend
 } from "siyuan";
+import {
+    hasClosestBlock,
+    hasClosestByAttribute,
+    hasClosestByClassName,
+    hasClosestByMatchTag,
+    hasTopClosestByClassName
+} from "@/protyle/util/hasClosest";
+import {renderAssetsPreview} from "@/asset/renderAssets";
+import {upDownHint} from "@/util/upDownHint";
+
+
 import "@/index.scss";
 
 
@@ -18,6 +31,36 @@ import { blankDrawio, drawioPath } from "./constants";
 import { saveContentAsFile } from "./file";
 import { createLink, getTitleFromPath } from "./link";
 const TAB_TYPE = "drawio_tab";
+
+const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
+    fetchPost("/api/search/searchAsset", {
+        k,
+        exts
+    }, (response) => {
+        let searchHTML = "";
+        response.data.forEach((item: { path: string, hName: string }, index: number) => {
+            searchHTML += `<div data-value="${item.path}" class="b3-list-item${index === 0 ? " b3-list-item--focus" : ""}"><div class="b3-list-item__text">${item.hName}</div></div>`;
+        });
+
+        const listElement = element.querySelector(".b3-list");
+        const previewElement = element.querySelector("#preview");
+        const inputElement = element.querySelector("input");
+        listElement.innerHTML = searchHTML || `<li class="b3-list--empty">${window.siyuan.languages.emptyContent}</li>`;
+        if (response.data.length > 0) {
+            previewElement.innerHTML = renderAssetsPreview(response.data[0].path);
+        } else {
+            previewElement.innerHTML = window.siyuan.languages.emptyContent;
+        }
+        /// #if MOBILE
+        window.siyuan.menus.menu.fullscreen();
+        /// #else
+        window.siyuan.menus.menu.popup(position);
+        /// #endif
+        if (!k) {
+            inputElement.select();
+        }
+    });
+};
 
 export default class DrawioPlugin extends Plugin {
 
@@ -30,7 +73,11 @@ export default class DrawioPlugin extends Plugin {
         window.fetchSyncPost = fetchSyncPost
         window.showMessage = showMessage
         this.eventBus.on("open-siyuan-url-plugin", this.onOpenTab.bind(this));
-        this.eventBus.on("loaded-protyle-static", this.bindEvent.bind(this))
+        this.eventBus.on("loaded-protyle-static", this.bindStaticEvent.bind(this))
+        this.eventBus.on("ws-main", this.bindWsEvent.bind(this))
+        
+        const frontEnd = getFrontend();
+        this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
 
         // 图标的制作参见帮助文档
         this.addIcons(`<symbol id="icon-drawio-standard" viewBox="0 0 32 32">
@@ -58,9 +105,9 @@ export default class DrawioPlugin extends Plugin {
         });
 
         this.protyleSlash = [{
-            filter: ["drawio"],
+            filter: ["插入drawio", "insert drawio", "crdrawio"],
             id: "insertDrawio",
-            html: `<div class="b3-list-item__first"><div class="color__square">A</div><span class="b3-list-item__text">${this.i18n.insertDrawio}</span></div>`,
+            html: `<div class="b3-list-item__first"><svg class="b3-list-item__graphic"><use xlink:href="#icon-drawio-standard"></use></svg><span class="b3-list-item__text">${this.i18n.insertDrawio}</span></div>`,
             callback: this.showInsertDialog,
             }
         ];
@@ -75,7 +122,114 @@ export default class DrawioPlugin extends Plugin {
     uninstall() {
     }
 
-    private showInsertDialog(protyle: Protyle) {
+    public showOpenDialog(callback?: (url: string, name: string) => void) {
+        const position: IPosition = {
+            x: 500,
+            y: 500
+        }
+        const exts = [".drawio"]
+        const dialog = new Dialog({
+            title: `创建drawio`,
+            content: `<div class="fn__flex" style="max-height: 50vh">
+<div class="fn__flex-column" style="${this.isMobile ? "width:100%" : "min-width: 260px;max-width:420px"}">
+    <div class="fn__flex" style="margin: 0 8px 4px 8px">
+        <input class="b3-text-field fn__flex-1"/>
+        <span class="fn__space"></span>
+        <span data-type="previous" class="block__icon block__icon--show"><svg><use xlink:href="#iconLeft"></use></svg></span>
+        <span class="fn__space"></span>
+        <span data-type="next" class="block__icon block__icon--show"><svg><use xlink:href="#iconRight"></use></svg></span>
+    </div>
+    <div class="b3-list fn__flex-1 b3-list--background" style="position: relative"><img style="margin: 0 auto;display: block;width: 64px;height: 64px" src="/stage/loading-pure.svg"></div>
+</div>
+<div id="preview" style="width: 360px;display: ${this.isMobile || window.outerWidth < window.outerWidth / 2 + 260 ? "none" : "flex"};padding: 8px;overflow: auto;justify-content: center;align-items: center;word-break: break-all;"></div>
+</div>`,
+        width: this.isMobile ? "92vw" : "560px",
+        });
+        dialog.bindInput(dialog.element.querySelector("input"))
+
+        function bind(element) {
+            element.style.maxWidth = "none";
+            const listElement = element.querySelector(".b3-list");
+            const previewElement = element.querySelector("#preview");
+            listElement.addEventListener("mouseover", (event) => {
+                const target = event.target as HTMLElement;
+                const hoverItemElement = hasClosestByClassName(target, "b3-list-item");
+                if (!hoverItemElement) {
+                    return;
+                }
+                previewElement.innerHTML = renderAssetsPreview(hoverItemElement.getAttribute("data-value"));
+            });
+            const inputElement = element.querySelector("input");
+            inputElement.addEventListener("keydown", (event: KeyboardEvent) => {
+                if (event.isComposing) {
+                    return;
+                }
+                const isEmpty = element.querySelector(".b3-list--empty");
+                if (!isEmpty) {
+                    const currentElement = upDownHint(listElement, event);
+                    if (currentElement) {
+                        previewElement.innerHTML = renderAssetsPreview(currentElement.getAttribute("data-value"));
+                        event.stopPropagation();
+                    }
+                }
+    
+                if (event.key === "Enter") {
+                    if (!isEmpty) {
+                        const currentElement = element.querySelector(".b3-list-item--focus");
+                        if (callback) {
+                            dialog.destroy()
+                            callback(currentElement.getAttribute("data-value"), currentElement.textContent);
+                        }
+                    }
+                    // 空行处插入 mp3 会多一个空的 mp3 块
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            });
+            inputElement.addEventListener("input", (event: InputEvent) => {
+                if (event.isComposing) {
+                    return;
+                }
+                event.stopPropagation();
+                renderAssetList(element, inputElement.value, position, exts);
+            });
+            inputElement.addEventListener("compositionend", (event: InputEvent) => {
+                event.stopPropagation();
+                renderAssetList(element, inputElement.value, position, exts);
+            });
+            element.lastElementChild.addEventListener("click", (event) => {
+                const target = event.target as HTMLElement;
+                const previousElement = hasClosestByAttribute(target, "data-type", "previous");
+                if (previousElement) {
+                    inputElement.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowUp"}));
+                    event.stopPropagation();
+                    return;
+                }
+                const nextElement = hasClosestByAttribute(target, "data-type", "next");
+                if (nextElement) {
+                    inputElement.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowDown"}));
+                    event.stopPropagation();
+                    return;
+                }
+                const listItemElement = hasClosestByClassName(target, "b3-list-item");
+                if (listItemElement) {
+                    event.stopPropagation();
+                    const currentURL = listItemElement.getAttribute("data-value");
+                    if (callback) {
+                        dialog.destroy()
+                        callback(currentURL, listItemElement.textContent);
+                    }
+                }
+            });
+            renderAssetList(element, "", position, exts);
+        }
+
+        bind(dialog.element)
+    }
+
+
+
+    public showInsertDialog(protyle: Protyle) {
         const range = protyle.protyle.toolbar.range;
         let nodeElement = protyle.hasClosestBlock(range.startContainer) as HTMLElement;
         if (!nodeElement) {
@@ -95,7 +249,7 @@ export default class DrawioPlugin extends Plugin {
 </div>`,
             width: this.isMobile ? "92vw" : "560px",
         });
-        dialog.bindInput(dialog.element.querySelector("#draw-name"), console.log)
+        dialog.bindInput(dialog.element.querySelector("#draw-name"))
         const input: HTMLInputElement = dialog.element.querySelector("#draw-name")
         input.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
@@ -163,20 +317,55 @@ export default class DrawioPlugin extends Plugin {
         })
     }
 
-    bindEvent(data: CustomEvent<{ protyle: IProtyle }>) {
+    bindStaticEvent(data: CustomEvent<{ protyle: IProtyle }>) {
+        console.log("bindStaticEvent", data)
         if(data.detail.protyle) {
             const element: HTMLElement = data.detail.protyle.wysiwyg.element
-            const list = element.querySelectorAll('[data-type="a"]')
-            list.forEach((item: HTMLElement) => {
-                if(item.dataset.href && item.dataset.href.endsWith(".drawio")) {
-                  item.addEventListener("click", (event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    const target: HTMLElement = event.target as HTMLElement
-                    this.openCustomTabByPath(target.dataset.href)
-                  })
-                }
-            })
+            this.bindClickEvent(element)
         }
     }
+
+    bindClickEvent(element: HTMLElement) {
+        const list = element.querySelectorAll('[data-type="a"]')
+        list.forEach((item: HTMLElement) => {
+            if(item.dataset.href && item.dataset.href.endsWith(".drawio")) {
+              item.addEventListener("click", this.onClickEvent)
+            }
+        })
+    }
+
+    onClickEvent = (event: MouseEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const target: HTMLElement = event.target as HTMLElement
+        this.openCustomTabByPath(target.dataset.href)
+    }
+
+    bindDynamicEvent(data: CustomEvent<{ protyle: IProtyle }>) {
+        console.log("bindDynamicEvent", data)
+        if(data.detail.protyle) {
+            // const element: HTMLElement = data.detail.protyle.wysiwyg.element
+            // const list = element.querySelectorAll('[data-type="a"]')
+            // list.forEach((item: HTMLElement) => {
+            //     if(item.dataset.href && item.dataset.href.endsWith(".drawio")) {
+            //       item.addEventListener("click", (event) => {
+            //         event.preventDefault();
+            //         event.stopPropagation();
+            //         const target: HTMLElement = event.target as HTMLElement
+            //         this.openCustomTabByPath(target.dataset.href)
+            //       })
+            //     }
+            // })
+        }
+    }
+
+    bindWsEvent(data: CustomEvent<IWebSocketData>) {
+        if("savedoc" === data.detail.cmd){
+            const el = data.target as HTMLElement
+            this.bindClickEvent(el.parentNode as HTMLElement)
+        }
+    }
+
+
+    
 }
