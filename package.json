@@ -1,6 +1,6 @@
 {
   "name": "plugin-sample-vite",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "description": "This is a sample plugin based on vite and svelte for Siyuan (https://b3log.org/siyuan)",
   "repository": "https://github.com/frostime/plugin-sample-vite",
