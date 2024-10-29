@@ -154,6 +154,11 @@ function executeCommand(command) {
         console.log('🔄  Performing git add and git push...');
         await executeCommand('git add plugin.json package.json');
         await executeCommand(`git commit -m "chore: bump version to ${newVersion}"`);
+        await executeCommand(`git push`);
+
+        // Create and push git tag
+        console.log('🔄  Creating and pushing git tag...');
+        await executeCommand(`git tag v${newVersion}`);
         await executeCommand(`git push origin v${newVersion}`);
 
         console.log('✅  Git add and push completed.');
