@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { exec } from 'node:child_process';
+import { version } from 'node:os';
 
 // Utility to read JSON file
 function readJsonFile(filePath) {
@@ -153,7 +154,7 @@ function executeCommand(command) {
         console.log('🔄  Performing git add and git push...');
         await executeCommand('git add plugin.json package.json');
         await executeCommand(`git commit -m "chore: bump version to ${newVersion}"`);
-        await executeCommand('git push');
+        await executeCommand(`git push origin v${newVersion}`);
 
         console.log('✅  Git add and push completed.');
 
