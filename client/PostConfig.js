@@ -10,6 +10,7 @@
     const assetsDirPath = "/assets/drawio/";
 
     if(window.parent.siyuan) {
+        //#region public method
         async function uploadFileToSiyuan(file, assetsDirPath) {
             const formData = new FormData();
             formData.append("assetsDirPath", assetsDirPath);
@@ -50,7 +51,12 @@
         function loadFile(app, url) {
             app.loadFile("U" + encodeURIComponent(url), true)
         }
+        //#endregion
     
+        // #region App 
+        // Overrides default mode
+        App.mode = App.MODE_DEVICE;
+
         App.prototype.showSaveFilePicker = function(success, error, opts) {
             success(null, { name: opts.suggestedName })
         }
@@ -253,7 +259,9 @@
                 fn();
             }
         };
+        // #endregion
     
+        // #region LocalFile 
         LocalFile.prototype.saveFile = function(title, revision, success, error, useCurrentData, unloading, overwrite) {
             if (title != this.title)
                 {
@@ -308,13 +316,13 @@
                     const blob = new Blob([content], { type: fileType.mimeType });
                     const file = new File([blob], title, { type: fileType.mimeType });
                     saveFileToSiyuan(file, title).then(result => {
-        if (result.success) {
-            this.title = result.newTitle;
-            done();
-        } else {
-            errorWrapper(new Error('Failed to save file to SiYuan'));
-        }
-    }).catch(errorWrapper)
+                        if (result.success) {
+                            this.title = result.newTitle;
+                            done();
+                        } else {
+                            errorWrapper(new Error('Failed to save file to SiYuan'));
+                        }
+                    }).catch(errorWrapper)
                 });
                 
                 if (binary)
@@ -332,9 +340,15 @@
                     doSave(savedData);
                 }
         }
-        // Overrides default mode
-        App.mode = App.MODE_DEVICE;
+
+        LocalFile.prototype.getPublicUrl = function(fn)
+        {
+            fn(assetsDirPath + this.title);
+        };
+        //#endregion
+  
     
+        //#region Menus
         var menusInit = Menus.prototype.init;
         Menus.prototype.init = function()
         {
@@ -438,16 +452,15 @@
                 this.addMenuItems(menu, ['-', 'pageSetup', 'print', '-', 'close', '-', 'exit'], parent);
             })));
         };
+        //#endregion
     
+        //#region Editor
         Editor.prototype.editAsNew = function(xml, title) {
             const href = decodeURIComponent(location.hash).slice(2)
             parent.drawioPlugin.openCustomTabByPath(href)
         }
+        //#endregion
 
-        LocalFile.prototype.getPublicUrl = function(fn)
-        {
-            fn(assetsDirPath + this.title);
-        };
     }
 
 })();
