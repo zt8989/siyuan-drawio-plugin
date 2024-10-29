@@ -152,14 +152,14 @@ function executeCommand(command) {
         const readmePath = path.join(process.cwd(), 'README.md');
         const readmeZhPath = path.join(process.cwd(), 'README_zh_CN.md');
 
-        const updateMarkdownVersion = async (filePath) => {
+        const updateMarkdownVersion = async (filePath, versionHeading) => {
             const content = await fs.promises.readFile(filePath, 'utf8');
-            const updatedContent = content.replace(/## Version\n\d+\.\d+\.\d+/g, `## Version\n${newVersion}`);
+            const updatedContent = content.replace(new RegExp(`${versionHeading}\\n\\d+\\.\\d+\\.\\d+`, 'g'), `${versionHeading}\n${newVersion}`);
             await fs.promises.writeFile(filePath, updatedContent, 'utf8');
         };
 
-        await updateMarkdownVersion(readmePath);
-        await updateMarkdownVersion(readmeZhPath);
+        await updateMarkdownVersion(readmePath, '## Version');
+        await updateMarkdownVersion(readmeZhPath, '## 版本');
 
         console.log(`\n✅  Version successfully updated to: \x1b[32m${newVersion}\x1b[0m\n`);
 
