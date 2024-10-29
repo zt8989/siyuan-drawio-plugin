@@ -18,7 +18,7 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.5
+0.1.6
 
 ## Minimum App Version
 3.0.12
