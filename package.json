@@ -1,11 +1,11 @@
 {
-  "name": "plugin-sample-vite",
+  "name": "siyuan-drawio-plugin",
   "version": "0.1.6",
   "type": "module",
-  "description": "This is a sample plugin based on vite and svelte for Siyuan (https://b3log.org/siyuan)",
-  "repository": "https://github.com/frostime/plugin-sample-vite",
+  "description": "Draw.io integrated as a plugin into Siyuan",
+  "repository": "https://github.com/cowboy/siyuan-drawio-plugin",
   "homepage": "",
-  "author": "frostime",
+  "author": "cowboy",
   "license": "MIT",
   "scripts": {
     "dev": "cross-env NODE_ENV=development VITE_SOURCEMAP=inline vite build --watch",
