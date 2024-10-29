@@ -46,8 +46,12 @@ fi
 
 for item in "${copyItems[@]}"; do
     if [[ "$item" == *"/" ]]; then
-        # Copy directory recursively
-        cp -r "./drawio/src/main/webapp/$item" "./$targetDir/webapp/$item"
+        # Copy directory recursively, excluding mxgraph/src
+        if [[ "$item" == "mxgraph/" ]]; then
+            rsync -av --exclude 'src' "./drawio/src/main/webapp/$item" "./$targetDir/webapp/$item"
+        else
+            cp -r "./drawio/src/main/webapp/$item" "./$targetDir/webapp/$item"
+        fi
     else
         # Copy file
         cp "./drawio/src/main/webapp/$item" "./$targetDir/webapp/$item"
