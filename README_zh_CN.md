@@ -46,3 +46,7 @@ cowboy
 ## 关键词
 - plugin
 - drawio
+
+# ❤️用爱发电
+如果喜欢我的插件，欢迎给GitHub仓库点star和捐赠，这会激励我继续完善此插件和开发新插件。
+![1621730196479_.pic.jpg](https://img.picui.cn/free/2024/10/29/6720b2e1275cb.jpg)
