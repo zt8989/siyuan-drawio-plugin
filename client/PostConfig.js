@@ -378,7 +378,10 @@
             }),)
 
             editorUi.actions.put("open",  new Action(mxResources.get('open'), function() {
-                parent.drawioPlugin.showOpenDialog(url => loadFile(editorUi, url))
+                parent.drawioPlugin.showOpenDialog((url, name) => {
+                    loadFile(editorUi, url)
+                    parent.drawioPlugin.updateTabTitle(frameElement, name)
+                })
             }),)
             
             // this.put('openRecent', new Menu(function(menu, parent)

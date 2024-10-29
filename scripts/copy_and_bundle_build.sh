@@ -3,9 +3,11 @@
 # Default behavior is to create a zip file
 createZip=true
 
-# Check if the flag is provided to not create a zip file
-if [ "$1" == "--no-zip" ]; then
+# Check if the environment variable ENV is set and if bundle is 0
+if [ -n "$BUNDLE" ] && [ "$BUNDLE" == "0" ]; then
     createZip=false
+else
+    createZip=true
 fi
 
 # Define source and destination directories

@@ -118,6 +118,17 @@ export default class DrawioPlugin extends Plugin {
     uninstall() {
     }
 
+    public updateTabTitle(frameElement: HTMLIFrameElement, title: string) {
+        const dataId = frameElement?.parentElement?.getAttribute('data-id');
+        if (dataId) {
+            const tabs = this.getOpenedTab()[TAB_TYPE]
+            const tab = tabs.map(tab => tab.tab).filter(tab => tab.id === dataId)
+            if(tab.length > 0) {
+                tab[0].updateTitle(title)
+            }
+        }
+    }
+
     public showOpenDialog(callback?: (url: string, name: string) => void) {
         const position: IPosition = {
             x: 500,
@@ -302,8 +313,7 @@ export default class DrawioPlugin extends Plugin {
                 title: title || "drawio",
                 data: data,
                 id: this.name + TAB_TYPE,
-               
-            }
+            },
         });
 
     }
