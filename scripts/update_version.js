@@ -4,6 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
+import { exec } from 'node:child_process';
 
 // Utility to read JSON file
 function readJsonFile(filePath) {
@@ -72,6 +73,19 @@ function incrementVersion(version, type) {
     return `${major}.${minor}.${patch}`;
 }
 
+// Function to execute a shell command
+function executeCommand(command) {
+    return new Promise((resolve, reject) => {
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                reject(error);
+                return;
+            }
+            resolve(stdout);
+        });
+    });
+}
+
 // Main script
 (async function () {
     try {
@@ -134,6 +148,14 @@ function incrementVersion(version, type) {
         await writeJsonFile(packageJsonPath, packageData);
 
         console.log(`\n✅  Version successfully updated to: \x1b[32m${newVersion}\x1b[0m\n`);
+
+        // Perform git add and git push
+        console.log('🔄  Performing git add and git push...');
+        await executeCommand('git add plugin.json package.json');
+        await executeCommand(`git commit -m "chore: bump version to ${newVersion}"`);
+        await executeCommand('git push');
+
+        console.log('✅  Git add and push completed.');
 
     } catch (error) {
         console.error('❌  Error:', error);
