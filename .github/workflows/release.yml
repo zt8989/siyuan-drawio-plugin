@@ -50,7 +50,7 @@ jobs:
 
       # Build for production, 这一步会生成一个 package.zip
       - name: Build for production
-        run: pnpm build
+        run: npm run build
 
       - name: Release
         uses: ncipollo/release-action@v1
