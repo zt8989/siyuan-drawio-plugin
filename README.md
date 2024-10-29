@@ -20,6 +20,11 @@ cowboy
 ## Version
 0.1.6
 
+## Changelog
+- **v0.1.6 (2024-10-29)**
+  - refactor(client): Optimize file opening logic and update tab titles
+  - refactor(client): Refactor code structure in PostConfig.js
+
 ## Minimum App Version
 3.0.12
 

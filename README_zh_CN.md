@@ -18,7 +18,12 @@ cowboy
 ![预览](preview.png)
 
 ## 版本
-0.1.5
+0.1.6
+
+## 更新日志
+- **v0.1.6 (2024-10-29)**
+  - refactor(client): 优化文件打开逻辑并更新标签标题
+  - refactor(client): 重构PostConfig.js中的代码结构
 
 ## 最低应用版本
 3.0.12
