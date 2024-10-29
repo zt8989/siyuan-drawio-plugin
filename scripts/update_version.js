@@ -148,11 +148,24 @@ function executeCommand(command) {
         await writeJsonFile(pluginJsonPath, pluginData);
         await writeJsonFile(packageJsonPath, packageData);
 
+        // Update the version in the markdown files
+        const readmePath = path.join(process.cwd(), 'README.md');
+        const readmeZhPath = path.join(process.cwd(), 'README_zh_CN.md');
+
+        const updateMarkdownVersion = async (filePath) => {
+            const content = await fs.promises.readFile(filePath, 'utf8');
+            const updatedContent = content.replace(/## Version\n\d+\.\d+\.\d+/g, `## Version\n${newVersion}`);
+            await fs.promises.writeFile(filePath, updatedContent, 'utf8');
+        };
+
+        await updateMarkdownVersion(readmePath);
+        await updateMarkdownVersion(readmeZhPath);
+
         console.log(`\n✅  Version successfully updated to: \x1b[32m${newVersion}\x1b[0m\n`);
 
         // Perform git add and git push
         console.log('🔄  Performing git add and git push...');
-        await executeCommand('git add plugin.json package.json');
+        await executeCommand('git add plugin.json package.json README.md README_zh_CN.md');
         await executeCommand(`git commit -m "chore: bump version to ${newVersion}"`);
         await executeCommand(`git push`);
 
