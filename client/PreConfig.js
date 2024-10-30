@@ -9,6 +9,11 @@ import {Workbox} from 'workbox-window';
           var t = document.getElementsByTagName('meta')[0];
         t.parentNode.insertBefore(s, t);
     } catch (e) {} // ignore
+    if ('serviceWorker' in navigator) {
+      const wb = new Workbox('service-worker.js');
+  
+      wb.register();
+    }
   } else {
     urlParams['test'] = '1';
   }
@@ -50,12 +55,6 @@ import {Workbox} from 'workbox-window';
   urlParams["tr"]=0 //: Disables the Trello integration.
   urlParams["gh"]=0 //: Disables the GitHub integration.
   urlParams["gl"]=0 //: Disables the GitLab integration.
-
-  if ('serviceWorker' in navigator) {
-    const wb = new Workbox('service-worker.js');
-
-    wb.register();
-  }
 
   if(parent.siyuan) {
     urlParams['lang'] = getLang();
