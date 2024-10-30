@@ -236,7 +236,8 @@ export default class DrawioPlugin extends Plugin {
 
 
 
-    public showInsertDialog(protyle: Protyle) {
+    showInsertDialog = (protyle: Protyle) => {
+        let that = this
         const range = protyle.protyle.toolbar.range;
         let nodeElement = protyle.hasClosestBlock(range.startContainer) as HTMLElement;
         if (!nodeElement) {
@@ -262,11 +263,11 @@ export default class DrawioPlugin extends Plugin {
             if (event.key === "Enter") {
                 event.preventDefault();
                 event.stopPropagation();
-                this.onSave(dialog, input, protyle)
+                that.onSave(dialog, input, protyle)
             }
         })
         dialog.element.querySelector("#save-drawio").addEventListener("click", () => {
-            this.onSave(dialog, input, protyle)
+            that.onSave(dialog, input, protyle)
         })
     }
 
