@@ -18,12 +18,15 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.7
+0.1.8
 
 ## Changelog
+- **v0.1.8 (2024-10-31)**
+  - Fix `path` package error in browser environment
+- **v0.1.7 (2024-10-30)**
+  - Fix issue where `/` command popup would not show
 - **v0.1.6 (2024-10-29)**
-  - refactor(client): Optimize file opening logic and update tab titles
-  - refactor(client): Refactor code structure in PostConfig.js
+  - Optimize file opening logic and update tab titles
 
 ## Minimum App Version
 3.0.12
