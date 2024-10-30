@@ -1,7 +1,7 @@
 {
   "name": "siyuan-drawio-plugin",
   "author": "cowboy",
-  "url": "https://github.com/cowboy/siyuan-drawio-plugin",
+  "url": "https://github.com/zt8989/siyuan-drawio-plugin",
   "version": "0.1.9",
   "minAppVersion": "3.0.12",
   "backends": [

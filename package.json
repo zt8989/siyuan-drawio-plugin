@@ -3,7 +3,7 @@
   "version": "0.1.9",
   "type": "module",
   "description": "Draw.io integrated as a plugin into Siyuan",
-  "repository": "https://github.com/cowboy/siyuan-drawio-plugin",
+  "repository": "https://github.com/zt8989/siyuan-drawio-plugin",
   "homepage": "",
   "author": "cowboy",
   "license": "MIT",
