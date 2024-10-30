@@ -107,6 +107,14 @@ export default class DrawioPlugin extends Plugin {
             callback: this.showInsertDialog,
             }
         ];
+
+        this.addCommand({
+            langKey: "openDrawio",
+            hotkey: "⇧⌘d",
+            globalCallback: () => {
+                this.openCustomTab()
+            },
+        });
     }
 
     onLayoutReady() {
