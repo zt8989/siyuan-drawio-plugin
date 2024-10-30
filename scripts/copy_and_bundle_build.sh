@@ -11,7 +11,7 @@ else
 fi
 
 # Define source and destination directories
-outputDir="dist"
+outputDir=${1:-"dist"}
 webappJsDir="$outputDir/webapp/js"
 webappDir="$outputDir/webapp"
 zipFilePath="package.zip"

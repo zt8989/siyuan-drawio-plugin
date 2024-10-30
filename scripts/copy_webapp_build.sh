@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Source and target directories
-targetDir="dist"
+targetDir=${1:-"dist"}
 
 copyItems=(
     "images/"
