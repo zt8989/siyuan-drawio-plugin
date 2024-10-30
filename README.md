@@ -18,7 +18,7 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.9
+0.1.10
 
 ## Changelog
 - **v0.1.9 (2024-10-31)**
