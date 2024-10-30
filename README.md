@@ -18,15 +18,17 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.8
+0.1.9
 
 ## Changelog
+- **v0.1.9 (2024-10-31)**
+  - Fixed the issue with the popup for creating new files.
 - **v0.1.8 (2024-10-31)**
-  - Fix `path` package error in browser environment
+  - Fixed the error with the `path` package in the browser environment.
 - **v0.1.7 (2024-10-30)**
-  - Fix issue where `/` command popup would not show
+  - Fixed the issue where the `/` command popup would not show.
 - **v0.1.6 (2024-10-29)**
-  - Optimize file opening logic and update tab titles
+  - Optimized file opening logic and updated tab titles.
 
 ## Minimum App Version
 3.0.12
