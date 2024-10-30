@@ -38,7 +38,7 @@
     "vite-plugin-zip-pack": "^1.0.5"
   },
   "dependencies": {
-    "path": "^0.12.7",
+    "path-browserify": "^1.0.1",
     "workbox-routing": "^7.1.0",
     "workbox-strategies": "^7.1.0",
     "workbox-window": "^7.1.0"
