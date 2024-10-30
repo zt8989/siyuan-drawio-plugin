@@ -7,10 +7,20 @@
     window.VSD_CONVERT_URL = null;
     window.EMF_CONVERT_URL = null;
     window.ICONSEARCH_PATH = null;
+    const typePrefix = "drawio_"
     const assetsDirPath = "/assets/drawio/";
 
     if(window.parent.siyuan) {
         //#region public method
+        const electron = {
+            sendMessage(type, payload) {
+                window.parent.postMessage({
+                    type: typePrefix + type,
+                    payload
+                })
+            }
+        }
+
         async function uploadFileToSiyuan(file, assetsDirPath) {
             const formData = new FormData();
             formData.append("assetsDirPath", assetsDirPath);
@@ -464,6 +474,31 @@
         }
         //#endregion
 
+        //#region EditorUi
+        // Initializes the user interface
+        var editorUiInit = EditorUi.prototype.init;
+        EditorUi.prototype.init = async function()
+        {
+            editorUiInit.apply(this, arguments);
+
+            var editorUi = this;
+            var graph = this.editor.graph;
+                // Replaces new action
+		    var oldNew = this.actions.get('new').funct;
+		
+            this.actions.addAction('new...', mxUtils.bind(this, function()
+            {
+                if (this.getCurrentFile() == null)
+                {
+                    oldNew();
+                }
+                else
+                {
+                    electron.sendMessage('newfile', {width: 1600});
+                }
+            }), null, null, Editor.ctrlKey + '+N');
+        }
+        //#endregion
     }
 
 })();

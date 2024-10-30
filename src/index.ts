@@ -71,6 +71,8 @@ export default class DrawioPlugin extends Plugin {
         this.eventBus.on("open-siyuan-url-plugin", this.onOpenTab.bind(this));
         this.eventBus.on("loaded-protyle-static", this.bindStaticEvent.bind(this))
         this.eventBus.on("ws-main", this.bindWsEvent.bind(this))
+
+        window.addEventListener("message", this.onMessage)
         
         const frontEnd = getFrontend();
         this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
@@ -124,6 +126,15 @@ export default class DrawioPlugin extends Plugin {
     }
 
     uninstall() {
+    }
+
+    onMessage = (ev: MessageEvent<{ type: string, payload: any, callbackId?: string }>) => {
+        switch(ev.data.type) {
+            case "drawio_newfile":
+                this.openCustomTab()
+                break
+        }
+        console.log(ev)
     }
 
     public updateTabTitle(frameElement: HTMLIFrameElement, title: string) {
