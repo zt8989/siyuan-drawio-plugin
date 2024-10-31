@@ -376,7 +376,7 @@
                 var urlParams = new URLSearchParams({
                     icon: "iconDrawio",
                     title: file.getTitle(),
-                    data: JSON.stringify({ url: '/assets/drawio/' + file.getTitle() })
+                    data: JSON.stringify({ url: 'assets/drawio/' + file.getTitle() })
                 })
                 var link = `[${file.getTitle()}](siyuan://plugins/siyuan-drawio-plugin?${urlParams.toString()})`
                 parent.navigator.clipboard.writeText(link).then(() => {

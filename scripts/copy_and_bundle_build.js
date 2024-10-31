@@ -10,8 +10,8 @@ const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const createZip = process.env.BUNDLE !== '0';
 const outputDir = process.argv[2] || 'dist';
+const createZip = process.env.BUNDLE !== '0' && outputDir === 'dist';
 const webappJsDir = path.join(outputDir, 'webapp', 'js');
 const webappDir = path.join(outputDir, 'webapp');
 const zipFilePath = 'package.zip';
