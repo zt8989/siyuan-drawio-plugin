@@ -36,9 +36,15 @@ importers:
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
+      jszip:
+        specifier: ^3.10.1
+        version: 3.10.1
       minimist:
         specifier: ^1.2.8
         version: 1.2.8
+      rimraf:
+        specifier: ^5.0.10
+        version: 5.0.10
       rollup-plugin-livereload:
         specifier: ^2.0.5
         version: 2.0.5
@@ -723,6 +729,10 @@ packages:
   reusify@1.0.4:
     resolution: {integrity: sha512-U9nH88a3fc/ekCF1l0/UP1IosiuIjyTh7hBvXVMHYgVcfGvt897Xguj2UOLDeI5BG2m7/uwyaLVT6fbtCwTyzw==}
     engines: {iojs: '>=1.0.0', node: '>=0.10.0'}
+
+  rimraf@5.0.10:
+    resolution: {integrity: sha512-l0OE8wL34P4nJH/H2ffoaniAokM2qSmrtXHmlpvYr5AVVX8msAyW0l8NVJFDxlSK4u3Uh/f41cQheDVdnYijwQ==}
+    hasBin: true
 
   rollup-plugin-livereload@2.0.5:
     resolution: {integrity: sha512-vqQZ/UQowTW7VoiKEM5ouNW90wE5/GZLfdWuR0ELxyKOJUIaj+uismPZZaICU4DnWPVjnpCDDxEqwU7pcKY/PA==}
@@ -1426,6 +1436,10 @@ snapshots:
   readdirp@4.0.2: {}
 
   reusify@1.0.4: {}
+
+  rimraf@5.0.10:
+    dependencies:
+      glob: 10.4.5
 
   rollup-plugin-livereload@2.0.5:
     dependencies:
