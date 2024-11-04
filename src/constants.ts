@@ -20,3 +20,9 @@ export abstract class Constants {
         ".rst", ".adoc", ".textile", ".opml", ".org", ".wiki", ".epub"];
 
 }
+
+
+export const TAB_TYPE = "drawio_tab";
+export const OPEN_TYPE = "drawio_open";
+export const NEW_TYPE = "drawio_newfile"
+export const CALLBAK_TYPE = "drawio_callback"

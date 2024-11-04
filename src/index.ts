@@ -14,19 +14,17 @@ import {
 import {
     hasClosestByAttribute,
     hasClosestByClassName} from "@/protyle/util/hasClosest";
-import {renderAssetsPreview} from "@/asset/renderAssets";
 import {upDownHint} from "@/util/upDownHint";
 
 
 import "@/index.scss";
 
 
-import { checkInvalidPathChar } from "./utils";
+import { checkInvalidPathChar, getIframeFromEventSource } from "./utils";
 import { upload } from "./api";
-import { blankDrawio, drawioPath } from "./constants";
+import { blankDrawio, CALLBAK_TYPE, drawioPath, NEW_TYPE, OPEN_TYPE, TAB_TYPE } from "./constants";
 import { saveContentAsFile } from "./file";
 import { createLink, getTitleFromPath } from "./link";
-const TAB_TYPE = "drawio_tab";
 
 const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
     fetchPost("/api/search/searchAsset", {
@@ -35,18 +33,18 @@ const renderAssetList = (element: Element, k: string, position: IPosition, exts:
     }, (response) => {
         let searchHTML = "";
         response.data.forEach((item: { path: string, hName: string }, index: number) => {
-            searchHTML += `<div data-value="${item.path}" class="b3-list-item${index === 0 ? " b3-list-item--focus" : ""}"><div class="b3-list-item__text">${item.hName}</div></div>`;
+            searchHTML += `<div data-value="${item.path}" class="b3-list-item${index === 0 ? " b3-list-item--focus" : ""}"><div class="b3-list-item__text">${item.path}</div></div>`;
         });
 
         const listElement = element.querySelector(".b3-list");
-        const previewElement = element.querySelector("#preview");
+        // const previewElement = element.querySelector("#preview");
         const inputElement = element.querySelector("input");
         listElement.innerHTML = searchHTML || `<li class="b3-list--empty">${window.siyuan.languages.emptyContent}</li>`;
-        if (response.data.length > 0) {
-            previewElement.innerHTML = renderAssetsPreview(response.data[0].path);
-        } else {
-            previewElement.innerHTML = window.siyuan.languages.emptyContent;
-        }
+        // if (response.data.length > 0) {
+        //     previewElement.innerHTML = renderAssetsPreview(response.data[0].path);
+        // } else {
+        //     previewElement.innerHTML = window.siyuan.languages.emptyContent;
+        // }
         /// #if MOBILE
         window.siyuan.menus.menu.fullscreen();
         /// #else
@@ -103,7 +101,7 @@ export default class DrawioPlugin extends Plugin {
         });
 
         this.protyleSlash = [{
-            filter: ["插入drawio", "insert drawio", "crdrawio"],
+            filter: ["插入/选择drawio", "insert/select drawio", "crdrawio"],
             id: "insertDrawio",
             html: `<div class="b3-list-item__first"><svg class="b3-list-item__graphic"><use xlink:href="#icon-drawio-standard"></use></svg><span class="b3-list-item__text">${this.i18n.insertDrawio}</span></div>`,
             callback: this.showInsertDialog,
@@ -130,10 +128,22 @@ export default class DrawioPlugin extends Plugin {
 
     onMessage = (ev: MessageEvent<{ type: string, payload: any, callbackId?: string }>) => {
         switch(ev.data.type) {
-            case "drawio_newfile":
+            case NEW_TYPE:
                 this.openCustomTab()
                 break
-        }
+            case OPEN_TYPE:
+                this.showOpenDialog((url, name) => {
+                    if(ev.data.callbackId) {
+                        const iframeElement = getIframeFromEventSource(ev.source as Window)
+                        ev.source.postMessage({
+                            type: CALLBAK_TYPE,
+                            callbackId: ev.data.callbackId,
+                            payload: [url, name]
+                        })
+                        this.updateTabTitle(iframeElement, name)
+                    }
+                })
+        } 
         console.log(ev)
     }
 
@@ -155,9 +165,9 @@ export default class DrawioPlugin extends Plugin {
         }
         const exts = [".drawio"]
         const dialog = new Dialog({
-            title: `创建drawio`,
+            title: `选择drawio`,
             content: `<div class="fn__flex" style="max-height: 50vh">
-<div class="fn__flex-column" style="${this.isMobile ? "width:100%" : "min-width: 260px;max-width:420px"}">
+<div class="fn__flex-column" style="width:100%">
     <div class="fn__flex" style="margin: 0 8px 4px 8px">
         <input class="b3-text-field fn__flex-1"/>
         <span class="fn__space"></span>
@@ -166,8 +176,11 @@ export default class DrawioPlugin extends Plugin {
         <span data-type="next" class="block__icon block__icon--show"><svg><use xlink:href="#iconRight"></use></svg></span>
     </div>
     <div class="b3-list fn__flex-1 b3-list--background" style="position: relative"><img style="margin: 0 auto;display: block;width: 64px;height: 64px" src="/stage/loading-pure.svg"></div>
+    <div class="search__tip">
+        <kbd>shift ↵</kbd> 创建
+        <kbd>Esc</kbd> 退出搜索
+    </div>
 </div>
-<div id="preview" style="width: 360px;display: ${this.isMobile || window.outerWidth < window.outerWidth / 2 + 260 ? "none" : "flex"};padding: 8px;overflow: auto;justify-content: center;align-items: center;word-break: break-all;"></div>
 </div>`,
         width: this.isMobile ? "92vw" : "560px",
         });
@@ -176,15 +189,6 @@ export default class DrawioPlugin extends Plugin {
         function bind(element) {
             element.style.maxWidth = "none";
             const listElement = element.querySelector(".b3-list");
-            const previewElement = element.querySelector("#preview");
-            listElement.addEventListener("mouseover", (event) => {
-                const target = event.target as HTMLElement;
-                const hoverItemElement = hasClosestByClassName(target, "b3-list-item");
-                if (!hoverItemElement) {
-                    return;
-                }
-                previewElement.innerHTML = renderAssetsPreview(hoverItemElement.getAttribute("data-value"));
-            });
             const inputElement = element.querySelector("input");
             inputElement.addEventListener("keydown", (event: KeyboardEvent) => {
                 if (event.isComposing) {
@@ -192,11 +196,7 @@ export default class DrawioPlugin extends Plugin {
                 }
                 const isEmpty = element.querySelector(".b3-list--empty");
                 if (!isEmpty) {
-                    const currentElement = upDownHint(listElement, event);
-                    if (currentElement) {
-                        previewElement.innerHTML = renderAssetsPreview(currentElement.getAttribute("data-value"));
-                        event.stopPropagation();
-                    }
+                    upDownHint(listElement, event);
                 }
     
                 if (event.key === "Enter") {

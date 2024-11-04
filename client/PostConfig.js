@@ -11,12 +11,31 @@
     const assetsDirPath = "/assets/drawio/";
 
     if(window.parent.siyuan) {
+        const callbacks = {}
         //#region public method
+        window.addEventListener('message', function(event) {
+            switch (event.data.type) {
+                case "drawio_callback":
+                    var message = event.data;
+                    var messageId = message.callbackId;
+                    var messageArgs = message.payload;
+                    if(messageId && callbacks[messageId]) {
+                        callbacks[messageId].apply(null, messageArgs)
+                    }
+                    return
+            }
+            
+        });
+
         const electron = {
-            sendMessage(type, payload) {
+            sendMessage(type, payload, callbackId, callback) {
+                if(callbackId) {
+                    callbacks[callbackId] = callback
+                }
                 window.parent.postMessage({
                     type: typePrefix + type,
-                    payload
+                    payload,
+                    callbackId
                 })
             }
         }
@@ -388,9 +407,8 @@
             }),)
 
             editorUi.actions.put("open",  new Action(mxResources.get('open'), function() {
-                parent.drawioPlugin.showOpenDialog((url, name) => {
+                electron.sendMessage("open", null, "open" + (new Date).getTime(), (url, name) => {
                     loadFile(editorUi, url)
-                    parent.drawioPlugin.updateTabTitle(frameElement, name)
                 })
             }),)
             
