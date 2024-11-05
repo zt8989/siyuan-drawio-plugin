@@ -18,9 +18,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.10
+0.1.11
 
 ## Changelog
+- **v0.1.11 (2024-11-05)**
+  - Optimized the logic for adding new tabs and the `/` command to insert `drawio`.
 - **v0.1.9 (2024-10-31)**
   - Fixed the issue with the popup for creating new files.
 - **v0.1.8 (2024-10-31)**
