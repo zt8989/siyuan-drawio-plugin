@@ -18,10 +18,6 @@ export function checkInvalidPathChar(result: string){
     return InvalidPathChar.some((v) => result.indexOf(v) !== -1)
 }
 
-export function trim(str: string) {
-    return String.prototype.trim.apply(undefined, str)
-}
-
 // Function to get the iframe element from the event source
 export function getIframeFromEventSource(source: Window) {
     var iframes = document.querySelectorAll('iframe');

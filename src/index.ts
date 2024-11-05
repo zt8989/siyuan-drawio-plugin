@@ -25,6 +25,7 @@ import { upload } from "./api";
 import { blankDrawio, CALLBAK_TYPE, drawioPath, NEW_TYPE, OPEN_TYPE, TAB_TYPE } from "./constants";
 import { saveContentAsFile } from "./file";
 import { createLink, getTitleFromPath } from "./link";
+import { ShowDialogCallback } from "./types";
 
 const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
     fetchPost("/api/search/searchAsset", {
@@ -88,7 +89,7 @@ export default class DrawioPlugin extends Plugin {
             title: this.i18n.openDrawio,
             position: "right",
             callback: () => {
-                this.openCustomTab()
+                this.openNewCustomTab()
             }
         });
 
@@ -112,7 +113,7 @@ export default class DrawioPlugin extends Plugin {
             langKey: "openDrawio",
             hotkey: "⇧⌘d",
             globalCallback: () => {
-                this.openCustomTab()
+                this.openNewCustomTab()
             },
         });
     }
@@ -129,18 +130,19 @@ export default class DrawioPlugin extends Plugin {
     onMessage = (ev: MessageEvent<{ type: string, payload: any, callbackId?: string }>) => {
         switch(ev.data.type) {
             case NEW_TYPE:
-                this.openCustomTab()
+                this.openNewCustomTab()
                 break
             case OPEN_TYPE:
-                this.showOpenDialog((url, name) => {
+                this.showOpenDialog(false, (url, dialog) => {
+                    dialog.destroy()
                     if(ev.data.callbackId) {
                         const iframeElement = getIframeFromEventSource(ev.source as Window)
                         ev.source.postMessage({
                             type: CALLBAK_TYPE,
                             callbackId: ev.data.callbackId,
-                            payload: [url, name]
+                            payload: [url, getTitleFromPath(url)]
                         })
-                        this.updateTabTitle(iframeElement, name)
+                        this.updateTabTitle(iframeElement, getTitleFromPath(url))
                     }
                 })
         } 
@@ -158,12 +160,16 @@ export default class DrawioPlugin extends Plugin {
         }
     }
 
-    public showOpenDialog(callback?: (url: string, name: string) => void) {
+    public showOpenDialog(showCreate: boolean, callback?: ShowDialogCallback) {
         const position: IPosition = {
             x: 500,
             y: 500
         }
         const exts = [".drawio"]
+        const createDiv = showCreate ? `<div class="search__tip">
+            <kbd>shift ↵</kbd> 创建
+            <kbd>Esc</kbd> 退出搜索
+        </div>` : ''
         const dialog = new Dialog({
             title: `选择drawio`,
             content: `<div class="fn__flex" style="max-height: 50vh">
@@ -176,10 +182,7 @@ export default class DrawioPlugin extends Plugin {
         <span data-type="next" class="block__icon block__icon--show"><svg><use xlink:href="#iconRight"></use></svg></span>
     </div>
     <div class="b3-list fn__flex-1 b3-list--background" style="position: relative"><img style="margin: 0 auto;display: block;width: 64px;height: 64px" src="/stage/loading-pure.svg"></div>
-    <div class="search__tip">
-        <kbd>shift ↵</kbd> 创建
-        <kbd>Esc</kbd> 退出搜索
-    </div>
+    ${createDiv}
 </div>
 </div>`,
         width: this.isMobile ? "92vw" : "560px",
@@ -200,11 +203,10 @@ export default class DrawioPlugin extends Plugin {
                 }
     
                 if (event.key === "Enter") {
-                    if (!isEmpty) {
+                    if (!isEmpty || event.shiftKey) {
                         const currentElement = element.querySelector(".b3-list-item--focus");
                         if (callback) {
-                            dialog.destroy()
-                            callback(currentElement.getAttribute("data-value"), currentElement.textContent);
+                            callback(currentElement?.getAttribute("data-value"), dialog, event.shiftKey,inputElement.value);
                         }
                     }
                     // 空行处插入 mp3 会多一个空的 mp3 块
@@ -242,8 +244,7 @@ export default class DrawioPlugin extends Plugin {
                     event.stopPropagation();
                     const currentURL = listItemElement.getAttribute("data-value");
                     if (callback) {
-                        dialog.destroy()
-                        callback(currentURL, listItemElement.textContent);
+                        callback(currentURL, dialog, false, inputElement.value);
                     }
                 }
             });
@@ -256,42 +257,27 @@ export default class DrawioPlugin extends Plugin {
 
 
     showInsertDialog = (protyle: Protyle) => {
-        let that = this
         const range = protyle.protyle.toolbar.range;
         let nodeElement = protyle.hasClosestBlock(range.startContainer) as HTMLElement;
         if (!nodeElement) {
             return;
         }
         range.deleteContents()
-        const dialog = new Dialog({
-            title: `创建drawio`,
-            content: `<div class="b3-dialog__content">
-        <label class="fn__flex b3-label config__item">
-                <div class="fn__flex-1">名称<div class="b3-label__text">名称为文件名，不可包含/,*,$等特殊字符</div>
-                </div><span class="fn__space"></span><input id="draw-name"
-                    class="b3-text-field fn__flex-center fn__size200" value="">
-            </label>
-            <div class="button-group" style="float: right; margin: 20px 0px 10px;"><button id="save-drawio"
-                    class="b3-button">保存</button></div>
-</div>`,
-            width: this.isMobile ? "92vw" : "560px",
-        });
-        dialog.bindInput(dialog.element.querySelector("#draw-name"))
-        const input: HTMLInputElement = dialog.element.querySelector("#draw-name")
-        input.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                event.stopPropagation();
-                that.onSave(dialog, input, protyle)
+        this.showOpenDialog(true, (url, dialog, isNew, value) => {
+            if(isNew){
+                this.onSave(dialog, value, protyle)
+            } else {
+                dialog.destroy()
+                protyle.insert(createLink(url), true, true)
+                this.openCustomTab(getTitleFromPath(url), undefined, {
+                    url
+                })
             }
-        })
-        dialog.element.querySelector("#save-drawio").addEventListener("click", () => {
-            that.onSave(dialog, input, protyle)
+            
         })
     }
 
-    private onSave(dialog: Dialog, input: HTMLInputElement, protyle: Protyle){
-        let value = input.value && input.value.trim()
+    private onSave(dialog: Dialog, value: string, protyle: Protyle){
         if(!value || checkInvalidPathChar(value)) {
             showMessage(`Drawio: 名称 ${value} 不合法`)
             return
@@ -307,7 +293,11 @@ export default class DrawioPlugin extends Plugin {
             // range.setEnd(textNode, value.length);
             // range.collapse(false);
             // focusByRange(range);
-            protyle.insert(createLink(data["succMap"][value]), true, true)
+            const url = data["succMap"][value]
+            protyle.insert(createLink(url), true, true)
+            this.openCustomTab(getTitleFromPath(url), undefined, {
+                url
+            })
         }).catch(e => {
             console.error(e)
             showMessage(e, 6000, "error")
@@ -323,6 +313,10 @@ export default class DrawioPlugin extends Plugin {
                 urlObj.searchParams.get("data") ? JSON.parse(urlObj.searchParams.get("data")) : {},
             )
         }
+    }
+
+    openNewCustomTab() {
+        this.openCustomTab(undefined, undefined, { nounce: (new Date).getTime() })
     }
 
     openCustomTab(title?: string, icon?: string, data?: any,) {
@@ -345,7 +339,6 @@ export default class DrawioPlugin extends Plugin {
     }
 
     bindStaticEvent(data: CustomEvent<{ protyle: IProtyle }>) {
-        console.log("bindStaticEvent", data)
         if(data.detail.protyle) {
             const element: HTMLElement = data.detail.protyle.wysiwyg.element
             this.bindClickEvent(element)
