@@ -21,6 +21,7 @@
                     var messageArgs = message.payload;
                     if(messageId && callbacks[messageId]) {
                         callbacks[messageId].apply(null, messageArgs)
+                        delete callbacks[messageId]
                     }
                     return
             }
@@ -515,6 +516,12 @@
                     electron.sendMessage('newfile', {width: 1600});
                 }
             }), null, null, Editor.ctrlKey + '+N');
+
+            this.actions.get('open').shortcut = Editor.ctrlKey + '+O';
+		
+            // Adds shortcut keys for file operations
+            editorUi.keyHandler.bindAction(78, true, 'new'); // Ctrl+N
+            editorUi.keyHandler.bindAction(79, true, 'open'); // Ctrl+O
         }
         //#endregion
     }

@@ -47,7 +47,7 @@ import {Workbox} from 'workbox-window';
   window.DRAW_MATH_URL = 'math/es5';
   window.DRAWIO_CONFIG = null;; // Replace with your custom draw.io configurations. For more details, https://www.drawio.com/doc/faq/configure-diagram-editor
   urlParams['sync'] = 'manual';
-  // urlParams['offline'] = '0';
+  urlParams['offline'] = '1';
   urlParams['mode'] = 'device'
   urlParams["gapi"]=0 //: Disables the Google integration.
   urlParams["db"]=0 //: Disables the Dropbox integration.
