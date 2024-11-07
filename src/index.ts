@@ -28,6 +28,9 @@ import { createLink, getTitleFromPath } from "./link";
 import { ShowDialogCallback } from "./types";
 
 const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
+    const frontEnd = getFrontend();
+    const isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
+
     fetchPost("/api/search/searchAsset", {
         k,
         exts
@@ -38,19 +41,13 @@ const renderAssetList = (element: Element, k: string, position: IPosition, exts:
         });
 
         const listElement = element.querySelector(".b3-list");
-        // const previewElement = element.querySelector("#preview");
         const inputElement = element.querySelector("input");
         listElement.innerHTML = searchHTML || `<li class="b3-list--empty">${window.siyuan.languages.emptyContent}</li>`;
-        // if (response.data.length > 0) {
-        //     previewElement.innerHTML = renderAssetsPreview(response.data[0].path);
-        // } else {
-        //     previewElement.innerHTML = window.siyuan.languages.emptyContent;
-        // }
-        /// #if MOBILE
-        window.siyuan.menus.menu.fullscreen();
-        /// #else
-        window.siyuan.menus.menu.popup(position);
-        /// #endif
+        if(isMobile){
+            window.siyuan.menus.menu.fullscreen();
+        } else {
+            window.siyuan.menus.menu.popup(position);
+        }
         if (!k) {
             inputElement.select();
         }
