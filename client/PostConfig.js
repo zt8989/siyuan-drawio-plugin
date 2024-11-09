@@ -60,10 +60,16 @@
                     data.path =  "/data/" + data.path
                 }
             }
-            return fetch("/api/file/getFile", {
+            const response = await fetch("/api/file/getFile", {
                 body: JSON.stringify(data),
                 method: "POST"
-            }).then(resonse => resonse.text());
+            })
+            if (response.status === 200) {
+                return response.text()
+            } else {
+                const json = await response.json()
+                throw new Error(json.msg)
+            }
         }
     
         async function saveFileToSiyuan(file, fileName) {
