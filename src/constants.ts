@@ -22,7 +22,10 @@ export abstract class Constants {
 }
 
 
-export const TAB_TYPE = "drawio_tab";
-export const OPEN_TYPE = "drawio_open";
-export const NEW_TYPE = "drawio_newfile"
-export const CALLBAK_TYPE = "drawio_callback"
+export const PREFIX = "drawio_";
+export const TAB_TYPE = PREFIX + "tab";
+export const OPEN_TYPE = PREFIX + "open";
+export const NEW_TYPE = PREFIX + "newfile"
+export const CALLBAK_TYPE = PREFIX + "callback"
+export const SHOW_MESSAGE = PREFIX + "showMessage"
+export const COPY_LINK = PREFIX + "copyLink"

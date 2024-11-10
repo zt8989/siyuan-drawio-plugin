@@ -399,18 +399,7 @@
     
             editorUi.actions.put("copyLink", new Action(parent.drawioPlugin.i18n.copyAsSiYuanLink, function() {
                 var file = editorUi.getCurrentFile();
-                var urlParams = new URLSearchParams({
-                    icon: "iconDrawio",
-                    title: file.getTitle(),
-                    data: JSON.stringify({ url: 'assets/drawio/' + file.getTitle() })
-                })
-                var link = `[${file.getTitle()}](siyuan://plugins/siyuan-drawio-plugin?${urlParams.toString()})`
-                parent.navigator.clipboard.writeText(link).then(() => {
-                    parent.showMessage(parent.drawioPlugin.i18n.linkCopiedToClipboard)
-                }).catch(err => {
-                    console.error('Failed to copy link: ', err);
-                    parent.showMessage(err, 6000, "error")
-                });
+                electron.sendMessage("copyLink", file.getTitle())
             }),)
 
             editorUi.actions.put("open",  new Action(mxResources.get('open'), function() {

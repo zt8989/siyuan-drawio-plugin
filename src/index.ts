@@ -9,7 +9,7 @@ import {
     fetchSyncPost,
     IProtyle,
     IWebSocketData,
-    getFrontend
+    getFrontend,
 } from "siyuan";
 import {
     hasClosestByAttribute,
@@ -22,9 +22,9 @@ import "@/index.scss";
 
 import { checkInvalidPathChar, getIframeFromEventSource } from "./utils";
 import { upload } from "./api";
-import { blankDrawio, CALLBAK_TYPE, drawioPath, NEW_TYPE, OPEN_TYPE, TAB_TYPE } from "./constants";
+import { blankDrawio, CALLBAK_TYPE, COPY_LINK, drawioPath, NEW_TYPE, OPEN_TYPE, TAB_TYPE } from "./constants";
 import { saveContentAsFile } from "./file";
-import { createLink, getTitleFromPath } from "./link";
+import { createLinkFromPath, createLinkFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback } from "./types";
 
 const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
@@ -122,6 +122,7 @@ export default class DrawioPlugin extends Plugin {
     }
 
     async onunload() {
+        window.removeEventListener("message", this.onMessage)
     }
 
     uninstall() {
@@ -145,8 +146,22 @@ export default class DrawioPlugin extends Plugin {
                         this.updateTabTitle(iframeElement, getTitleFromPath(url))
                     }
                 })
+                break
+            case COPY_LINK:
+                this.copyLink(ev.data.payload)
+                break
         } 
         console.log(ev)
+    }
+
+    public copyLink(title: string){
+        var link = createLinkFromTitle(title)
+        navigator.clipboard.writeText(link).then(() => {
+            showMessage(this.i18n.linkCopiedToClipboard)
+        }).catch(err => {
+            console.error('Failed to copy link: ', err);
+            showMessage(err, 6000, "error")
+        });
     }
 
     public updateTabTitle(frameElement: HTMLIFrameElement, title: string) {
@@ -268,7 +283,7 @@ export default class DrawioPlugin extends Plugin {
                 this.onSave(dialog, value, protyle)
             } else {
                 dialog.destroy()
-                protyle.insert(createLink(url), true, true)
+                protyle.insert(createLinkFromPath(url), true, true)
                 this.openCustomTab(getTitleFromPath(url), undefined, {
                     url
                 })
@@ -294,7 +309,7 @@ export default class DrawioPlugin extends Plugin {
             // range.collapse(false);
             // focusByRange(range);
             const url = data["succMap"][value]
-            protyle.insert(createLink(url), true, true)
+            protyle.insert(createLinkFromPath(url), true, true)
             this.openCustomTab(getTitleFromPath(url), undefined, {
                 url
             })
