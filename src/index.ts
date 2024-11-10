@@ -22,7 +22,7 @@ import "@/index.scss";
 
 import { checkInvalidPathChar, getIframeFromEventSource } from "./utils";
 import { upload } from "./api";
-import { blankDrawio, CALLBAK_TYPE, COPY_LINK, drawioPath, NEW_TYPE, OPEN_TYPE, TAB_TYPE } from "./constants";
+import { blankDrawio, CALLBAK_TYPE, COPY_LINK, drawioPath, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE } from "./constants";
 import { saveContentAsFile } from "./file";
 import { createLinkFromPath, createLinkFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback } from "./types";
@@ -149,6 +149,9 @@ export default class DrawioPlugin extends Plugin {
                 break
             case COPY_LINK:
                 this.copyLink(ev.data.payload)
+                break
+            case OPEN_TAB_BY_PATH:
+                this.openCustomTabByPath(ev.data.payload)
                 break
         } 
         console.log(ev)

@@ -15,7 +15,7 @@
         //#region public method
         window.addEventListener('message', function(event) {
             switch (event.data.type) {
-                case "drawio_callback":
+                case typePrefix + "callback":
                     var message = event.data;
                     var messageId = message.callbackId;
                     var messageArgs = message.payload;
@@ -484,7 +484,7 @@
         //#region Editor
         Editor.prototype.editAsNew = function(xml, title) {
             const href = decodeURIComponent(location.hash).slice(2)
-            parent.drawioPlugin.openCustomTabByPath(href)
+            electron.sendMessage("openTabByPath", href)
         }
         //#endregion
 
