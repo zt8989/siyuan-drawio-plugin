@@ -72,11 +72,13 @@
             }
         }
     
-        async function saveFileToSiyuan(file, fileName) {
-            
+        async function saveFileToSiyuan(content, title, fileType) {
+            const blob = new Blob([content], { type: fileType.mimeType });
+            const file = new File([blob], title, { type: fileType.mimeType });
+
             const data = await uploadFileToSiyuan(file, assetsDirPath);
             if (data.code === 0 && data.data && data.data.succMap) {
-                const newFilePath = data.data.succMap[fileName];
+                const newFilePath = data.data.succMap[title];
                 const newTitle = newFilePath.split('/').pop();
                 return { success: true, newTitle };
             }
@@ -103,7 +105,10 @@
         App.prototype.loadTemplate = function(url, onload, onerror, templateFilename, asLibrary)
         {
             if(url.startsWith("assets/")) {
-                getFileContent({ path: url }).then(onload, onerror)
+                getFileContent({ path: url }).then((text) => {
+                    onload(text)
+                    this.setMode(App.MODE_DEVICE)
+                }, onerror)
             } else {
                 loadTemplate.apply(this, arguments);
             }
@@ -111,84 +116,102 @@
         // #endregion
     
         // #region LocalFile 
-        LocalFile.prototype.saveFile = function(title, revision, success, error, useCurrentData, unloading, overwrite) {
+        LocalFile.prototype.saveFile = function(title, revision, success, error, useCurrentData, unloading, overwrite)
+        {
             if (title != this.title)
-                {
-                    this.fileHandle = null;
-                    this.desc = null;
-                    this.editable = null;
-                }
-                
-                this.title = title;
+            {
+                this.fileHandle = null;
+                this.desc = null;
+                this.editable = null;
+            }
             
-                // Updates data after changing file name
-                if (!useCurrentData)
-                {
-                    this.updateFileData();
-                }
-                
-                var binary = this.ui.useCanvasForExport && /(\.png)$/i.test(this.getTitle());
-                this.setShadowModified(false);
-                var savedData = this.getData();
-                
-                var done = mxUtils.bind(this, function()
-                {
-                    this.setModified(this.getShadowModified());
-                    this.contentChanged();
-            
-                    if (success != null)
-                    {
-                        success();
-                    }
-                });
-                
-                var doSave = mxUtils.bind(this, function(data)
-                {
-                    var errorWrapper = mxUtils.bind(this, function(e)
-                    {
-                        this.savingFile = false;
-                        
-                        if (error != null)
-                        {
-                            // Wraps error object to offer save status option
-                            error({error: e});
-                        }
-                    });
-    
-                    const extension = title.split('.').pop().toLowerCase();
+            this.title = title;
         
-                    const fileType = this.ui.editor.diagramFileTypes.find(type => type.extension === extension);
-                    if (!fileType) {
-                        throw new Error(`Unsupported file extension: ${extension}`);
-                    }
-                    let content = (binary) ? this.ui.base64ToBlob(data, 'image/png') : data
-                    const blob = new Blob([content], { type: fileType.mimeType });
-                    const file = new File([blob], title, { type: fileType.mimeType });
-                    saveFileToSiyuan(file, title).then(result => {
-                        if (result.success) {
-                            this.title = result.newTitle;
-                            done();
-                        } else {
-                            errorWrapper(new Error('Failed to save file to SiYuan'));
-                        }
-                    }).catch(errorWrapper)
-                });
-                
-                if (binary)
-                {
-                    var p = this.ui.getPngFileProperties(this.ui.fileNode);
+            // Updates data after changing file name
+            if (!useCurrentData)
+            {
+                this.updateFileData();
+            }
             
-                    this.ui.getEmbeddedPng(mxUtils.bind(this, function(imageData)
-                    {
-                        doSave(imageData);
-                    }), error, (this.ui.getCurrentFile() != this) ?
-                        savedData : null, p.scale, p.border);
-                }
-                else
+            var binary = this.ui.useCanvasForExport && /(\.png)$/i.test(this.getTitle());
+            this.setShadowModified(false);
+            var savedData = this.getData();
+            
+            var done = mxUtils.bind(this, function()
+            {
+                this.setModified(this.getShadowModified());
+                this.contentChanged();
+        
+                if (success != null)
                 {
-                    doSave(savedData);
+                    success();
                 }
-        }
+            });
+            
+            var doSave = mxUtils.bind(this, function(data)
+            {
+                // if (this.fileHandle != null)
+                // {
+                    // Sets shadow modified state during save
+                    if (!this.savingFile)
+                    {
+                        this.savingFileTime = new Date();
+                        this.savingFile = true;
+                        
+                        var errorWrapper = mxUtils.bind(this, function(e)
+                        {
+                            this.savingFile = false;
+                            
+                            if (error != null)
+                            {
+                                // Wraps error object to offer save status option
+                                error({error: e});
+                            }
+                        });
+                        
+                        // Saves a copy as a draft while saving
+                        this.saveDraft(savedData);
+                        
+                        const extension = title.split('.').pop().toLowerCase();
+    
+                        const fileType = this.ui.editor.diagramFileTypes.find(type => type.extension === extension);
+                        if (!fileType) {
+                            throw new Error(`Unsupported file extension: ${extension}`);
+                        }
+                        let content = (binary) ? this.ui.base64ToBlob(data, 'image/png') : data
+                        saveFileToSiyuan(content, title, title, fileType).then(result => {
+                            if (result.success) {
+                                var desc = null
+                                this.title = result.newTitle;
+                                var lastDesc = this.desc;
+                                this.savingFile = false;
+                                this.desc = desc;
+                                this.fileSaved(savedData, lastDesc, done, errorWrapper);
+                                
+                                // Deletes draft after saving
+                                this.removeDraft();
+                            } else {
+                                errorWrapper(new Error('Failed to save file to SiYuan'));
+                            }
+                        }).catch(errorWrapper)
+                }
+            });
+            
+            if (binary)
+            {
+                var p = this.ui.getPngFileProperties(this.ui.fileNode);
+        
+                this.ui.getEmbeddedPng(mxUtils.bind(this, function(imageData)
+                {
+                    doSave(imageData);
+                }), error, (this.ui.getCurrentFile() != this) ?
+                    savedData : null, p.scale, p.border);
+            }
+            else
+            {
+                doSave(savedData);
+            }
+        };
 
         // 不需要公共URL
         // LocalFile.prototype.getPublicUrl = function(fn)
