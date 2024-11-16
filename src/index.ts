@@ -24,8 +24,9 @@ import { checkInvalidPathChar, getIframeFromEventSource } from "./utils";
 import { upload } from "./api";
 import { blankDrawio, CALLBAK_TYPE, COPY_LINK, drawioPath, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE } from "./constants";
 import { saveContentAsFile } from "./file";
-import { createLinkFromPath, createLinkFromTitle, getTitleFromPath } from "./link";
+import { createLinkFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback } from "./types";
+import { genDrawioHTMLByUrl } from "./asset/renderAssets";
 
 const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
     fetchPost("/api/search/searchAsset", {
@@ -286,10 +287,7 @@ export default class DrawioPlugin extends Plugin {
                 this.onSave(dialog, value, protyle)
             } else {
                 dialog.destroy()
-                protyle.insert(createLinkFromPath(url), true, true)
-                this.openCustomTab(getTitleFromPath(url), undefined, {
-                    url
-                })
+                protyle.insert(genDrawioHTMLByUrl(url, protyle.protyle), true, true)
             }
             
         })
@@ -312,7 +310,7 @@ export default class DrawioPlugin extends Plugin {
             // range.collapse(false);
             // focusByRange(range);
             const url = data["succMap"][value]
-            protyle.insert(createLinkFromPath(url), true, true)
+            protyle.insert(genDrawioHTMLByUrl(url, protyle.protyle), true, true)
             this.openCustomTab(getTitleFromPath(url), undefined, {
                 url
             })

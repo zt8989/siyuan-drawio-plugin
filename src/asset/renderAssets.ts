@@ -1,7 +1,7 @@
 import {Constants} from "@/constants";
-/// #if !MOBILE
-/// #endif
 import {pathPosix} from "@/util/pathName";
+import { getTitleFromPath } from "@/link";
+import { IProtyle } from "siyuan";
 
 export const renderAssetsPreview = (pathString: string) => {
     if (!pathString) {
@@ -19,3 +19,44 @@ export const renderAssetsPreview = (pathString: string) => {
     }
 };
 
+export const genDrawioHTMLByUrl = (assetUrl: string, protyle: IProtyle)  => {
+    const title = getTitleFromPath(assetUrl)
+    return genDrawioIFrameHTML(assetUrl, getDrawioIframe(title, assetUrl), protyle)
+}
+
+export const getDrawioIframe = (title: string, assetUrl: string) => {
+    return `/plugins/siyuan-drawio-plugin/webapp/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=${encodeURIComponent(title)}#U${encodeURIComponent(assetUrl)}`
+}
+
+
+// 定义一个函数来格式化日期和时间
+function formatDate(date) {
+    const pad = (num) => String(num).padStart(2, '0');
+
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1); // 月份从 0 开始，需要加 1
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const seconds = pad(date.getSeconds());
+
+    return `${year}${month}${day}${hours}${minutes}${seconds}`;
+}
+
+export const genDrawioIFrameHTML = (assetUrl: string, iframeSrc: string, protyle: IProtyle, width = "100%", height = "200px") => {
+    const tempElement = document.createElement("template");
+    const html = `<iframe frameborder="0" style="width:${width};height:${height};" src="${iframeSrc}"></iframe>`
+    tempElement.innerHTML = protyle.lute.SpinBlockDOM(html)
+    const nodeIFrame = tempElement.content.querySelector(`div[data-type="NodeIFrame"]`)
+    nodeIFrame?.setAttribute('custom-data-assets', assetUrl);
+    return protyle.lute.SpinBlockDOM(tempElement.innerHTML)
+};
+
+export const genDrawioEmbedHTML = (assetUrl: string, iframeSrc: string, protyle: IProtyle, width = "100%", height = "200px") => {
+    const tempElement = document.createElement("template");
+    const html = `<iframe frameborder="0" style="width:${width};height:${height};" src="/plugins/siyuan-drawio-plugin/webapp/embed.html"></iframe>`
+    tempElement.innerHTML = protyle.lute.SpinBlockDOM(html)
+    const nodeIFrame = tempElement.content.querySelector(`div[data-type="NodeIFrame"]`)
+    nodeIFrame?.setAttribute('custom-data-assets', assetUrl);
+    return protyle.lute.SpinBlockDOM(tempElement.innerHTML)
+};

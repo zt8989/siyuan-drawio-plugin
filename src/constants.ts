@@ -18,6 +18,7 @@ export abstract class Constants {
     public static readonly SIYUAN_ASSETS_SEARCH: string[] = [".txt", ".md", ".markdown", ".docx", ".xlsx", ".pptx", ".pdf", ".json", ".log", ".sql", ".html", ".xml", ".java", ".h", ".c",
         ".cpp", ".go", ".rs", ".swift", ".kt", ".py", ".php", ".js", ".css", ".ts", ".sh", ".bat", ".cmd", ".ini", ".yaml",
         ".rst", ".adoc", ".textile", ".opml", ".org", ".wiki", ".epub"];
+    public static readonly ZWSP: string = "\u200b";
 
 }
 
@@ -30,3 +31,4 @@ export const CALLBAK_TYPE = PREFIX + "callback"
 export const SHOW_MESSAGE = PREFIX + "showMessage"
 export const COPY_LINK = PREFIX + "copyLink"
 export const OPEN_TAB_BY_PATH = PREFIX + "openTabByPath"
+
