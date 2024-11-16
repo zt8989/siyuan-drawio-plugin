@@ -59,4 +59,11 @@ import {Workbox} from 'workbox-window';
   if(parent.siyuan) {
     urlParams['lang'] = getLang();
   }
+
+  const urlSearchParams = new URLSearchParams(location.search)
+  if(urlSearchParams.get("lightbox") === "1" && !urlSearchParams.get("toolbar-config")) {
+    urlParams["toolbar-config"] = JSON.stringify({
+      refreshBtn: {}
+    })
+  } 
 })()

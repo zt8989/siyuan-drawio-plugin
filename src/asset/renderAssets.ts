@@ -25,7 +25,12 @@ export const genDrawioHTMLByUrl = (assetUrl: string, protyle: IProtyle)  => {
 }
 
 export const getDrawioIframe = (title: string, assetUrl: string) => {
-    return `/plugins/siyuan-drawio-plugin/webapp/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=${encodeURIComponent(title)}#U${encodeURIComponent(assetUrl)}`
+    const urlSearchParams = new URLSearchParams("?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&")
+    urlSearchParams.append('toolbar-config', JSON.stringify({
+        refreshBtn: {}
+    }))
+    urlSearchParams.append('title', title)
+    return `/plugins/siyuan-drawio-plugin/webapp/?${urlSearchParams.toString()}#U${encodeURIComponent(assetUrl)}`
 }
 
 
