@@ -397,10 +397,11 @@
                 editorUi.openLink('https://www.draw.io/')
             }));
     
-            editorUi.actions.put("copyLink", new Action(parent.drawioPlugin.i18n.copyAsSiYuanLink, function() {
-                var file = editorUi.getCurrentFile();
-                electron.sendMessage("copyLink", file.getTitle())
-            }),)
+            // 不需要复制链接，建议直接使用`/`命令
+            // editorUi.actions.put("copyLink", new Action(parent.drawioPlugin.i18n.copyAsSiYuanLink, function() {
+            //     var file = editorUi.getCurrentFile();
+            //     electron.sendMessage("copyLink", file.getTitle())
+            // }),)
 
             editorUi.actions.put("open",  new Action(mxResources.get('open'), function() {
                 electron.sendMessage("open", null, "open" + (new Date).getTime(), (url, name) => {
