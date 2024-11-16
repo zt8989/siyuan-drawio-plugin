@@ -17,9 +17,11 @@ const webappDir = path.join(outputDir, 'webapp');
 const zipFilePath = 'package.zip';
 
 const filesToCopy = [
-    { src: path.join(outputDir, 'PostConfig.js'), dest: webappJsDir },
-    { src: path.join(outputDir, 'PreConfig.js'), dest: webappJsDir },
-    { src: path.join(outputDir, 'service-worker.js'), dest: webappDir },
+    { src: path.join(outputDir, 'PostConfig.js'), dest: webappJsDir, type: "move" },
+    { src: path.join(outputDir, 'PreConfig.js'), dest: webappJsDir, type: "move" },
+    { src: path.join(outputDir, 'service-worker.js'), dest: webappDir, type: "move" },
+    { src: path.join("client", 'embed.html'), dest: webappDir, type: "copy" },
+    { src: path.join("client", 'embed2.js'), dest: webappDir, type: "copy" },
 ];
 
 // Create destination directories if they don't exist
@@ -31,13 +33,24 @@ if (!fs.existsSync(webappDir)) {
 }
 
 // Copy files
-filesToCopy.forEach(({ src, dest }) => {
-    if (fs.existsSync(src)) {
-        const destFile = path.join(dest, path.basename(src));
-        fs.renameSync(src, destFile);
-        console.log(`Moved ${src} to ${destFile}`);
-    } else {
-        console.log(`Source file not found: ${src}`);
+filesToCopy.forEach(({ src, dest, type }) => {
+    if(type == "move") {
+        if (fs.existsSync(src)) {
+            const destFile = path.join(dest, path.basename(src));
+            fs.renameSync(src, destFile);
+            console.log(`Moved ${src} to ${destFile}`);
+        } else {
+            console.log(`Source file not found: ${src}`);
+        }
+    } 
+    if(type == "copy") {
+        if (fs.existsSync(src)) {
+            const destFile = path.join(dest, path.basename(src));
+            fs.copyFileSync(src, destFile);
+            console.log(`Copyed ${src} to ${destFile}`);
+        } else {
+            console.log(`Source file not found: ${src}`);
+        }
     }
 })
 

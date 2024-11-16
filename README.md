@@ -6,10 +6,12 @@
 ## Description
 Integrated into Siyuan as a plugin
 
-### Embedding into Siyuan                                     
-                                                              
-1. In drawio, go to File -> Embed -> IFrame -> Create -> Copy 
-2. Paste into Siyuan document   
+### Usage
+
+In edit mode, type `/drawio`, select and insert it into the note.
+
+![Insert drawio in command mode](asset/preview-1.png)
+![Select or create a new drawio](asset/preview-2.png)
 
 ## Author
 cowboy
@@ -18,9 +20,12 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.11
+0.1.12
 
 ## Changelog
+- **v0.1.12 (2024-11-16)**
+  - The `/` command will automatically insert `drawio` as an `iframe` into the note, and add the `data-assets` attribute to resolve the issue of unreferenced resource files.
+  - Removed the 'Copy as Siyuan Link' menu in drawio.
 - **v0.1.11 (2024-11-05)**
   - Optimized the logic for adding new tabs and the `/` command to insert `drawio`.
 - **v0.1.9 (2024-10-31)**
