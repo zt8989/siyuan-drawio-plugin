@@ -3,7 +3,7 @@ import {
     showMessage,
     Dialog,
     openTab,
-    IModel,
+    Custom,
     Protyle,
     fetchPost,
     fetchSyncPost,
@@ -59,7 +59,7 @@ const renderAssetList = (element: Element, k: string, position: IPosition, exts:
 
 export default class DrawioPlugin extends Plugin {
 
-    customTab: () => IModel;
+    customTab: () => Custom;
     private isMobile: boolean;
 
     async onload() {
