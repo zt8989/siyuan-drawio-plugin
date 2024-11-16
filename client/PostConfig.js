@@ -8,7 +8,7 @@
     window.EMF_CONVERT_URL = null;
     window.ICONSEARCH_PATH = null;
     const typePrefix = "drawio_"
-    const assetsDirPath = "/assets/drawio/";
+    const assetsDirPath = "assets/drawio/";
 
     if(window.parent.siyuan) {
         const callbacks = {}
@@ -190,10 +190,11 @@
                 }
         }
 
-        LocalFile.prototype.getPublicUrl = function(fn)
-        {
-            fn(assetsDirPath + this.title);
-        };
+        // 不需要公共URL
+        // LocalFile.prototype.getPublicUrl = function(fn)
+        // {
+        //     fn(assetsDirPath + this.title);
+        // };
         //#endregion
   
     
@@ -204,11 +205,6 @@
             menusInit.apply(this, arguments);
     
             var editorUi = this.editorUi;
-    
-            editorUi.actions.put('useOffline', new Action(mxResources.get('useOffline') + '...', function()
-            {
-                editorUi.openLink('https://www.draw.io/')
-            }));
     
             // 不需要复制链接，建议直接使用`/`命令
             // editorUi.actions.put("copyLink", new Action(parent.drawioPlugin.i18n.copyAsSiYuanLink, function() {
@@ -267,7 +263,7 @@
             // Replaces file menu to replace openFrom menu with open and rename downloadAs to export
             this.put('file', new Menu(mxUtils.bind(this, function(menu, parent)
             {
-                this.addMenuItems(menu, ['new', 'open', 'copyLink'], parent);
+                this.addMenuItems(menu, ['new', 'open'/*, 'copyLink'*/], parent);
                 this.addSubmenu('openRecent', menu, parent);
                 this.addMenuItems(menu, ['-', 'synchronize', '-', 'save', 'saveAs', '-', 'import'], parent);
                 this.addSubmenu('exportAs', menu, parent);
