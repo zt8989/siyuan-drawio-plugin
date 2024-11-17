@@ -6,7 +6,6 @@ import {
     Custom,
     Protyle,
     fetchPost,
-    fetchSyncPost,
     IProtyle,
     IWebSocketData,
     getFrontend,
@@ -15,6 +14,8 @@ import {
     hasClosestByAttribute,
     hasClosestByClassName} from "@/protyle/util/hasClosest";
 import {upDownHint} from "@/util/upDownHint";
+import {preConfig} from "@/client/PreConfig"
+import {postConfig} from "@/client/PostConfig"
 
 
 import "@/index.scss";
@@ -63,11 +64,15 @@ export default class DrawioPlugin extends Plugin {
     customTab: () => Custom;
     private isMobile: boolean;
 
+    preConfig: any
+
+    postConfig:any
+
     async onload() {
         window.drawioPlugin = this
-        window.fetchPost = fetchPost
-        window.fetchSyncPost = fetchSyncPost
-        window.showMessage = showMessage
+        this.preConfig = preConfig(this)
+        this.postConfig = postConfig(this)
+        
         this.eventBus.on("open-siyuan-url-plugin", this.onOpenTab.bind(this));
         this.eventBus.on("loaded-protyle-static", this.bindStaticEvent.bind(this))
         this.eventBus.on("ws-main", this.bindWsEvent.bind(this))
