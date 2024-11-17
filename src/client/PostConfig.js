@@ -42,5 +42,10 @@ function setupEditorUi(global, electron) {
             editorUi.keyHandler.bindAction(78, true, 'new'); // Ctrl+N
             editorUi.keyHandler.bindAction(79, true, 'open'); // Ctrl+O
         }
+
+        EditorUi.prototype.isStandaloneApp = function()
+        {
+            return true
+        };
         //#endregion
 }
