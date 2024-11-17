@@ -484,13 +484,6 @@
             })));
         };
         //#endregion
-    
-        //#region Editor
-        Editor.prototype.editAsNew = function(xml, title) {
-            const href = decodeURIComponent(location.hash).slice(2)
-            electron.sendMessage("openTabByPath", href)
-        }
-        //#endregion
     }
 
 })();
