@@ -10,7 +10,7 @@
     const typePrefix = "drawio_"
     const assetsDirPath = "assets/drawio/";
 
-    if(window.parent.siyuan) {
+    if(window.parent.drawioPlugin) {
         const callbacks = {}
         //#region public method
         window.addEventListener('message', function(event) {
@@ -89,6 +89,9 @@
         function loadFile(app, url) {
             app.loadFile("U" + encodeURIComponent(url), true)
         }
+
+        window.parent.drawioPlugin?.postConfig(window, electron)
+
         //#endregion
     
         // #region App 
@@ -312,45 +315,6 @@
                 this.addMenuItems(menu, ['-', 'pageSetup', 'print', '-', 'close', '-', 'exit'], parent);
             })));
         };
-        //#endregion
-    
-        //#region Editor
-        Editor.prototype.editAsNew = function(xml, title) {
-            const href = decodeURIComponent(location.hash).slice(2)
-            electron.sendMessage("openTabByPath", href)
-        }
-        //#endregion
-
-        //#region EditorUi
-        // Initializes the user interface
-        var editorUiInit = EditorUi.prototype.init;
-        EditorUi.prototype.init = async function()
-        {
-            editorUiInit.apply(this, arguments);
-
-            var editorUi = this;
-            var graph = this.editor.graph;
-                // Replaces new action
-		    var oldNew = this.actions.get('new').funct;
-		
-            this.actions.addAction('new...', mxUtils.bind(this, function()
-            {
-                if (this.getCurrentFile() == null)
-                {
-                    oldNew();
-                }
-                else
-                {
-                    electron.sendMessage('newfile', {width: 1600});
-                }
-            }), null, null, Editor.ctrlKey + '+N');
-
-            this.actions.get('open').shortcut = Editor.ctrlKey + '+O';
-		
-            // Adds shortcut keys for file operations
-            editorUi.keyHandler.bindAction(78, true, 'new'); // Ctrl+N
-            editorUi.keyHandler.bindAction(79, true, 'open'); // Ctrl+O
-        }
         //#endregion
     }
 
