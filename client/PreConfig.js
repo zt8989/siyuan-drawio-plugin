@@ -16,7 +16,6 @@ if(process.env.NODE_ENV !== 'development'){
  */
 // Overrides of global vars need to be pre-loaded
 window.DRAWIO_PUBLIC_BUILD = true;
-window.PLANT_URL = parent?.siyuan?.config?.editor?.plantUMLServePath ?? 'https://www.plantuml.com/plantuml/svg/~1';;
 window.DRAWIO_BASE_URL = "/plugins/siyuan-drawio-plugin/webapp"; // Replace with path to base of deployment, e.g. https://www.example.com/folder
 window.DRAWIO_LIGHTBOX_URL = window.DRAWIO_BASE_URL; // Replace with your lightbox URL, eg. https://www.example.com
 window.DRAW_MATH_URL = 'math/es5';
@@ -32,5 +31,5 @@ urlParams["gh"]=0 //: Disables the GitHub integration.
 urlParams["gl"]=0 //: Disables the GitLab integration.
 
 if(window.parent.drawioPlugin) {
-  window.parent.drawioPlugin?.preConfig(window)
+  window.parent.drawioPlugin.preConfig(window)
 }
