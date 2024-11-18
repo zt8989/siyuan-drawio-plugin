@@ -52,8 +52,8 @@ importers:
         specifier: ^1.63.3
         version: 1.80.4
       siyuan:
-        specifier: 1.0.4
-        version: 1.0.4
+        specifier: 1.0.5
+        version: 1.0.5
       ts-node:
         specifier: ^10.9.1
         version: 10.9.2(@types/node@20.17.1)(typescript@5.6.3)
@@ -769,8 +769,8 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-  siyuan@1.0.4:
-    resolution: {integrity: sha512-f08uGkbE6Tej4ucv9DEgjyZ4L7I/5QbhrYgFJ3dAXYZLY3I9+KTFN5gn2HZWzOLgU7CjqvNusQWmjGQ431ifPQ==}
+  siyuan@1.0.5:
+    resolution: {integrity: sha512-cTE2WETYSehfm+FoXeAg7lGoGCPkMMCezwUloGS+P5nIEA/IGLUTJXyhML3yTkW92r7qV3oCsm0Ozr13UV94jQ==}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -1495,7 +1495,7 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  siyuan@1.0.4: {}
+  siyuan@1.0.5: {}
 
   source-map-js@1.2.1: {}
 

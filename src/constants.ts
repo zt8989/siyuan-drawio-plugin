@@ -18,11 +18,17 @@ export abstract class Constants {
     public static readonly SIYUAN_ASSETS_SEARCH: string[] = [".txt", ".md", ".markdown", ".docx", ".xlsx", ".pptx", ".pdf", ".json", ".log", ".sql", ".html", ".xml", ".java", ".h", ".c",
         ".cpp", ".go", ".rs", ".swift", ".kt", ".py", ".php", ".js", ".css", ".ts", ".sh", ".bat", ".cmd", ".ini", ".yaml",
         ".rst", ".adoc", ".textile", ".opml", ".org", ".wiki", ".epub"];
+    public static readonly ZWSP: string = "\u200b";
 
 }
 
 
-export const TAB_TYPE = "drawio_tab";
-export const OPEN_TYPE = "drawio_open";
-export const NEW_TYPE = "drawio_newfile"
-export const CALLBAK_TYPE = "drawio_callback"
+export const PREFIX = "drawio_";
+export const TAB_TYPE = PREFIX + "tab";
+export const OPEN_TYPE = PREFIX + "open";
+export const NEW_TYPE = PREFIX + "newfile"
+export const CALLBAK_TYPE = PREFIX + "callback"
+export const SHOW_MESSAGE = PREFIX + "showMessage"
+export const COPY_LINK = PREFIX + "copyLink"
+export const OPEN_TAB_BY_PATH = PREFIX + "openTabByPath"
+

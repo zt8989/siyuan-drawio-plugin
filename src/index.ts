@@ -3,18 +3,19 @@ import {
     showMessage,
     Dialog,
     openTab,
-    IModel,
+    Custom,
     Protyle,
     fetchPost,
-    fetchSyncPost,
     IProtyle,
     IWebSocketData,
-    getFrontend
+    getFrontend,
 } from "siyuan";
 import {
     hasClosestByAttribute,
     hasClosestByClassName} from "@/protyle/util/hasClosest";
 import {upDownHint} from "@/util/upDownHint";
+import {preConfig} from "@/client/PreConfig"
+import {postConfig} from "@/client/PostConfig"
 
 
 import "@/index.scss";
@@ -22,10 +23,11 @@ import "@/index.scss";
 
 import { checkInvalidPathChar, getIframeFromEventSource } from "./utils";
 import { upload } from "./api";
-import { blankDrawio, CALLBAK_TYPE, drawioPath, NEW_TYPE, OPEN_TYPE, TAB_TYPE } from "./constants";
+import { blankDrawio, CALLBAK_TYPE, COPY_LINK, drawioPath, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE } from "./constants";
 import { saveContentAsFile } from "./file";
-import { createLink, getTitleFromPath } from "./link";
+import { createLinkFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback } from "./types";
+import { genDrawioHTMLByUrl } from "./asset/renderAssets";
 
 const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
     const frontEnd = getFrontend();
@@ -56,14 +58,18 @@ const renderAssetList = (element: Element, k: string, position: IPosition, exts:
 
 export default class DrawioPlugin extends Plugin {
 
-    customTab: () => IModel;
+    customTab: () => Custom;
     private isMobile: boolean;
+
+    preConfig: any
+
+    postConfig:any
 
     async onload() {
         window.drawioPlugin = this
-        window.fetchPost = fetchPost
-        window.fetchSyncPost = fetchSyncPost
-        window.showMessage = showMessage
+        this.preConfig = preConfig(this)
+        this.postConfig = postConfig(this)
+        
         this.eventBus.on("open-siyuan-url-plugin", this.onOpenTab.bind(this));
         this.eventBus.on("loaded-protyle-static", this.bindStaticEvent.bind(this))
         this.eventBus.on("ws-main", this.bindWsEvent.bind(this))
@@ -119,6 +125,7 @@ export default class DrawioPlugin extends Plugin {
     }
 
     async onunload() {
+        window.removeEventListener("message", this.onMessage)
     }
 
     uninstall() {
@@ -142,8 +149,25 @@ export default class DrawioPlugin extends Plugin {
                         this.updateTabTitle(iframeElement, getTitleFromPath(url))
                     }
                 })
+                break
+            case COPY_LINK:
+                this.copyLink(ev.data.payload)
+                break
+            case OPEN_TAB_BY_PATH:
+                this.openCustomTabByPath(ev.data.payload)
+                break
         } 
         console.log(ev)
+    }
+
+    public copyLink(title: string){
+        var link = createLinkFromTitle(title)
+        navigator.clipboard.writeText(link).then(() => {
+            showMessage(this.i18n.linkCopiedToClipboard)
+        }).catch(err => {
+            console.error('Failed to copy link: ', err);
+            showMessage(err, 6000, "error")
+        });
     }
 
     public updateTabTitle(frameElement: HTMLIFrameElement, title: string) {
@@ -265,10 +289,7 @@ export default class DrawioPlugin extends Plugin {
                 this.onSave(dialog, value, protyle)
             } else {
                 dialog.destroy()
-                protyle.insert(createLink(url), true, true)
-                this.openCustomTab(getTitleFromPath(url), undefined, {
-                    url
-                })
+                protyle.insert(genDrawioHTMLByUrl(url, protyle.protyle), true, true)
             }
             
         })
@@ -291,7 +312,7 @@ export default class DrawioPlugin extends Plugin {
             // range.collapse(false);
             // focusByRange(range);
             const url = data["succMap"][value]
-            protyle.insert(createLink(url), true, true)
+            protyle.insert(genDrawioHTMLByUrl(url, protyle.protyle), true, true)
             this.openCustomTab(getTitleFromPath(url), undefined, {
                 url
             })
