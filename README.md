@@ -25,6 +25,8 @@ cowboy
 ## Changelog
 - **v0.1.14 (2024-11-16)**
   - Removed offline mode.
+- **v0.1.13 (2024-11-16)**
+  - Added a refresh button in lightbox mode.
 - **v0.1.12 (2024-11-16)**
   - The `/` command will automatically insert `drawio` as an `iframe` into the note, and add the `data-assets` attribute to resolve the issue of unreferenced resource files.
   - Removed the 'Copy as Siyuan Link' menu in drawio.
