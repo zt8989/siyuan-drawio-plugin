@@ -142,6 +142,7 @@ export default class DrawioPlugin extends Plugin {
             case OPEN_TYPE:
                 this.showOpenDialog(false, (url, dialog) => {
                     dialog.destroy()
+                    console.log(OPEN_TYPE, ev.data, url)
                     if(ev.data.callbackId) {
                         const iframeElement = getIframeFromEventSource(ev.source as Window)
                         ev.source.postMessage({
@@ -160,7 +161,7 @@ export default class DrawioPlugin extends Plugin {
                 this.openCustomTabByPath(ev.data.payload)
                 break
         } 
-        console.log(ev)
+        console.log("on plugin message", ev)
     }
 
     public copyLink(title: string){

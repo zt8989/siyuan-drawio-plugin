@@ -1,4 +1,3 @@
-const typePrefix = "drawio_"
 import { getFileText, upload } from "@/api";
 
 const assetsDirPath = "assets/drawio/";
@@ -11,38 +10,7 @@ export function postConfig(drawioPlugin) {
     /**
      * @param {Drawio} global
      */
-    return function setup(global) {
-        const callbacks = {}
-        //#region public method
-        global.addEventListener('message', function(event) {
-            switch (event.data.type) {
-                case typePrefix + "callback":
-                    var message = event.data;
-                    var messageId = message.callbackId;
-                    var messageArgs = message.payload;
-                    if(messageId && callbacks[messageId]) {
-                        callbacks[messageId].apply(null, messageArgs)
-                        delete callbacks[messageId]
-                    }
-                    return
-            }
-            
-        });
-
-        const electron = {
-            sendMessage(type, payload, callbackId, callback) {
-                if(callbackId) {
-                    callbacks[callbackId] = callback
-                }
-                global.parent.postMessage({
-                    type: typePrefix + type,
-                    payload,
-                    callbackId
-                })
-            }
-        }
-
-        //#endregion
+    return function setup(global, electron) {
         setupApp(global);
         setupLocalFile(global);
         setupMenus(global, electron);
