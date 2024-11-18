@@ -7,7 +7,7 @@ const assetsDirPath = "assets/drawio/";
  */
 export function postConfig(drawioPlugin) {
     /**
-     * @param {*} global
+     * @param {Drawio} global
      */
     return function setup(global) {
         const callbacks = {}
@@ -98,6 +98,9 @@ function loadFile(app, url) {
     app.loadFile("U" + encodeURIComponent(url), true)
 }
 
+/**
+ * @param {Drawio} global
+ */
 function setupApp(global) {
     const { App } = global
     // #region App 
@@ -124,6 +127,9 @@ function setupApp(global) {
     // #endregion
 }
 
+/**
+ * @param {Drawio} global
+ */
 function setupLocalFile(global) {
     const { LocalFile, mxUtils } = global
     // #region LocalFile 
@@ -181,7 +187,7 @@ function setupLocalFile(global) {
                     throw new Error(`Unsupported file extension: ${extension}`);
                 }
                 let content = (binary) ? this.ui.base64ToBlob(data, 'image/png') : data;
-                saveFileToSiyuan(content, title, title, fileType).then(result => {
+                saveFileToSiyuan(content, title, fileType).then(result => {
                     if (result.success) {
                         var desc = null;
                         this.title = result.newTitle;
@@ -221,6 +227,9 @@ function setupLocalFile(global) {
     //#endregion
 }
 
+/**
+ * @param {Drawio} global
+ */
 function setupMenus(global, electron) {
     const { Action, mxUtils, Menus, Menu, mxResources } = global
     //#region Menus
@@ -347,6 +356,9 @@ function setupEditorUi(global, electron) {
     //#endregion
 }
 
+/**
+ * @param {Drawio} global
+ */
 function setupEditor(global, electron){
     //#region Editor
     const { Editor, location } = global
