@@ -1,16 +1,13 @@
-(async function() {
-    /**
-     * Copyright (c) 2006-2024, JGraph Ltd
-     * Copyright (c) 2006-2024, draw.io AG
-     */
-    // null'ing of global vars need to be after init.js
-    window.VSD_CONVERT_URL = null;
-    window.EMF_CONVERT_URL = null;
-    window.ICONSEARCH_PATH = null;
+/**
+ * Copyright (c) 2006-2024, JGraph Ltd
+ * Copyright (c) 2006-2024, draw.io AG
+ */
+// null'ing of global vars need to be after init.js
+window.VSD_CONVERT_URL = null;
+window.EMF_CONVERT_URL = null;
+window.ICONSEARCH_PATH = null;
 
 
-    if(window.parent.drawioPlugin) {
-        window.parent.drawioPlugin.postConfig(window)
-    }
-
-})();
+if(window.parent.drawioPlugin) {
+    window.parent.drawioPlugin.postConfig(window)
+}
