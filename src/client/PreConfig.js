@@ -5,7 +5,7 @@
  */
 export function preConfig(drawioPlugin) {
     return function setup(global) {
-      global.PLANT_URL = parent?.siyuan?.config?.editor?.plantUMLServePath ?? 'https://www.plantuml.com/plantuml/svg/~1';;
+      global.PLANT_URL = window?.siyuan?.config?.editor?.plantUMLServePath ?? 'https://www.plantuml.com/plantuml/svg/~1';;
       const {urlParams} = global
       urlParams['lang'] = getLang();
       
