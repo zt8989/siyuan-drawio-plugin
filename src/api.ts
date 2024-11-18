@@ -356,6 +356,27 @@ export const getFileBlob = async (path: string): Promise<Blob | null> => {
     return data;
 }
 
+/**
+ * fetchPost will secretly convert data into json, this func merely return Blob
+ * @param endpoint 
+ * @returns 
+ */
+export const getFileText = async (path: string): Promise<string | null> => {
+    const endpoint = '/api/file/getFile'
+    let response = await fetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify({
+            path: path
+        })
+    });
+    if (response.status === 200) {
+        return response.text()
+    } else {
+        const json = await response.json()
+        throw new Error(json.msg)
+    }
+}
+
 
 export async function putFile(path: string, isDir: boolean, file: any) {
     let form = new FormData();

@@ -1,4 +1,6 @@
 const typePrefix = "drawio_"
+import { getFileText, upload } from "@/api";
+
 const assetsDirPath = "assets/drawio/";
 /**
  * 
@@ -49,17 +51,6 @@ export function postConfig(drawioPlugin) {
     }
 }  
 
-async function uploadFileToSiyuan(file, assetsDirPath) {
-    const formData = new FormData();
-    formData.append("assetsDirPath", assetsDirPath);
-    formData.append("file[]", file);
-
-    return await fetch("/api/asset/upload", {
-        method: "POST",
-        body: formData
-    }).then(res => res.json());
-}
-
 async function getFileContent(data) {
     if(data.path) {
         if(data.path.startsWith("/assets")) {
@@ -68,30 +59,18 @@ async function getFileContent(data) {
             data.path =  "/data/" + data.path
         }
     }
-    const response = await fetch("/api/file/getFile", {
-        body: JSON.stringify(data),
-        method: "POST"
-    })
-    if (response.status === 200) {
-        return response.text()
-    } else {
-        const json = await response.json()
-        throw new Error(json.msg)
-    }
+
+    return getFileText(data.path)
 }
 
 async function saveFileToSiyuan(content, title, fileType) {
     const blob = new Blob([content], { type: fileType.mimeType });
     const file = new File([blob], title, { type: fileType.mimeType });
 
-    const data = await uploadFileToSiyuan(file, assetsDirPath);
-    if (data.code === 0 && data.data && data.data.succMap) {
-        const newFilePath = data.data.succMap[title];
-        const newTitle = newFilePath.split('/').pop();
-        return { success: true, newTitle };
-    }
-    
-    return { success: false };
+    const data = await upload(assetsDirPath, [file]);
+    const newFilePath = data.succMap[title];
+    const newTitle = newFilePath.split('/').pop();
+    return { success: true, newTitle };
 }
 
 function loadFile(app, url) {
@@ -188,19 +167,15 @@ function setupLocalFile(global) {
                 }
                 let content = (binary) ? this.ui.base64ToBlob(data, 'image/png') : data;
                 saveFileToSiyuan(content, title, fileType).then(result => {
-                    if (result.success) {
-                        var desc = null;
-                        this.title = result.newTitle;
-                        var lastDesc = this.desc;
-                        this.savingFile = false;
-                        this.desc = desc;
-                        this.fileSaved(savedData, lastDesc, done, errorWrapper);
+                    var desc = null;
+                    this.title = result.newTitle;
+                    var lastDesc = this.desc;
+                    this.savingFile = false;
+                    this.desc = desc;
+                    this.fileSaved(savedData, lastDesc, done, errorWrapper);
 
-                        // Deletes draft after saving
-                        this.removeDraft();
-                    } else {
-                        errorWrapper(new Error('Failed to save file to SiYuan'));
-                    }
+                    // Deletes draft after saving
+                    this.removeDraft();
                 }).catch(errorWrapper);
             }
         });
