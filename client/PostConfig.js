@@ -392,26 +392,16 @@
     
             var editorUi = this.editorUi;
     
-            editorUi.actions.put('useOffline', new Action(mxResources.get('useOffline') + '...', function()
-            {
-                editorUi.openLink('https://www.draw.io/')
-            }));
+            // editorUi.actions.put('useOffline', new Action(mxResources.get('useOffline') + '...', function()
+            // {
+            //     editorUi.openLink('https://www.draw.io/')
+            // }));
     
-            editorUi.actions.put("copyLink", new Action(parent.drawioPlugin.i18n.copyAsSiYuanLink, function() {
-                var file = editorUi.getCurrentFile();
-                var urlParams = new URLSearchParams({
-                    icon: "iconDrawio",
-                    title: file.getTitle(),
-                    data: JSON.stringify({ url: 'assets/drawio/' + file.getTitle() })
-                })
-                var link = `[${file.getTitle()}](siyuan://plugins/siyuan-drawio-plugin?${urlParams.toString()})`
-                parent.navigator.clipboard.writeText(link).then(() => {
-                    parent.showMessage(parent.drawioPlugin.i18n.linkCopiedToClipboard)
-                }).catch(err => {
-                    console.error('Failed to copy link: ', err);
-                    parent.showMessage(err, 6000, "error")
-                });
-            }),)
+            // 不需要复制链接，建议直接使用`/`命令
+            // editorUi.actions.put("copyLink", new Action(parent.drawioPlugin.i18n.copyAsSiYuanLink, function() {
+            //     var file = editorUi.getCurrentFile();
+            //     electron.sendMessage("copyLink", file.getTitle())
+            // }),)
 
             editorUi.actions.put("open",  new Action(mxResources.get('open'), function() {
                 electron.sendMessage("open", null, "open" + (new Date).getTime(), (url, name) => {
@@ -495,7 +485,7 @@
         //#region Editor
         Editor.prototype.editAsNew = function(xml, title) {
             const href = decodeURIComponent(location.hash).slice(2)
-            parent.drawioPlugin.openCustomTabByPath(href)
+            electron.sendMessage("openTabByPath", href)
         }
         //#endregion
 
