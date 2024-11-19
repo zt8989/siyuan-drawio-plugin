@@ -14,9 +14,6 @@ import {
     hasClosestByAttribute,
     hasClosestByClassName} from "@/protyle/util/hasClosest";
 import {upDownHint} from "@/util/upDownHint";
-import {preConfig} from "@/client/PreConfig"
-import {postConfig} from "@/client/PostConfig"
-
 
 import "@/index.scss";
 
@@ -67,8 +64,6 @@ export default class DrawioPlugin extends Plugin {
 
     async onload() {
         window.drawioPlugin = this
-        this.preConfig = preConfig(this)
-        this.postConfig = postConfig(this)
         
         this.eventBus.on("open-siyuan-url-plugin", this.onOpenTab.bind(this));
         this.eventBus.on("loaded-protyle-static", this.bindStaticEvent.bind(this))
