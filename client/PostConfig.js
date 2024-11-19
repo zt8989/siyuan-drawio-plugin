@@ -1,4 +1,3 @@
-(async function() {
     /**
      * Copyright (c) 2006-2024, JGraph Ltd
      * Copyright (c) 2006-2024, draw.io AG
@@ -521,5 +520,3 @@
         }
         //#endregion
     }
-
-})();
