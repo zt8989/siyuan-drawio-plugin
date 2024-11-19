@@ -10,7 +10,7 @@
     const typePrefix = "drawio_"
     const assetsDirPath = "/assets/drawio/";
 
-    if(window.parent.drawioPlugin) {
+    if(window.parent.siyuan) {
         const callbacks = {}
         //#region public method
         window.addEventListener('message', function(event) {
@@ -87,9 +87,6 @@
         function loadFile(app, url) {
             app.loadFile("U" + encodeURIComponent(url), true)
         }
-
-        window.parent.drawioPlugin?.postConfig(window, electron)
-
         //#endregion
     
         // #region App 
@@ -400,11 +397,21 @@
                 editorUi.openLink('https://www.draw.io/')
             }));
     
-            // 不需要复制链接，建议直接使用`/`命令
-            // editorUi.actions.put("copyLink", new Action(parent.drawioPlugin.i18n.copyAsSiYuanLink, function() {
-            //     var file = editorUi.getCurrentFile();
-            //     electron.sendMessage("copyLink", file.getTitle())
-            // }),)
+            editorUi.actions.put("copyLink", new Action(parent.drawioPlugin.i18n.copyAsSiYuanLink, function() {
+                var file = editorUi.getCurrentFile();
+                var urlParams = new URLSearchParams({
+                    icon: "iconDrawio",
+                    title: file.getTitle(),
+                    data: JSON.stringify({ url: 'assets/drawio/' + file.getTitle() })
+                })
+                var link = `[${file.getTitle()}](siyuan://plugins/siyuan-drawio-plugin?${urlParams.toString()})`
+                parent.navigator.clipboard.writeText(link).then(() => {
+                    parent.showMessage(parent.drawioPlugin.i18n.linkCopiedToClipboard)
+                }).catch(err => {
+                    console.error('Failed to copy link: ', err);
+                    parent.showMessage(err, 6000, "error")
+                });
+            }),)
 
             editorUi.actions.put("open",  new Action(mxResources.get('open'), function() {
                 electron.sendMessage("open", null, "open" + (new Date).getTime(), (url, name) => {
@@ -483,6 +490,45 @@
                 this.addMenuItems(menu, ['-', 'pageSetup', 'print', '-', 'close', '-', 'exit'], parent);
             })));
         };
+        //#endregion
+    
+        //#region Editor
+        Editor.prototype.editAsNew = function(xml, title) {
+            const href = decodeURIComponent(location.hash).slice(2)
+            parent.drawioPlugin.openCustomTabByPath(href)
+        }
+        //#endregion
+
+        //#region EditorUi
+        // Initializes the user interface
+        var editorUiInit = EditorUi.prototype.init;
+        EditorUi.prototype.init = async function()
+        {
+            editorUiInit.apply(this, arguments);
+
+            var editorUi = this;
+            var graph = this.editor.graph;
+                // Replaces new action
+		    var oldNew = this.actions.get('new').funct;
+		
+            this.actions.addAction('new...', mxUtils.bind(this, function()
+            {
+                if (this.getCurrentFile() == null)
+                {
+                    oldNew();
+                }
+                else
+                {
+                    electron.sendMessage('newfile', {width: 1600});
+                }
+            }), null, null, Editor.ctrlKey + '+N');
+
+            this.actions.get('open').shortcut = Editor.ctrlKey + '+O';
+		
+            // Adds shortcut keys for file operations
+            editorUi.keyHandler.bindAction(78, true, 'new'); // Ctrl+N
+            editorUi.keyHandler.bindAction(79, true, 'open'); // Ctrl+O
+        }
         //#endregion
     }
 
