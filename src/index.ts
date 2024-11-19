@@ -58,10 +58,6 @@ export default class DrawioPlugin extends Plugin {
     customTab: () => Custom;
     private isMobile: boolean;
 
-    preConfig: any
-
-    postConfig:any
-
     async onload() {
         window.drawioPlugin = this
         
