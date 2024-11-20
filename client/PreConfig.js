@@ -1,12 +1,4 @@
-import {Workbox} from 'workbox-window';
-
-  if(process.env.NODE_ENV !== 'development'){
-    if ('serviceWorker' in navigator) {
-      const wb = new Workbox('service-worker.js');
-
-      wb.register();
-    }
-  } else {
+  if(process.env.NODE_ENV === 'development'){
     urlParams['test'] = '1';
   }
   /**
