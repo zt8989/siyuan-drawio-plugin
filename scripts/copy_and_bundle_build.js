@@ -56,7 +56,7 @@ filesToCopy.forEach(({ src, dest, type }) => {
         if (fs.existsSync(src)) {
             const destFile = path.join(dest, path.basename(src));
             const fileContent = fs.readFileSync(src, 'utf8');
-            const wrappedContent = `(function() {\n'use strict';\n${fileContent}\n})();`;
+            const wrappedContent = `(function() {\n${fileContent}\n})();`;
             fs.writeFileSync(destFile, wrappedContent);
             fs.unlinkSync(src);
             console.log(`Moved and wrapped with IIFE: ${src} to ${destFile}`);
