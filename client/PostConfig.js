@@ -8,7 +8,7 @@
     window.EMF_CONVERT_URL = null;
     window.ICONSEARCH_PATH = null;
     const typePrefix = "drawio_"
-    const assetsDirPath = "/assets/drawio/";
+    const assetsDirPath = "assets/drawio/";
 
     if(window.parent.siyuan) {
         const callbacks = {}
@@ -379,7 +379,7 @@
 
         LocalFile.prototype.getPublicUrl = function(fn)
         {
-            fn(assetsDirPath + this.title);
+            fn(assetsDirPath.startsWith("/") ? "" : "/" + assetsDirPath + this.title);
         };
         //#endregion
   
