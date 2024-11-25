@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.14
+0.1.15
 
 ## Changelog
+- **v0.1.15 (2024-11-17)**
+  - 🔧 chore(drawio): Update submodule to 24.8.9 release
 - **v0.1.14 (2024-11-16)**
   - Removed offline mode.
 - **v0.1.13 (2024-11-16)**
