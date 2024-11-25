@@ -1,4 +1,3 @@
-(async function() {
     /**
      * Copyright (c) 2006-2024, JGraph Ltd
      * Copyright (c) 2006-2024, draw.io AG
@@ -8,7 +7,7 @@
     window.EMF_CONVERT_URL = null;
     window.ICONSEARCH_PATH = null;
     const typePrefix = "drawio_"
-    const assetsDirPath = "/assets/drawio/";
+    const assetsDirPath = "assets/drawio/";
 
     if(window.parent.siyuan) {
         const callbacks = {}
@@ -72,11 +71,13 @@
             }
         }
     
-        async function saveFileToSiyuan(file, fileName) {
-            
+        async function saveFileToSiyuan(content, title, fileType) {
+            const blob = new Blob([content], { type: fileType.mimeType });
+            const file = new File([blob], title, { type: fileType.mimeType });
+
             const data = await uploadFileToSiyuan(file, assetsDirPath);
             if (data.code === 0 && data.data && data.data.succMap) {
-                const newFilePath = data.data.succMap[fileName];
+                const newFilePath = data.data.succMap[title];
                 const newTitle = newFilePath.split('/').pop();
                 return { success: true, newTitle };
             }
@@ -99,283 +100,116 @@
     
         App.prototype.fetchAndShowNotification = function(){}
     
-        App.prototype.loadFile = function(id, sameWindow, file, success, force)
+        var loadTemplate = App.prototype.loadTemplate 
+        App.prototype.loadTemplate = function(url, onload, onerror, templateFilename, asLibrary)
         {
-            sameWindow = true;
-            
-            this.hideDialog();
-            
-            var fn2 = mxUtils.bind(this, function()
-            {
-                if (id == null || id.length == 0)
-                {
-                    this.editor.setStatus('');
-                    this.fileLoaded(null);
-                }
-                else if (this.spinner.spin(document.body, mxResources.get('loading')))
-                {
-                    // Handles files from localStorage
-                    if (file != null)
-                    {
-                        // File already loaded
-                        this.spinner.stop();
-                        this.fileLoaded(file);
-    
-                        if (success != null)
-                        {
-                            success();
-                        }
-                    }
-                    else if (id.charAt(0) == 'U')
-                    {
-                        var url = decodeURIComponent(id.substring(1));
-                        
-                        var doFallback = mxUtils.bind(this, function()
-                        {
-                            // Fallback for non-public Google Drive files
-                            if (url.substring(0, 31) == 'https://drive.google.com/uc?id=' &&
-                                (this.drive != null || typeof window.DriveClient === 'function'))
-                            {
-                                this.hideDialog();
-                                
-                                var fallback = mxUtils.bind(this, function()
-                                {
-                                    this.spinner.stop();
-                                    
-                                    if (this.drive != null)
-                                    {
-                                        var tempId = url.substring(31, url.lastIndexOf('&ex'));
-                                        
-                                        this.loadFile('G' + tempId, sameWindow, null, mxUtils.bind(this, function()
-                                        {
-                                            var currentFile = this.getCurrentFile();
-                                            
-                                            if (currentFile != null && this.editor.chromeless && !this.editor.editable)
-                                            {
-                                                currentFile.getHash = function()
-                                                {
-                                                    return 'G' + tempId;
-                                                };
-                                                
-                                                window.location.hash = '#' + currentFile.getHash();
-                                            }
-                                            
-                                            if (success != null)
-                                            {
-                                                success();
-                                            }
-                                        }));
-                                        
-                                        return true;
-                                    }
-                                    else
-                                    {
-                                        return false;
-                                    }
-                                });
-                                
-                                if (!fallback() && this.spinner.spin(document.body, mxResources.get('loading')))
-                                {
-                                    this.addListener('clientLoaded', fallback);
-                                }
-                                
-                                return true;
-                            }
-                            else
-                            {
-                                return false;
-                            }
-                        });
-                        
-                        getFileContent({ path: url }).then(mxUtils.bind(this, function(text)
-                        {
-                            this.spinner.stop();
-                            
-                            if (text != null && text.length > 0)
-                            {
-                                var filename = this.defaultFilename;
-                                
-                                // Tries to find name from URL with valid extensions
-                                if (urlParams['title'] == null && urlParams['notitle'] != '1')
-                                {
-                                    var tmp = url;
-                                    var dot = url.lastIndexOf('.');
-                                    var slash = tmp.lastIndexOf('/');
-                                    
-                                    if (dot > slash && slash > 0)
-                                    {
-                                        tmp = tmp.substring(slash + 1, dot);
-                                        var ext = url.substring(dot);
-                                        
-                                        if (!this.useCanvasForExport && ext == '.png')
-                                        {
-                                            ext = '.drawio';
-                                        }
-    
-                                        if (ext === '.svg' || ext === '.xml' ||
-                                            ext === '.html' || ext === '.png'  ||
-                                            ext === '.drawio')
-                                        {
-                                            filename = tmp + ext;
-                                        }
-                                    }
-                                }
-                                
-                                var tempFile = new LocalFile(this, text, (urlParams['title'] != null) ?
-                                    decodeURIComponent(urlParams['title']) : filename, false);
-                                tempFile.getHash = function()
-                                {
-                                    return id;
-                                };
-                                
-                                if (this.fileLoaded(tempFile, true))
-                                {
-                                    if (success != null)
-                                    {
-                                        success();
-                                    }
-                                }
-                                else if (!doFallback())
-                                {
-                                    this.handleError({message: mxResources.get('fileNotFound')},
-                                        mxResources.get('errorLoadingFile'));
-                                }
-                            }
-                            else if (!doFallback())
-                            {
-                                this.handleError({message: mxResources.get('fileNotFound')},
-                                    mxResources.get('errorLoadingFile'));
-                            }
-                        }), mxUtils.bind(this, function(e)
-                        {
-                            console.log(e)
-                            if (!doFallback())
-                            {
-                                this.spinner.stop();
-                                this.handleError({message: mxResources.get('fileNotFound')},
-                                    mxResources.get('errorLoadingFile'));
-                            }
-                        }), (urlParams['template-filename'] != null) ?
-                            decodeURIComponent(urlParams['template-filename']) : null);
-                    }
-                }
-            });
-            
-            var currentFile = this.getCurrentFile();
-            
-            var fn = mxUtils.bind(this, function()
-            {
-                if (force || currentFile == null || !currentFile.isModified())
-                {
-                    fn2();
-                }
-                else
-                {
-                    this.confirm(mxResources.get('allChangesLost'), mxUtils.bind(this, function()
-                    {
-                        if (currentFile != null)
-                        {
-                            window.location.hash = currentFile.getHash();
-                        }
-                    }), fn2, mxResources.get('cancel'), mxResources.get('discardChanges'));
-                }
-            });
-            
-            if (id == null || id.length == 0)
-            {
-                fn();
+            if(url.startsWith("assets/")) {
+                getFileContent({ path: url }).then((text) => {
+                    onload(text)
+                    this.setMode(App.MODE_DEVICE)
+                }, onerror)
+            } else {
+                loadTemplate.apply(this, arguments);
             }
-            else if (currentFile != null && !sameWindow)
-            {
-                this.showDialog(new PopupDialog(this, this.getUrl() + '#' + id,
-                    null, fn).container, 320, 160, true, true);
-            }
-            else
-            {
-                fn();
-            }
-        };
+        }
         // #endregion
     
         // #region LocalFile 
-        LocalFile.prototype.saveFile = function(title, revision, success, error, useCurrentData, unloading, overwrite) {
+        LocalFile.prototype.saveFile = function(title, revision, success, error, useCurrentData, unloading, overwrite)
+        {
             if (title != this.title)
-                {
-                    this.fileHandle = null;
-                    this.desc = null;
-                    this.editable = null;
-                }
-                
-                this.title = title;
+            {
+                this.fileHandle = null;
+                this.desc = null;
+                this.editable = null;
+            }
             
-                // Updates data after changing file name
-                if (!useCurrentData)
-                {
-                    this.updateFileData();
-                }
-                
-                var binary = this.ui.useCanvasForExport && /(\.png)$/i.test(this.getTitle());
-                this.setShadowModified(false);
-                var savedData = this.getData();
-                
-                var done = mxUtils.bind(this, function()
-                {
-                    this.setModified(this.getShadowModified());
-                    this.contentChanged();
-            
-                    if (success != null)
-                    {
-                        success();
-                    }
-                });
-                
-                var doSave = mxUtils.bind(this, function(data)
-                {
-                    var errorWrapper = mxUtils.bind(this, function(e)
-                    {
-                        this.savingFile = false;
-                        
-                        if (error != null)
-                        {
-                            // Wraps error object to offer save status option
-                            error({error: e});
-                        }
-                    });
-    
-                    const extension = title.split('.').pop().toLowerCase();
+            this.title = title;
         
-                    const fileType = this.ui.editor.diagramFileTypes.find(type => type.extension === extension);
-                    if (!fileType) {
-                        throw new Error(`Unsupported file extension: ${extension}`);
-                    }
-                    let content = (binary) ? this.ui.base64ToBlob(data, 'image/png') : data
-                    const blob = new Blob([content], { type: fileType.mimeType });
-                    const file = new File([blob], title, { type: fileType.mimeType });
-                    saveFileToSiyuan(file, title).then(result => {
-                        if (result.success) {
-                            this.title = result.newTitle;
-                            done();
-                        } else {
-                            errorWrapper(new Error('Failed to save file to SiYuan'));
-                        }
-                    }).catch(errorWrapper)
-                });
-                
-                if (binary)
-                {
-                    var p = this.ui.getPngFileProperties(this.ui.fileNode);
+            // Updates data after changing file name
+            if (!useCurrentData)
+            {
+                this.updateFileData();
+            }
             
-                    this.ui.getEmbeddedPng(mxUtils.bind(this, function(imageData)
-                    {
-                        doSave(imageData);
-                    }), error, (this.ui.getCurrentFile() != this) ?
-                        savedData : null, p.scale, p.border);
-                }
-                else
+            var binary = this.ui.useCanvasForExport && /(\.png)$/i.test(this.getTitle());
+            this.setShadowModified(false);
+            var savedData = this.getData();
+            
+            var done = mxUtils.bind(this, function()
+            {
+                this.setModified(this.getShadowModified());
+                this.contentChanged();
+        
+                if (success != null)
                 {
-                    doSave(savedData);
+                    success();
                 }
-        }
+            });
+            
+            var doSave = mxUtils.bind(this, function(data)
+            {
+                // if (this.fileHandle != null)
+                // {
+                    // Sets shadow modified state during save
+                    if (!this.savingFile)
+                    {
+                        this.savingFileTime = new Date();
+                        this.savingFile = true;
+                        
+                        var errorWrapper = mxUtils.bind(this, function(e)
+                        {
+                            this.savingFile = false;
+                            
+                            if (error != null)
+                            {
+                                // Wraps error object to offer save status option
+                                error({error: e});
+                            }
+                        });
+                        
+                        // Saves a copy as a draft while saving
+                        this.saveDraft(savedData);
+                        
+                        const extension = title.split('.').pop().toLowerCase();
+                        const fileType = this.ui.editor.diagramFileTypes.find(type => type.extension === extension);
+                        if (!fileType) {
+                            throw new Error(`Unsupported file extension: ${extension}`);
+                        }
+                        let content = (binary) ? this.ui.base64ToBlob(data, 'image/png') : data
+                        saveFileToSiyuan(content, title, title, fileType).then(result => {
+                            if (result.success) {
+                                var desc = null
+                                this.title = result.newTitle;
+                                var lastDesc = this.desc;
+                                this.savingFile = false;
+                                this.desc = desc;
+                                this.fileSaved(savedData, lastDesc, done, errorWrapper);
+                                
+                                // Deletes draft after saving
+                                this.removeDraft();
+                            } else {
+                                errorWrapper(new Error('Failed to save file to SiYuan'));
+                            }
+                        }).catch(errorWrapper)
+                }
+            });
+            
+            if (binary)
+            {
+                var p = this.ui.getPngFileProperties(this.ui.fileNode);
+        
+                this.ui.getEmbeddedPng(mxUtils.bind(this, function(imageData)
+                {
+                    doSave(imageData);
+                }), error, (this.ui.getCurrentFile() != this) ?
+                    savedData : null, p.scale, p.border);
+            }
+            else
+            {
+                doSave(savedData);
+            }
+        };
 
         LocalFile.prototype.getPublicUrl = function(fn)
         {
@@ -392,10 +226,10 @@
     
             var editorUi = this.editorUi;
     
-            editorUi.actions.put('useOffline', new Action(mxResources.get('useOffline') + '...', function()
-            {
-                editorUi.openLink('https://www.draw.io/')
-            }));
+            // editorUi.actions.put('useOffline', new Action(mxResources.get('useOffline') + '...', function()
+            // {
+            //     editorUi.openLink('https://www.draw.io/')
+            // }));
     
             // 不需要复制链接，建议直接使用`/`命令
             // editorUi.actions.put("copyLink", new Action(parent.drawioPlugin.i18n.copyAsSiYuanLink, function() {
@@ -456,7 +290,7 @@
             {
                 this.addMenuItems(menu, ['new', 'open', 'copyLink'], parent);
                 this.addSubmenu('openRecent', menu, parent);
-                this.addMenuItems(menu, ['-', 'synchronize', '-', 'save', 'saveAs', '-', 'import'], parent);
+                this.addMenuItems(menu, ['-', /*'synchronize', '-'*/, 'save', 'saveAs', '-', 'import'], parent);
                 this.addSubmenu('exportAs', menu, parent);
                 menu.addSeparator(parent);
                 this.addSubmenu('embed', menu, parent);
@@ -521,5 +355,3 @@
         }
         //#endregion
     }
-
-})();

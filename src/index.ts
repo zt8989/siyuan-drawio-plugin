@@ -6,7 +6,6 @@ import {
     Custom,
     Protyle,
     fetchPost,
-    fetchSyncPost,
     IProtyle,
     IWebSocketData,
     getFrontend,
@@ -15,7 +14,6 @@ import {
     hasClosestByAttribute,
     hasClosestByClassName} from "@/protyle/util/hasClosest";
 import {upDownHint} from "@/util/upDownHint";
-
 
 import "@/index.scss";
 
@@ -29,6 +27,9 @@ import { ShowDialogCallback } from "./types";
 import { genDrawioHTMLByUrl } from "./asset/renderAssets";
 
 const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
+    const frontEnd = getFrontend();
+    const isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
+
     fetchPost("/api/search/searchAsset", {
         k,
         exts
@@ -39,19 +40,13 @@ const renderAssetList = (element: Element, k: string, position: IPosition, exts:
         });
 
         const listElement = element.querySelector(".b3-list");
-        // const previewElement = element.querySelector("#preview");
         const inputElement = element.querySelector("input");
         listElement.innerHTML = searchHTML || `<li class="b3-list--empty">${window.siyuan.languages.emptyContent}</li>`;
-        // if (response.data.length > 0) {
-        //     previewElement.innerHTML = renderAssetsPreview(response.data[0].path);
-        // } else {
-        //     previewElement.innerHTML = window.siyuan.languages.emptyContent;
-        // }
-        /// #if MOBILE
-        window.siyuan.menus.menu.fullscreen();
-        /// #else
-        window.siyuan.menus.menu.popup(position);
-        /// #endif
+        if(isMobile){
+            window.siyuan.menus.menu.fullscreen();
+        } else {
+            window.siyuan.menus.menu.popup(position);
+        }
         if (!k) {
             inputElement.select();
         }
@@ -65,9 +60,7 @@ export default class DrawioPlugin extends Plugin {
 
     async onload() {
         window.drawioPlugin = this
-        window.fetchPost = fetchPost
-        window.fetchSyncPost = fetchSyncPost
-        window.showMessage = showMessage
+        
         this.eventBus.on("open-siyuan-url-plugin", this.onOpenTab.bind(this));
         this.eventBus.on("loaded-protyle-static", this.bindStaticEvent.bind(this))
         this.eventBus.on("ws-main", this.bindWsEvent.bind(this))

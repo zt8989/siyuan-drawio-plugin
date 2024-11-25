@@ -50,7 +50,7 @@ export default defineConfig({
     build: {
         outDir: outputDir,
         emptyOutDir: false,
-        minify: true,
+        minify: !isDev,
         sourcemap: isSrcmap ? 'inline' : false,
 
         lib: {
