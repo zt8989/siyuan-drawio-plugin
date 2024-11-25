@@ -144,7 +144,6 @@
                 if (success != null)
                 {
                     success();
-
                 }
             });
             
@@ -154,13 +153,6 @@
                 // {
                     // Sets shadow modified state during save
                     if (!this.savingFile)
-
-
-
-
-
-
-
                     {
                         this.savingFileTime = new Date();
                         this.savingFile = true;
@@ -170,53 +162,6 @@
                             this.savingFile = false;
                             
                             if (error != null)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                             {
                                 // Wraps error object to offer save status option
                                 error({error: e});
@@ -227,27 +172,6 @@
                         this.saveDraft(savedData);
                         
                         const extension = title.split('.').pop().toLowerCase();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
                         const fileType = this.ui.editor.diagramFileTypes.find(type => type.extension === extension);
                         if (!fileType) {
                             throw new Error(`Unsupported file extension: ${extension}`);
@@ -266,70 +190,20 @@
                                 this.removeDraft();
                             } else {
                                 errorWrapper(new Error('Failed to save file to SiYuan'));
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                             }
                         }).catch(errorWrapper)
-
-
                 }
             });
             
             if (binary)
-
-
             {
                 var p = this.ui.getPngFileProperties(this.ui.fileNode);
         
                 this.ui.getEmbeddedPng(mxUtils.bind(this, function(imageData)
-
-
                 {
                     doSave(imageData);
                 }), error, (this.ui.getCurrentFile() != this) ?
                     savedData : null, p.scale, p.border);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             }
             else
             {
