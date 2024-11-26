@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.16
+0.1.17
 
 ## Changelog
+- **v0.1.17 (2024-11-26)**
+  - Added theme simple/sketch
 - **v0.1.16 (2024-11-26)**
   - Added the **Copy as Image** feature
 - **v0.1.15 (2024-11-25)**
