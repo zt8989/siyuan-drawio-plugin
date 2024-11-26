@@ -24,7 +24,7 @@
       return lang
   }
   window.DRAWIO_PUBLIC_BUILD = true;
-  window.PLANT_URL = parent?.siyuan?.config?.editor?.plantUMLServePath ?? 'https://www.plantuml.com/plantuml/svg/~1';;
+  window.PLANT_URL = parent?.siyuan?.config?.editor?.plantUMLServePath.replace("/svg/~1", "") ?? 'https://www.plantuml.com/plantuml';;
   window.DRAWIO_BASE_URL = "/plugins/siyuan-drawio-plugin/webapp/"; // Replace with path to base of deployment, e.g. https://www.example.com/folder
   window.DRAWIO_VIEWER_URL = "/plugins/siyuan-drawio-plugin/webapp/js/viewer.min.js"; // Replace your path to the viewer js, e.g. https://www.example.com/js/viewer.min.js
   window.DRAWIO_LIGHTBOX_URL = "/plugins/siyuan-drawio-plugin/webapp"; // Replace with your lightbox URL, eg. https://www.example.com

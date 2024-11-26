@@ -1,4 +1,5 @@
 import { setup as EditorSetup } from "./components/Editor"
+import { setup as EditorUiSetup } from "./components/EditorUi"
 import { setup as ThemeSetup } from "./components/Theme"
     /**
      * Copyright (c) 2006-2024, JGraph Ltd
@@ -356,6 +357,7 @@ import { setup as ThemeSetup } from "./components/Theme"
             editorUi.keyHandler.bindAction(78, true, 'new'); // Ctrl+N
             editorUi.keyHandler.bindAction(79, true, 'open'); // Ctrl+O
         }
+        EditorUiSetup()
         //#endregion
 
         //#region theme
