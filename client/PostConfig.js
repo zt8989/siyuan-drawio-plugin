@@ -1,3 +1,4 @@
+import { setup as EditorSetup } from "./components/Editor"
     /**
      * Copyright (c) 2006-2024, JGraph Ltd
      * Copyright (c) 2006-2024, draw.io AG
@@ -321,6 +322,7 @@
             const href = decodeURIComponent(location.hash).slice(2)
             electron.sendMessage("openTabByPath", href)
         }
+        EditorSetup()
         //#endregion
 
         //#region EditorUi
