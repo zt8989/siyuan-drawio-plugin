@@ -11,7 +11,7 @@ export function setup() {
         document.getElementsByTagName("head")[0].appendChild(this.sketchStyleElt)) : A.apply(this, arguments)
     }
     ;
-    editorUiCreateWrapperForTheme = EditorUi.prototype.createWrapperForTheme;
+    var editorUiCreateWrapperForTheme = EditorUi.prototype.createWrapperForTheme;
     EditorUi.prototype.createWrapperForTheme = function(a) {
         "simple" == a || "sketch" == a ? (null == this.sketchWrapperElt && (this.sketchWrapperElt = document.createElement("div"),
         this.sketchWrapperElt.style.cssText = "position:absolute;top:0px;left:0px;right:0px;bottom:0px;overflow:hidden;"),
