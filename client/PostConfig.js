@@ -1,4 +1,5 @@
 import { setup as EditorSetup } from "./components/Editor"
+import { setup as ThemeSetup } from "./components/Theme"
     /**
      * Copyright (c) 2006-2024, JGraph Ltd
      * Copyright (c) 2006-2024, draw.io AG
@@ -355,5 +356,9 @@ import { setup as EditorSetup } from "./components/Editor"
             editorUi.keyHandler.bindAction(78, true, 'new'); // Ctrl+N
             editorUi.keyHandler.bindAction(79, true, 'open'); // Ctrl+O
         }
+        //#endregion
+
+        //#region theme
+        ThemeSetup()
         //#endregion
     }

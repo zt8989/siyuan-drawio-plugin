@@ -1,6 +1,6 @@
 {
   "name": "siyuan-drawio-plugin",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "type": "module",
   "description": "Draw.io integrated as a plugin into Siyuan",
   "repository": "https://github.com/zt8989/siyuan-drawio-plugin",
