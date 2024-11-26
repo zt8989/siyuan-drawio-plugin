@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.15
+0.1.16
 
 ## Changelog
+- **v0.1.16 (2024-11-26)**
+  - Added the **Copy as Image** feature
 - **v0.1.15 (2024-11-25)**
   - Modified file loading method to reduce changes to drawio
 - **v0.1.14 (2024-11-16)**

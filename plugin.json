@@ -2,7 +2,7 @@
   "name": "siyuan-drawio-plugin",
   "author": "cowboy",
   "url": "https://github.com/zt8989/siyuan-drawio-plugin",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "minAppVersion": "3.0.12",
   "backends": [
     "windows",
