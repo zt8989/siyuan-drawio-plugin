@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.17
+0.1.18
 
 ## Changelog
+- **v0.1.18 (2024-11-26)**
+  - Added support for PlantUML
 - **v0.1.17 (2024-11-26)**
   - Added theme simple/sketch
 - **v0.1.16 (2024-11-26)**
