@@ -78,3 +78,4 @@ cowboy
 ## 赞赏榜
 
 - ONIONLYONE ￥20
+- 凌风 ￥10
