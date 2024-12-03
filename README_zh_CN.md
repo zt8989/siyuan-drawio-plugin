@@ -79,3 +79,4 @@ cowboy
 
 - ONIONLYONE ￥20
 - 凌风 ￥10
+- Manfred ￥10

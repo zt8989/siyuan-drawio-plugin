@@ -73,5 +73,6 @@ cowboy
 
 ## Donation List
 
-- ONIONLYONE ¥20
+- ONIONLYONE ￥20
 - 凌风 ￥10
+- Manfred ￥10
