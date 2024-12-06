@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.18
+0.1.19
 
 ## Changelog
+- **v0.1.19 (2024-12-4)**
+  - Updated draw.io version to v25.0.2
 - **v0.1.18 (2024-11-26)**
   - Added support for PlantUML
 - **v0.1.17 (2024-11-26)**
