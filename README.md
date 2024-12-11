@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.19
+0.1.20
 
 ## Changelog
+- **v0.1.20 (2024-12-10)**
+  - Fixed an issue where files with only spaces in their names would cause an error due to being undetectable.
 - **v0.1.19 (2024-12-4)**
   - Updated draw.io version to v25.0.2
 - **v0.1.18 (2024-11-26)**

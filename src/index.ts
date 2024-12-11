@@ -25,6 +25,7 @@ import { saveContentAsFile } from "./file";
 import { createLinkFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback } from "./types";
 import { genDrawioHTMLByUrl } from "./asset/renderAssets";
+import qs from "query-string"
 
 const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
     const frontEnd = getFrontend();
@@ -90,7 +91,7 @@ export default class DrawioPlugin extends Plugin {
         this.customTab = this.addTab({
             type: TAB_TYPE,
             init() {
-                const urlObj = new URLSearchParams(this.data || {})
+                const urlObj = qs.stringify(this.data || {})
                 this.element.innerHTML = `<iframe class="siyuan-drawio-plugin__custom-tab" src="/plugins/siyuan-drawio-plugin/webapp/?${urlObj.toString()}"></iframe>`
             }
         });
