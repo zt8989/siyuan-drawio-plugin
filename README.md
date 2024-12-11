@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.20
+0.1.21
 
 ## Changelog
+- **v0.1.21 (2024-12-11)**
+  - Added full-screen mode
 - **v0.1.20 (2024-12-10)**
   - Fixed an issue where files with only spaces in their names would cause an error due to being undetectable.
 - **v0.1.19 (2024-12-4)**
