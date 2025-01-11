@@ -1,6 +1,12 @@
-  if(process.env.NODE_ENV === 'development'){
+import { DefaultElectronImpl } from './Electron.js';
+import Storage from './Storage.js';
+
+const storage = window.storage = new Storage(process.env.NODE_ENV === 'development');
+
+if(process.env.NODE_ENV === 'development'){
     urlParams['test'] = '1';
   }
+
   /**
    * Copyright (c) 2006-2024, JGraph Ltd
    * Copyright (c) 2006-2024, draw.io AG
@@ -42,6 +48,8 @@
 
   if(parent.siyuan) {
     urlParams['lang'] = getLang();
+    window.electron = new DefaultElectronImpl()
+    storage.setElectron(electron)
   }
 
   const urlSearchParams = new URLSearchParams(location.search)
@@ -49,4 +57,4 @@
     urlParams["toolbar-config"] = JSON.stringify({
       refreshBtn: {}
     })
-  } 
+  }
