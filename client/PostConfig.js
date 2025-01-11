@@ -94,6 +94,7 @@ import { setup as MenuSetup } from "./components/Menus"
                 this.fileHandle = null;
                 this.desc = null;
                 this.editable = null;
+                electron.sendMessage("update_title", title)
             }
             
             this.title = title;

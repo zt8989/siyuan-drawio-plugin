@@ -26,6 +26,7 @@ export abstract class Constants {
 export const PREFIX = "drawio_";
 export const TAB_TYPE = PREFIX + "tab";
 export const OPEN_TYPE = PREFIX + "open";
+export const UPDATE_TITLE = PREFIX + "update_title";
 export const NEW_TYPE = PREFIX + "newfile"
 export const CALLBAK_TYPE = PREFIX + "callback"
 export const SHOW_MESSAGE = PREFIX + "showMessage"

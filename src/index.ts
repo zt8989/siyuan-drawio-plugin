@@ -21,9 +21,9 @@ import "@/index.scss";
 
 import { checkInvalidPathChar, getIframeFromEventSource } from "./utils";
 import { upload } from "./api";
-import { blankDrawio, CALLBAK_TYPE, COPY_LINK, DRAWIO_CONFIG, drawioPath, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, SET_ITEM, TAB_TYPE } from "./constants";
+import { blankDrawio, CALLBAK_TYPE, COPY_LINK, DRAWIO_CONFIG, drawioPath, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, SET_ITEM, TAB_TYPE, UPDATE_TITLE } from "./constants";
 import { saveContentAsFile } from "./file";
-import { createLinkFromTitle, getTitleFromPath } from "./link";
+import { createLinkFromTitle, createUrlFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback } from "./types";
 import { genDrawioHTMLByUrl } from "./asset/renderAssets";
 import qs from "query-string"
@@ -157,6 +157,12 @@ export default class DrawioPlugin extends Plugin {
     }
 
     onMessage = (ev: MessageEvent<{ type: string, payload: any, callbackId?: string }>) => {
+        // Only process messages from same origin
+        if (ev.origin !== window.location.origin) {
+            logger.debug('Rejected message from invalid origin:', ev.origin);
+            return;
+        }
+        
         switch(ev.data.type) {
             case NEW_TYPE:
                 this.openNewCustomTab()
@@ -174,6 +180,10 @@ export default class DrawioPlugin extends Plugin {
                         this.updateTabTitle(iframeElement, getTitleFromPath(url))
                     }
                 })
+                break
+            case UPDATE_TITLE:
+                const iframeElement = getIframeFromEventSource(ev.source as Window)
+                this.updateTabTitle(iframeElement, ev.data.payload)
                 break
             case COPY_LINK:
                 this.copyLink(ev.data.payload)
@@ -210,6 +220,9 @@ export default class DrawioPlugin extends Plugin {
             const tabs = this.getOpenedTab()[TAB_TYPE]
             const tab = tabs.map(tab => tab.tab).filter(tab => tab.id === dataId)
             if(tab.length > 0) {
+                const model = tab[0].model as any
+                model.data = { url: createUrlFromTitle(title) }
+                tab[0].addModel(model)
                 tab[0].updateTitle(title)
             }
         }

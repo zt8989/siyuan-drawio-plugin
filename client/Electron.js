@@ -1,11 +1,18 @@
+import { logger } from "./logger";
 const typePrefix = "drawio_"
 
 class DefaultElectronImpl {
-    callbacks = {}
 
     constructor() {
+        this.callbacks = {}
         //#region public method
-        window.addEventListener('message', function(event) {
+        window.addEventListener('message', (event) => {
+            // Only process messages from same origin
+            if (event.origin !== window.location.origin) {
+                logger.debug('Rejected message from invalid origin:', event.origin);
+                return;
+            }
+
             switch (event.data.type) {
                 case typePrefix + "callback":
                     var message = event.data;
@@ -24,7 +31,7 @@ class DefaultElectronImpl {
 
     sendMessage(type, payload, callbackId, callback) {
         if(callbackId) {
-            callbacks[callbackId] = callback
+            this.callbacks[callbackId] = callback
         }
         window.parent.postMessage({
             type: typePrefix + type,

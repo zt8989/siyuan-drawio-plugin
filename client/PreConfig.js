@@ -1,7 +1,7 @@
 import { DefaultElectronImpl } from './Electron.js';
 import Storage from './Storage.js';
 
-const storage = window.storage = new Storage(process.env.NODE_ENV === 'development');
+const storage = window.storage = new Storage();
 
 if(process.env.NODE_ENV === 'development'){
     urlParams['test'] = '1';
