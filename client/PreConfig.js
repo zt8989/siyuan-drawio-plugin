@@ -1,6 +1,7 @@
 import { DefaultElectronImpl } from './Electron.js';
 import Storage from './Storage.js';
 
+window.isLocalStorage = true
 const storage = window.storage = new Storage();
 
 if(process.env.NODE_ENV === 'development'){
