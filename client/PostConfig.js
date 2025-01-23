@@ -10,39 +10,10 @@ import { setup as MenuSetup } from "./components/Menus"
     window.VSD_CONVERT_URL = null;
     window.EMF_CONVERT_URL = null;
     window.ICONSEARCH_PATH = null;
-    const typePrefix = "drawio_"
     const assetsDirPath = "assets/drawio/";
 
     if(window.parent.siyuan) {
-        const callbacks = {}
-        //#region public method
-        window.addEventListener('message', function(event) {
-            switch (event.data.type) {
-                case typePrefix + "callback":
-                    var message = event.data;
-                    var messageId = message.callbackId;
-                    var messageArgs = message.payload;
-                    if(messageId && callbacks[messageId]) {
-                        callbacks[messageId].apply(null, messageArgs)
-                        delete callbacks[messageId]
-                    }
-                    return
-            }
-            
-        });
-
-        const electron = {
-            sendMessage(type, payload, callbackId, callback) {
-                if(callbackId) {
-                    callbacks[callbackId] = callback
-                }
-                window.parent.postMessage({
-                    type: typePrefix + type,
-                    payload,
-                    callbackId
-                })
-            }
-        }
+        const electron = window.electron
 
         async function uploadFileToSiyuan(file, assetsDirPath) {
             const formData = new FormData();
@@ -123,6 +94,7 @@ import { setup as MenuSetup } from "./components/Menus"
                 this.fileHandle = null;
                 this.desc = null;
                 this.editable = null;
+                electron.sendMessage("update_title", title)
             }
             
             this.title = title;

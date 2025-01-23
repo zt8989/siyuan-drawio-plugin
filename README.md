@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.21
+0.1.22
 
 ## Changelog
+- **v0.1.22 (2025-01-21)**
+  - Save and restore configuration
 - **v0.1.21 (2024-12-11)**
   - Added full-screen mode
 - **v0.1.20 (2024-12-10)**

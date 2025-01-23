@@ -39,8 +39,26 @@ function ensureDirectoryExists(dirPath) {
     }
 }
 
+function replaceLocalStorage(content) {
+    return content
+        .replace(/localStorage\.getItem\(/g, 'storage.getItem(')
+        .replace(/localStorage\.setItem\(/g, 'storage.setItem(')
+        .replace(/localStorage\.removeItem\(/g, 'storage.removeItem(')
+        .replace(/localStorage\.clear\(/g, 'storage.clear()')
+        .replace(/localStorage\.key\(/g, 'storage.key(')
+        .replace(/localStorage\.length/g, 'storage.length');
+}
+
 function copyFile(src, dest) {
-    fs.copyFileSync(src, dest);
+    if (src.endsWith('app.min.js')) {
+        const content = fs.readFileSync(src, 'utf8');
+        const modifiedContent = replaceLocalStorage(content);
+        fs.writeFileSync(dest, modifiedContent);
+    } else if (src.endsWith('.js')) {
+        fs.copyFileSync(src, dest);
+    } else {
+        fs.copyFileSync(src, dest);
+    }
 }
 
 function copyDirectory(src, dest, exclude = []) {

@@ -19,7 +19,11 @@ export function createLinkFromPath(path: string){
     return createLink(title, path)
 }
 
+export function createUrlFromTitle(title: string) {
+    return 'assets/drawio/' + title
+}
+
 export function createLinkFromTitle(title: string){
-    const path = 'assets/drawio/' + title
+    const path = createUrlFromTitle(title)
     return createLink(title, path)
 }

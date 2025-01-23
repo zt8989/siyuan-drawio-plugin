@@ -95,9 +95,13 @@ export function setup(electron){
                 }
             }
             
-            this.addMenuItems(menu, ['-', 'pageSetup', 'print', '-', 'close', '-', 'exit'], parent);
+            this.addMenuItems(menu, ['-', 'pageSetup', 'print', '-', 'close', '-', 'appVersion', 'exit'], parent);
         })));
 
         editorUi.actions.get("fullscreen").visible = true
+        editorUi.actions.put('appVersion', new Action('v' + process.env.VERSION, function(arg1, evt)
+		{
+			// do nothing
+		}));
     };
 }

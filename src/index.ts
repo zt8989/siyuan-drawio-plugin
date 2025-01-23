@@ -10,6 +10,7 @@ import {
     IWebSocketData,
     getFrontend,
 } from "siyuan";
+import { logger } from "./logger";
 import {
     hasClosestByAttribute,
     hasClosestByClassName} from "@/protyle/util/hasClosest";
@@ -20,9 +21,9 @@ import "@/index.scss";
 
 import { checkInvalidPathChar, getIframeFromEventSource } from "./utils";
 import { upload } from "./api";
-import { blankDrawio, CALLBAK_TYPE, COPY_LINK, drawioPath, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE } from "./constants";
+import { blankDrawio, CALLBAK_TYPE, COPY_LINK, DRAWIO_CONFIG, drawioPath, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, SET_ITEM, TAB_TYPE, UPDATE_TITLE } from "./constants";
 import { saveContentAsFile } from "./file";
-import { createLinkFromTitle, getTitleFromPath } from "./link";
+import { createLinkFromTitle, createUrlFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback } from "./types";
 import { genDrawioHTMLByUrl } from "./asset/renderAssets";
 import qs from "query-string"
@@ -55,9 +56,9 @@ const renderAssetList = (element: Element, k: string, position: IPosition, exts:
 };
 
 export default class DrawioPlugin extends Plugin {
-
     customTab: () => Custom;
     private isMobile: boolean;
+    private configLoaded = false
 
     async onload() {
         window.drawioPlugin = this
@@ -67,6 +68,7 @@ export default class DrawioPlugin extends Plugin {
         this.eventBus.on("ws-main", this.bindWsEvent.bind(this))
 
         window.addEventListener("message", this.onMessage)
+        window.addEventListener('storage', this.onStorage)
         
         const frontEnd = getFrontend();
         this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
@@ -88,11 +90,19 @@ export default class DrawioPlugin extends Plugin {
             }
         });
 
+        const that = this
         this.customTab = this.addTab({
             type: TAB_TYPE,
             init() {
-                const urlObj = qs.stringify(this.data || {})
-                this.element.innerHTML = `<iframe class="siyuan-drawio-plugin__custom-tab" src="/plugins/siyuan-drawio-plugin/webapp/?${urlObj.toString()}"></iframe>`
+                const checkConfig = () => {
+                    if (that.configLoaded) {
+                        const urlObj = qs.stringify(this.data || {})
+                        this.element.innerHTML = `<iframe class="siyuan-drawio-plugin__custom-tab" src="/plugins/siyuan-drawio-plugin/webapp/?${urlObj.toString()}"></iframe>`
+                    } else {
+                        setTimeout(checkConfig, 100);
+                    }
+                };
+                checkConfig();
             }
         });
 
@@ -111,6 +121,20 @@ export default class DrawioPlugin extends Plugin {
                 this.openNewCustomTab()
             },
         });
+
+        this.restoreData()
+    }
+
+    async restoreData(){
+        const remoteDataObj = await this.loadData(DRAWIO_CONFIG)
+        const remoteData = typeof remoteDataObj == 'string' ? remoteDataObj : JSON.stringify(remoteDataObj) 
+        const localData = localStorage.getItem(DRAWIO_CONFIG)
+        logger.debug("restoreData, remoteData: %s, localData: %s", remoteData, localData)
+        if(remoteData != localData) {
+            logger.debug("localStorage.setItem(DRAWIO_CONFIG)")
+            localStorage.setItem(DRAWIO_CONFIG, remoteData)
+        }
+        this.configLoaded = true
     }
 
     onLayoutReady() {
@@ -118,12 +142,27 @@ export default class DrawioPlugin extends Plugin {
 
     async onunload() {
         window.removeEventListener("message", this.onMessage)
+        window.addEventListener('storage', this.onStorage)
     }
 
     uninstall() {
     }
 
+    onStorage = (ev: { key: string, newValue: string, oldValue: string }) => {
+        const { key, newValue, oldValue } = ev
+        if (key == DRAWIO_CONFIG && newValue != oldValue) {
+            logger.debug("this.saveData", key, newValue)
+            this.saveData(key, newValue)
+        }
+    }
+
     onMessage = (ev: MessageEvent<{ type: string, payload: any, callbackId?: string }>) => {
+        // Only process messages from same origin
+        if (ev.origin !== window.location.origin) {
+            logger.debug('Rejected message from invalid origin:', ev.origin);
+            return;
+        }
+        
         switch(ev.data.type) {
             case NEW_TYPE:
                 this.openNewCustomTab()
@@ -142,14 +181,27 @@ export default class DrawioPlugin extends Plugin {
                     }
                 })
                 break
+            case UPDATE_TITLE:
+                const iframeElement = getIframeFromEventSource(ev.source as Window)
+                this.updateTabTitle(iframeElement, ev.data.payload)
+                break
             case COPY_LINK:
                 this.copyLink(ev.data.payload)
                 break
             case OPEN_TAB_BY_PATH:
                 this.openCustomTabByPath(ev.data.payload)
                 break
+            // case SET_ITEM:
+            //     this.setStorageItem(ev.data.payload)
+            //     break
         } 
-        console.log(ev)
+        logger.debug(ev)
+    }
+
+    setStorageItem({ key, value }: any) {
+        if (key == DRAWIO_CONFIG) {
+            this.saveData(key, typeof value == 'string' ? value : JSON.stringify(value))
+        }
     }
 
     public copyLink(title: string){
@@ -157,7 +209,7 @@ export default class DrawioPlugin extends Plugin {
         navigator.clipboard.writeText(link).then(() => {
             showMessage(this.i18n.linkCopiedToClipboard)
         }).catch(err => {
-            console.error('Failed to copy link: ', err);
+            logger.debug('Failed to copy link: ', err);
             showMessage(err, 6000, "error")
         });
     }
@@ -168,6 +220,9 @@ export default class DrawioPlugin extends Plugin {
             const tabs = this.getOpenedTab()[TAB_TYPE]
             const tab = tabs.map(tab => tab.tab).filter(tab => tab.id === dataId)
             if(tab.length > 0) {
+                const model = tab[0].model as any
+                model.data = { url: createUrlFromTitle(title) }
+                tab[0].addModel(model)
                 tab[0].updateTitle(title)
             }
         }
@@ -372,7 +427,7 @@ export default class DrawioPlugin extends Plugin {
     }
 
     bindDynamicEvent(data: CustomEvent<{ protyle: IProtyle }>) {
-        console.log("bindDynamicEvent", data)
+        logger.debug("bindDynamicEvent", data)
         if(data.detail.protyle) {
             // const element: HTMLElement = data.detail.protyle.wysiwyg.element
             // const list = element.querySelectorAll('[data-type="a"]')

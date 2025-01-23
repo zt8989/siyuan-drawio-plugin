@@ -2,8 +2,9 @@ import { resolve } from "path"
 import { defineConfig, loadEnv } from "vite"
 import { viteStaticCopy } from "vite-plugin-static-copy"
 import livereload from "rollup-plugin-livereload"
-import zipPack from "vite-plugin-zip-pack";
 import fg from 'fast-glob';
+import packageJson from './package.json'
+export const version = packageJson.version
 
 import vitePluginYamlI18n from './yaml-plugin';
 
@@ -44,7 +45,8 @@ export default defineConfig({
 
     define: {
         "process.env.DEV_MODE": JSON.stringify(isDev),
-        "process.env.NODE_ENV": JSON.stringify(env.NODE_ENV)
+        "process.env.NODE_ENV": JSON.stringify(env.NODE_ENV),
+        "process.env.VERSION": JSON.stringify(version)
     },
 
     build: {
