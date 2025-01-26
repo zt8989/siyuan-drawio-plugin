@@ -33,5 +33,5 @@ export const SHOW_MESSAGE = PREFIX + "showMessage"
 export const COPY_LINK = PREFIX + "copyLink"
 export const OPEN_TAB_BY_PATH = PREFIX + "openTabByPath"
 export const SET_ITEM = PREFIX + "setItem"
-export const DRAWIO_CONFIG = '.drawio-config'
-
+export const DRAWIO_CONFIG = 'drawio-config.json'
+export const DEFAULT_SAVE_PATH = 'assets/drawio/'

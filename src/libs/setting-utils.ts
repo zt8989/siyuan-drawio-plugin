@@ -7,7 +7,34 @@
  * @Description  : 
  */
 
-import { Plugin, Setting } from 'siyuan';
+import { Plugin } from 'siyuan';
+import SettingWithError from './setting';
+
+interface ISettingUtilsItem {
+    key: string;
+    title: string;
+    description?: string;
+    type: TSettingItemType;
+    value: any;
+    direction?: 'column' | 'row';
+    options?: Record<string, string>;
+    slider?: {
+        min: number;
+        max: number;
+        step: number;
+    };
+    button?: {
+        label: string;
+        callback: () => void;
+    };
+    action?: {
+        callback: () => void;
+    };
+    createElement?: (value: any) => HTMLElement;
+    getEleVal?: (ele: HTMLElement) => any;
+    setEleVal?: (ele: HTMLElement, value: any) => void;
+    validator?: (value: any) => true | string;
+}
 
 
 /**
@@ -93,7 +120,7 @@ export class SettingUtils {
         this.name = args.name ?? 'settings';
         this.plugin = args.plugin;
         this.file = this.name.endsWith('.json') ? this.name : `${this.name}.json`;
-        this.plugin.setting = new Setting({
+        this.plugin.setting = new SettingWithError({
             width: args.width,
             height: args.height,
             confirmCallback: () => {
@@ -336,6 +363,32 @@ export class SettingUtils {
                 textInputElement.className = 'b3-text-field fn__flex-center fn__size200';
                 textInputElement.value = item.value;
                 textInputElement.onchange = item.action?.callback ?? (() => { });
+                // Add real-time validation on input
+                if (item.validator) {
+                    textInputElement.oninput = () => {
+                        const newValue = textInputElement.value;
+                        const validationResult = item.validator(newValue);
+                        
+                        // Remove any existing error message
+                        const existingError = textInputElement.parentElement?.querySelector('.b3-label__text.ft__error');
+                        if (existingError) {
+                            existingError.remove();
+                        }
+                        
+                        if (validationResult !== true) {
+                            // Create and show validation error message
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'b3-label__text';
+                            const errorSpan = document.createElement('span');
+                            errorSpan.className = 'ft__error';
+                            errorSpan.textContent = validationResult;
+                            errorDiv.appendChild(errorSpan);
+                            
+                            // Insert error message after the input element
+                            textInputElement.parentElement?.insertBefore(errorDiv, textInputElement.nextSibling);
+                        }
+                    };
+                }
                 itemElement = textInputElement;
                 textInputElement.addEventListener('keydown', preventEnterConfirm);
                 break;
@@ -385,7 +438,41 @@ export class SettingUtils {
         let item = this.settings.get(key);
         if (item.type === 'button') return;
         let element = this.elements.get(key) as any;
-        item.value = item.getEleVal(element);
+        const newValue = item.getEleVal(element);
+        
+        if (item.validator) {
+            const validationResult = item.validator(newValue);
+            if (validationResult !== true) {
+                // Remove any existing error message
+                const existingError = element.parentElement?.querySelector('.b3-label__text.ft__error');
+                if (existingError) {
+                    existingError.remove();
+                }
+                
+                // Create and show validation error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'b3-label__text';
+                const errorSpan = document.createElement('span');
+                errorSpan.className = 'ft__error';
+                errorSpan.textContent = validationResult;
+                errorDiv.appendChild(errorSpan);
+                
+                // Insert error message after the input element
+                element.parentElement?.insertBefore(errorDiv, element.nextSibling);
+                
+                // Revert to previous value
+                item.setEleVal(element, item.value);
+                return;
+            } else {
+                // Clear any existing error message if validation passes
+                const existingError = element.parentElement?.querySelector('.b3-label__text.ft__error');
+                if (existingError) {
+                    existingError.remove();
+                }
+            }
+        }
+        
+        item.value = newValue;
     }
 
     private updateElementFromValue(key: string) {

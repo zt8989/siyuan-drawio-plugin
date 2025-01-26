@@ -11,6 +11,7 @@ import {
     getFrontend,
 } from "siyuan";
 import { logger } from "./logger";
+import { DrawioSettings } from "./libs/drawio-settings";
 import {
     hasClosestByAttribute,
     hasClosestByClassName} from "@/protyle/util/hasClosest";
@@ -58,10 +59,12 @@ const renderAssetList = (element: Element, k: string, position: IPosition, exts:
 export default class DrawioPlugin extends Plugin {
     customTab: () => Custom;
     private isMobile: boolean;
-    private configLoaded = false
+    private configLoaded = false;
+    private settings: DrawioSettings;
 
     async onload() {
-        window.drawioPlugin = this
+        window.drawioPlugin = this;
+        this.settings = new DrawioSettings(this);
         
         this.eventBus.on("open-siyuan-url-plugin", this.onOpenTab.bind(this));
         this.eventBus.on("loaded-protyle-static", this.bindStaticEvent.bind(this))
@@ -351,7 +354,7 @@ export default class DrawioPlugin extends Plugin {
         if(!value.endsWith(drawio)) {
             value += drawio
         }
-        upload(drawioPath, [saveContentAsFile(value, blankDrawio)]).then((data) => {
+        upload(this.settings.getSavePath(), [saveContentAsFile(value, blankDrawio)]).then((data) => {
             dialog.destroy()
             // const textNode = document.createTextNode(createLink(data["succMap"][value]));
             // range.insertNode(textNode);
