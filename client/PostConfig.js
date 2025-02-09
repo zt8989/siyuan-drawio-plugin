@@ -10,7 +10,7 @@ import { setup as MenuSetup } from "./components/Menus"
     window.VSD_CONVERT_URL = null;
     window.EMF_CONVERT_URL = null;
     window.ICONSEARCH_PATH = null;
-    const assetsDirPath = "assets/drawio/";
+    const ASSETS_DIR_PATH = "assets/drawio/";
 
     if(window.parent.siyuan) {
         const electron = window.electron
@@ -45,12 +45,26 @@ import { setup as MenuSetup } from "./components/Menus"
                 throw new Error(json.msg)
             }
         }
+
+        function getFullPathName() {
+            return decodeURIComponent(location.hash.substring(2))
+        }
+
+        function getFullPath() {
+            const fullPathName = getFullPathName()
+            const lastSlashIndex = fullPathName.lastIndexOf('/');
+            if(fullPathName) {
+                return lastSlashIndex !== -1 ? fullPathName.substring(0, lastSlashIndex + 1) : '';
+            } else {
+                return ASSETS_DIR_PATH
+            }
+        }
     
         async function saveFileToSiyuan(content, title, fileType) {
             const blob = new Blob([content], { type: fileType.mimeType });
             const file = new File([blob], title, { type: fileType.mimeType });
 
-            const data = await uploadFileToSiyuan(file, assetsDirPath);
+            const data = await uploadFileToSiyuan(file, getFullPath());
             if (data.code === 0 && data.data && data.data.succMap) {
                 const newFilePath = data.data.succMap[title];
                 const newTitle = newFilePath.split('/').pop();
@@ -186,7 +200,7 @@ import { setup as MenuSetup } from "./components/Menus"
 
         LocalFile.prototype.getPublicUrl = function(fn)
         {
-            fn(assetsDirPath + this.title);
+            fn(getFullPathName());
         };
         //#endregion
   
