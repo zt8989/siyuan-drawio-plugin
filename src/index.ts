@@ -388,7 +388,7 @@ export default class DrawioPlugin extends Plugin {
         return openTab({   
             app: this.app,
             custom: {
-                icon:  icon || "icon-drawio",
+                icon:  icon || "icon-drawio-standard",
                 title: title || "drawio",
                 data: data,
                 id: this.name + TAB_TYPE,
