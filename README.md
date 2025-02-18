@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.22
+0.1.24
 
 ## Changelog
+- **v0.1.24 (2025-02-17)**
+  - Added drawio icon to tabs.
 - **v0.1.23 (2025-02-08)**
   - Added support for saving outside the drawio folder.
 - **v0.1.21 (2024-12-11)**
