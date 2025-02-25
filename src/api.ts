@@ -7,6 +7,10 @@
  */
 
 import { fetchPost, fetchSyncPost, IWebSocketData } from "siyuan";
+import { checkInvalidPathChar } from "./utils";
+import { blankDrawio, DRAWIO_EXTENSION, drawioPath } from "./constants";
+import { saveContentAsFile } from "./file";
+import { createUrlFromTitle } from "./link";
 
 
 export async function request(url: string, data: any) {
@@ -377,7 +381,14 @@ export async function removeFile(path: string) {
     return request(url, data);
 }
 
-
+export async function renameFile(newPath: string, path: string) {
+    let data = {
+        newPath,
+        path
+    }
+    let url = '/api/file/renameFile';
+    return fetchSyncPost(url, data);
+}
 
 export async function readDir(path: string): Promise<IResReadDir> {
     let data = {
@@ -476,3 +487,31 @@ export async function version(): Promise<string> {
 export async function currentTime(): Promise<number> {
     return request('/api/system/currentTime', {});
 }
+
+export async function saveDrawIoXml(value: string) {
+    if(!value || checkInvalidPathChar(value)) {
+        // showMessage(`Drawio: 名称 ${value} 不合法`)
+        throw new Error(`Drawio: 名称 ${value} 不合法`)
+    }
+    if(!value.endsWith(DRAWIO_EXTENSION)) {
+        value += DRAWIO_EXTENSION
+    }
+    return upload(drawioPath, [saveContentAsFile(value, blankDrawio)])
+}
+
+export async function renameDrawIo(name: string, oldPath: string) {
+    if(!name || checkInvalidPathChar(name)) {
+        // showMessage(`Drawio: 名称 ${value} 不合法`)
+        throw new Error(`Drawio: 名称 ${name} 不合法`)
+    }
+    if(!name.endsWith(DRAWIO_EXTENSION)) {
+        name += DRAWIO_EXTENSION
+    }
+    const res = await renameFile("/data/" + createUrlFromTitle(name), "/data/" + oldPath)
+    if(res.code === 0) {
+        return res.data
+    } else {
+        throw new Error(res.msg)
+    }
+}
+

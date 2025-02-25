@@ -21,5 +21,22 @@
     "linkCopiedToClipboard": "Link copied to clipboard",
     "copyAsSiYuanLink": "copy as siyuan link",
     "openDrawio": "open draw.io",
-    "title": "draw.io"
+    "title": "draw.io",
+    "min": "Minimize",
+    "create": "Create",
+    "createWhiteboard": "Create Whiteboard",
+    "renameWhiteboard": "Rename Whiteboard",
+    "refresh": "Refresh",
+    "copyLink": "Copy as link",
+    "edit": "Edit",
+    "delete": "Delete",
+    "empty": "Empty",
+    "deleteWarn": "⚠Warning:",
+    "deleteConfirm": "Are your sure to delete file: ${file}?",
+    "nameIsInvalid": "Name: ${name} is invalid",
+    "form": {
+        "name": "Name",
+        "nameDesc": "Name is the filename, must not conain special characters like /,*,$, etc.",
+        "save": "Save"
+    }
 }

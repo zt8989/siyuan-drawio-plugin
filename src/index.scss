@@ -9,3 +9,32 @@
         border: none;
     }
 }
+
+.plugin-drawio__custom-dock .b3-list-item {
+    .fileicon {
+        display: none;
+        margin-left: 4px;
+    }
+
+    &:hover .fileicon {
+        display: inline;
+    }
+
+    svg {
+        width: 14px;
+        height: 14px;
+        margin-right: 6px;
+    }
+}
+
+.mb-4 {
+    margin-bottom: 4px;
+}
+
+.mb-8 {
+    margin-bottom: 8px;
+}
+
+.mb-16 {
+    margin-bottom: 16px;
+}

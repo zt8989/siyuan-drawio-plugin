@@ -34,5 +34,6 @@ export const COPY_LINK = PREFIX + "copyLink"
 export const OPEN_TAB_BY_PATH = PREFIX + "openTabByPath"
 export const SET_ITEM = PREFIX + "setItem"
 export const DRAWIO_CONFIG = '.drawio-config'
+export const DRAWIO_EXTENSION = '.drawio'
 export const ICON_STANDARD = "icon-drawio-standard"
 export const DOCK_TYPE = PREFIX + "dock"

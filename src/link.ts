@@ -1,7 +1,17 @@
-export function getTitleFromPath(path: string) {
+export function getTitleFromPath(path: string, withExtension: boolean = true) {
     const items = path.split("/")
     const title = items[items.length - 1]
-    return title
+    if (withExtension) {
+        return title
+    } else {
+        const items = title.split(".")
+        return items[0]
+    }
+}
+
+export function getFileName(fileName: string) {
+    const items = fileName.split(".")
+    return items[0]
 }
 
 export function createLink(title: string, path: string){

@@ -9,7 +9,6 @@ import {
     IProtyle,
     IWebSocketData,
     getFrontend,
-    adaptHotkey,
 } from "siyuan";
 import { logger } from "./logger";
 import {
@@ -20,14 +19,14 @@ import {upDownHint} from "@/util/upDownHint";
 import "@/index.scss";
 
 
-import { checkInvalidPathChar, getIframeFromEventSource } from "./utils";
-import { upload } from "./api";
-import { blankDrawio, CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, drawioPath, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, SET_ITEM, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD } from "./constants";
-import { saveContentAsFile } from "./file";
+import { getIframeFromEventSource } from "./utils";
+import { saveDrawIoXml } from "./api";
+import { CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD, DRAWIO_EXTENSION } from "./constants";
 import { createLinkFromTitle, createUrlFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback } from "./types";
 import { genDrawioHTMLByUrl } from "./asset/renderAssets";
-import qs from "query-string"
+import qs from "query-string";
+import Dock from "./components/dock.svelte";
 
 const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
     const frontEnd = getFrontend();
@@ -128,45 +127,19 @@ export default class DrawioPlugin extends Plugin {
                 position: "LeftBottom",
                 size: { width: 200, height: 0 },
                 icon: ICON_STANDARD,
-                title: "Custom Dock",
+                title: that.i18n.title,
                 hotkey: "⌥⌘W",
             },
             data: {
-                text: "This is my custom dock"
             },
             type: DOCK_TYPE,
-            resize() {
-                console.log(DOCK_TYPE + " resize");
-            },
-            update() {
-                console.log(DOCK_TYPE + " update");
-            },
             init: (dock) => {
-                console.log(dock)
-                if (this.isMobile) {
-                    dock.element.innerHTML = `<div class="toolbar toolbar--border toolbar--dark">
-                    <svg class="toolbar__icon"><use xlink:href="#${ICON_STANDARD}"></use></svg>
-                        <div class="toolbar__text">Custom Dock</div>
-                    </div>
-                    <div class="fn__flex-1 plugin-sample__custom-dock">
-                        ${dock.data.text}
-                    </div>
-                    </div>`;
-                } else {
-                    dock.element.innerHTML = `<div class="fn__flex-1 fn__flex-column">
-                    <div class="block__icons">
-                        <div class="block__logo">
-                            <svg class="block__logoicon"><use xlink:href="#${ICON_STANDARD}"></use></svg>
-                            Custom Dock
-                        </div>
-                        <span class="fn__flex-1 fn__space"></span>
-                        <span data-type="min" class="block__icon b3-tooltips b3-tooltips__sw" aria-label="Min ${adaptHotkey("⌘W")}"><svg class="block__logoicon"><use xlink:href="#iconMin"></use></svg></span>
-                    </div>
-                    <div class="fn__flex-1 plugin-sample__custom-dock">
-                        ${dock.data.text}
-                    </div>
-                    </div>`;
-                }
+                new Dock({
+                    target: dock.element,
+                    props: {
+                        plugin: this,
+                    }
+                });
             },
             destroy() {
                 console.log("destroy dock:", DOCK_TYPE);
@@ -284,7 +257,7 @@ export default class DrawioPlugin extends Plugin {
             x: 500,
             y: 500
         }
-        const exts = [".drawio"]
+        const exts = [DRAWIO_EXTENSION]
         const createDiv = showCreate ? `<div class="search__tip">
             <kbd>shift ↵</kbd> 创建
             <kbd>Esc</kbd> 退出搜索
@@ -394,22 +367,22 @@ export default class DrawioPlugin extends Plugin {
     }
 
     private onSave(dialog: Dialog, value: string, protyle: Protyle){
-        if(!value || checkInvalidPathChar(value)) {
-            showMessage(`Drawio: 名称 ${value} 不合法`)
-            return
-        }
-        const drawio = ".drawio";
-        if(!value.endsWith(drawio)) {
-            value += drawio
-        }
-        upload(drawioPath, [saveContentAsFile(value, blankDrawio)]).then((data) => {
+        // if(!value || checkInvalidPathChar(value)) {
+        //     showMessage(`Drawio: 名称 ${value} 不合法`)
+        //     return
+        // }
+        // const drawio = ".drawio";
+        // if(!value.endsWith(drawio)) {
+        //     value += drawio
+        // }
+        saveDrawIoXml(value).then((data) => {
             dialog.destroy()
             // const textNode = document.createTextNode(createLink(data["succMap"][value]));
             // range.insertNode(textNode);
             // range.setEnd(textNode, value.length);
             // range.collapse(false);
             // focusByRange(range);
-            const url = data["succMap"][value]
+            const url = data["succMap"][value] || data["succMap"][value + DRAWIO_EXTENSION]
             protyle.insert(genDrawioHTMLByUrl(url, protyle.protyle), true, true)
             this.openCustomTab(getTitleFromPath(url), undefined, {
                 url
@@ -464,7 +437,7 @@ export default class DrawioPlugin extends Plugin {
     bindClickEvent(element: HTMLElement) {
         const list = element.querySelectorAll('[data-type="a"]')
         list.forEach((item: HTMLElement) => {
-            if(item.dataset.href && item.dataset.href.endsWith(".drawio")) {
+            if(item.dataset.href && item.dataset.href.endsWith(DRAWIO_EXTENSION)) {
               item.addEventListener("click", this.onClickEvent)
             }
         })
