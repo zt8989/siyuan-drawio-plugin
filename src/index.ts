@@ -9,6 +9,7 @@ import {
     IProtyle,
     IWebSocketData,
     getFrontend,
+    adaptHotkey,
 } from "siyuan";
 import { logger } from "./logger";
 import {
@@ -21,7 +22,7 @@ import "@/index.scss";
 
 import { checkInvalidPathChar, getIframeFromEventSource } from "./utils";
 import { upload } from "./api";
-import { blankDrawio, CALLBAK_TYPE, COPY_LINK, DRAWIO_CONFIG, drawioPath, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, SET_ITEM, TAB_TYPE, UPDATE_TITLE } from "./constants";
+import { blankDrawio, CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, drawioPath, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, SET_ITEM, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD } from "./constants";
 import { saveContentAsFile } from "./file";
 import { createLinkFromTitle, createUrlFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback } from "./types";
@@ -74,7 +75,7 @@ export default class DrawioPlugin extends Plugin {
         this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
 
         // 图标的制作参见帮助文档
-        this.addIcons(`<symbol id="icon-drawio-standard" viewBox="0 0 32 32">
+        this.addIcons(`<symbol id="${ICON_STANDARD}" viewBox="0 0 32 32">
 <path d="M16.634 11.932l1.756-1.016 5.090 8.814-1.756 1.014-5.090-8.812zM8.526 19.714l5.072-8.784 1.76 1.018-5.070 8.784-1.762-1.018z"></path>
 <path d="M12.276 4.296h7.448c0.9 0 1.348 0.45 1.348 1.348v5.786c0 0.9-0.45 1.348-1.348 1.348h-7.448c-0.9 0-1.348-0.45-1.348-1.348v-5.786c0-0.9 0.45-1.348 1.348-1.348zM19.714 19.224h7.45c0.898 0 1.346 0.448 1.346 1.346v5.788c0 0.898-0.448 1.346-1.346 1.346h-7.45c-0.898 0-1.348-0.448-1.348-1.346v-5.788c0-0.898 0.45-1.346 1.348-1.346zM4.838 19.224h7.448c0.9 0 1.348 0.448 1.348 1.346v5.788c0 0.898-0.45 1.346-1.348 1.346h-7.446c-0.9 0-1.348-0.448-1.348-1.346v-5.788c0-0.898 0.45-1.346 1.348-1.346z"></path>
 </symbol><symbol id="icon-drawio-inverse" viewBox="0 0 32 32">
@@ -82,7 +83,7 @@ export default class DrawioPlugin extends Plugin {
 </symbol>`);
 
         this.addTopBar({
-            icon: "icon-drawio-standard",
+            icon: ICON_STANDARD,
             title: this.i18n.openDrawio,
             position: "right",
             callback: () => {
@@ -120,6 +121,56 @@ export default class DrawioPlugin extends Plugin {
             globalCallback: () => {
                 this.openNewCustomTab()
             },
+        });
+
+        this.addDock({
+            config: {
+                position: "LeftBottom",
+                size: { width: 200, height: 0 },
+                icon: ICON_STANDARD,
+                title: "Custom Dock",
+                hotkey: "⌥⌘W",
+            },
+            data: {
+                text: "This is my custom dock"
+            },
+            type: DOCK_TYPE,
+            resize() {
+                console.log(DOCK_TYPE + " resize");
+            },
+            update() {
+                console.log(DOCK_TYPE + " update");
+            },
+            init: (dock) => {
+                console.log(dock)
+                if (this.isMobile) {
+                    dock.element.innerHTML = `<div class="toolbar toolbar--border toolbar--dark">
+                    <svg class="toolbar__icon"><use xlink:href="#${ICON_STANDARD}"></use></svg>
+                        <div class="toolbar__text">Custom Dock</div>
+                    </div>
+                    <div class="fn__flex-1 plugin-sample__custom-dock">
+                        ${dock.data.text}
+                    </div>
+                    </div>`;
+                } else {
+                    dock.element.innerHTML = `<div class="fn__flex-1 fn__flex-column">
+                    <div class="block__icons">
+                        <div class="block__logo">
+                            <svg class="block__logoicon"><use xlink:href="#${ICON_STANDARD}"></use></svg>
+                            Custom Dock
+                        </div>
+                        <span class="fn__flex-1 fn__space"></span>
+                        <span data-type="min" class="block__icon b3-tooltips b3-tooltips__sw" aria-label="Min ${adaptHotkey("⌘W")}"><svg class="block__logoicon"><use xlink:href="#iconMin"></use></svg></span>
+                    </div>
+                    <div class="fn__flex-1 plugin-sample__custom-dock">
+                        ${dock.data.text}
+                    </div>
+                    </div>`;
+                }
+            },
+            destroy() {
+                console.log("destroy dock:", DOCK_TYPE);
+            }
         });
 
         this.restoreData()
@@ -388,7 +439,7 @@ export default class DrawioPlugin extends Plugin {
         return openTab({   
             app: this.app,
             custom: {
-                icon:  icon || "icon-drawio-standard",
+                icon:  icon || ICON_STANDARD,
                 title: title || "drawio",
                 data: data,
                 id: this.name + TAB_TYPE,

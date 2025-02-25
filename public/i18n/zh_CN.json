@@ -20,5 +20,6 @@
     "insertDrawio": "插入/选择drawio",
     "linkCopiedToClipboard": "链接已复制到剪贴板",
     "copyAsSiYuanLink": "复制为思源链接",
-    "openDrawio": "打开draw.io"
+    "openDrawio": "打开draw.io",
+    "title": "draw.io"
 }

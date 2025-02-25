@@ -20,5 +20,6 @@
     "insertDrawio": "insert/select drawio",
     "linkCopiedToClipboard": "Link copied to clipboard",
     "copyAsSiYuanLink": "copy as siyuan link",
-    "openDrawio": "open draw.io"
+    "openDrawio": "open draw.io",
+    "title": "draw.io"
 }

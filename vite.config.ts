@@ -3,6 +3,7 @@ import { defineConfig, loadEnv } from "vite"
 import { viteStaticCopy } from "vite-plugin-static-copy"
 import livereload from "rollup-plugin-livereload"
 import fg from 'fast-glob';
+import { svelte } from '@sveltejs/vite-plugin-svelte'
 import packageJson from './package.json'
 export const version = packageJson.version
 
@@ -27,6 +28,7 @@ export default defineConfig({
     },
 
     plugins: [
+        svelte(),
 
         vitePluginYamlI18n({
             inDir: 'public/i18n',
@@ -60,7 +62,6 @@ export default defineConfig({
                 index: resolve(__dirname, "src/index.ts"),
                 PostConfig: resolve(__dirname, "client/PostConfig.js"),
                 PreConfig: resolve(__dirname, "client/PreConfig.js"),
-                'service-worker': resolve(__dirname, "client/service-worker.js"),
             },
             fileName: (fromat, entryName) => `${entryName}.js`,
             formats: ["cjs"],
