@@ -11,6 +11,7 @@ import { checkInvalidPathChar } from "./utils";
 import { blankDrawio, DRAWIO_EXTENSION, drawioPath, DATA_PATH } from "./constants";
 import { saveContentAsFile } from "./file";
 import { createUrlFromTitle } from "./link";
+import { Asset } from "./types";
 
 
 export async function request(url: string, data: any) {
@@ -486,6 +487,10 @@ export async function version(): Promise<string> {
 
 export async function currentTime(): Promise<number> {
     return request('/api/system/currentTime', {});
+}
+
+export async function searchAsset(k: string, exts: string[]): Promise<Asset[]> {
+    return request('/api/search/searchAsset', { k, exts });
 }
 
 export async function saveDrawIoXml(value: string) {

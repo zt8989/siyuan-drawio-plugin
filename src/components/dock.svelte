@@ -1,9 +1,9 @@
 <script lang="ts">
     import type DrawioPlugin from '@/index'
-    import { fetchPost, confirm } from "siyuan";
+    import { confirm } from "siyuan";
     import { getTitleFromPath } from "../link";
     import { onMount } from 'svelte';
-    import { removeFile } from '@/api';
+    import { removeFile, searchAsset } from '@/api';
     import {DRAWIO_EXTENSION, ICON_STANDARD, DATA_PATH} from "@/constants"
     import { addWhiteboard, renameWhiteboard } from '@/dialog';
     import type { Asset } from '@/types';
@@ -47,11 +47,12 @@
     const searchAssets = () => {
         isLoading = true;
         error = '';
-        fetchPost('/api/search/searchAsset', {
-            k: '',
-            exts: [DRAWIO_EXTENSION]
-        }, (response) => {
-            assets = response.data;
+        searchAsset('', [DRAWIO_EXTENSION]).then(data => {
+            // 按更新时间降序排序
+            assets = data.sort((a, b) => b.updated - a.updated);
+            isLoading = false;
+        }).catch(err => {
+            error = err.message;
             isLoading = false;
         });
     };
@@ -108,7 +109,7 @@
         {:else}
             <div class="b3-list">
                 {#each assets as asset}
-                    <div class="b3-list-item b3-tooltips b3-tooltips__s" aria-label={asset.path} data-name={asset.path}>
+                    <div class="b3-list-item" data-name={asset.path}>
                         <span on:click={() => handleOpen(asset.path)}>{asset.hName}</span>
                         <span
                             class="fileicon editfile b3-tooltips b3-tooltips__s"

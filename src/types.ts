@@ -7,4 +7,5 @@ export interface ShowDialogCallback {
 export type Asset = {
     path: string;
     hName: string;
+    updated: number;
 };
