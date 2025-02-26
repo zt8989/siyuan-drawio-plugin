@@ -1,12 +1,12 @@
 <script lang="ts">
     import type DrawioPlugin from '@/index'
     import { confirm } from "siyuan";
-    import { getTitleFromPath } from "../link";
     import { onMount } from 'svelte';
     import { removeFile, listDrawioFiles } from '@/api';
     import {ICON_STANDARD, DATA_PATH} from "@/constants"
     import { addWhiteboard, renameWhiteboard } from '@/dialog';
     import type { Asset } from '@/types';
+    import { genDrawioHTMLByUrl } from '@/asset/renderAssets';
     
     export let plugin: DrawioPlugin;
 
@@ -25,7 +25,7 @@
 
     const handleCopy = (path: string, e: MouseEvent) => {
         e.stopPropagation();
-        plugin.copyLink(getTitleFromPath(path));
+        plugin.copyRawLink(genDrawioHTMLByUrl(path));
     };
 
     const handleEdit = (file: Asset, e: MouseEvent) => {

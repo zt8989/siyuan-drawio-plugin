@@ -238,6 +238,15 @@ export default class DrawioPlugin extends Plugin {
         });
     }
 
+    public copyRawLink(link: string){
+        navigator.clipboard.writeText(link).then(() => {
+            showMessage(this.i18n.linkCopiedToClipboard)
+        }).catch(err => {
+            logger.debug('Failed to copy link: ', err);
+            showMessage(err, 6000, "error")
+        });
+    }
+
     public updateTabTitle(frameElement: HTMLIFrameElement, title: string) {
         const dataId = frameElement?.parentElement?.getAttribute('data-id');
         if (dataId) {
@@ -360,7 +369,7 @@ export default class DrawioPlugin extends Plugin {
                 this.onSave(dialog, value, protyle)
             } else {
                 dialog.destroy()
-                protyle.insert(genDrawioHTMLByUrl(url, protyle.protyle), true, true)
+                protyle.insert(genDrawioHTMLByUrl(url), true, true)
             }
             
         })

@@ -539,10 +539,15 @@ export async function renameDrawIo(name: string, oldPath: string) {
     if(!name || checkInvalidPathChar(name)) {
         throw new Error(`Drawio: 名称 ${name} 不合法`)
     }
-    if(!name.endsWith(DRAWIO_EXTENSION)) {
-        name += DRAWIO_EXTENSION
-    }
-    const res = await renameFile(DATA_PATH + createUrlFromTitle(name), DATA_PATH + oldPath)
+    // 从旧路径提取时间戳和ID部分
+    const oldName = oldPath.split('/').pop() || '';
+    const oldPathWithoutFileName = oldPath.slice(0, -oldName.length);
+    const parts = oldName.split('-');
+    const suffix = parts.length >= 3 ? `-${parts.slice(-2).join('-')}` : '';
+    
+    const newName = name.endsWith(DRAWIO_EXTENSION) ? name : name + suffix;
+    const newPath = DATA_PATH + oldPathWithoutFileName + newName;
+    const res = await renameFile(newPath, DATA_PATH + oldPath)
     if(res.code === 0) {
         return res.data
     } else {
