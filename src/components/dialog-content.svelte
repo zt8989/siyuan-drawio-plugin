@@ -2,12 +2,12 @@
   import type DrawioPlugin from '@/index'
   import { showMessage } from 'siyuan';
   import { saveDrawIoXml, renameDrawIo } from '@/api';
-    import { createUrlFromTitle, getFileName } from '@/link';
-    import type { Asset } from '@/types';
-    import { DRAWIO_EXTENSION } from '@/constants';
+  import { createUrlFromTitle, getFileName } from '@/link';
+  import type { Asset } from '@/types';
+  import { DRAWIO_EXTENSION } from '@/constants';
 
   export let type;
-  export let oldName = '';
+  export const oldName = '';
   export let asset: Asset = undefined;
   export let onSave;
   export let plugin: DrawioPlugin;

@@ -4,7 +4,7 @@
     import { getTitleFromPath } from "../link";
     import { onMount } from 'svelte';
     import { removeFile } from '@/api';
-    import {DRAWIO_EXTENSION, ICON_STANDARD} from "@/constants"
+    import {DRAWIO_EXTENSION, ICON_STANDARD, DATA_PATH} from "@/constants"
     import { addWhiteboard, renameWhiteboard } from '@/dialog';
     import type { Asset } from '@/types';
     
@@ -38,7 +38,7 @@
     const handleDelete = (file: Asset, event) => {
         event.stopPropagation();
         confirm(plugin.i18n.deleteWarn + ":" + plugin.i18n.title, plugin.i18n.deleteConfirm.replace("${file}", file.hName), () => {
-            removeFile(file.path).then(() => {
+            removeFile(DATA_PATH + file.path).then(() => {
                 searchAssets();
             });
         })

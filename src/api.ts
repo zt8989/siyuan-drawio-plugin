@@ -8,7 +8,7 @@
 
 import { fetchPost, fetchSyncPost, IWebSocketData } from "siyuan";
 import { checkInvalidPathChar } from "./utils";
-import { blankDrawio, DRAWIO_EXTENSION, drawioPath } from "./constants";
+import { blankDrawio, DRAWIO_EXTENSION, drawioPath, DATA_PATH } from "./constants";
 import { saveContentAsFile } from "./file";
 import { createUrlFromTitle } from "./link";
 
@@ -501,13 +501,12 @@ export async function saveDrawIoXml(value: string) {
 
 export async function renameDrawIo(name: string, oldPath: string) {
     if(!name || checkInvalidPathChar(name)) {
-        // showMessage(`Drawio: 名称 ${value} 不合法`)
         throw new Error(`Drawio: 名称 ${name} 不合法`)
     }
     if(!name.endsWith(DRAWIO_EXTENSION)) {
         name += DRAWIO_EXTENSION
     }
-    const res = await renameFile("/data/" + createUrlFromTitle(name), "/data/" + oldPath)
+    const res = await renameFile(DATA_PATH + createUrlFromTitle(name), DATA_PATH + oldPath)
     if(res.code === 0) {
         return res.data
     } else {

@@ -37,3 +37,4 @@ export const DRAWIO_CONFIG = '.drawio-config'
 export const DRAWIO_EXTENSION = '.drawio'
 export const ICON_STANDARD = "icon-drawio-standard"
 export const DOCK_TYPE = PREFIX + "dock"
+export const DATA_PATH = "/data/"
