@@ -3,8 +3,8 @@
     import { confirm } from "siyuan";
     import { getTitleFromPath } from "../link";
     import { onMount } from 'svelte';
-    import { removeFile, searchAsset } from '@/api';
-    import {DRAWIO_EXTENSION, ICON_STANDARD, DATA_PATH} from "@/constants"
+    import { removeFile, listDrawioFiles } from '@/api';
+    import {ICON_STANDARD, DATA_PATH} from "@/constants"
     import { addWhiteboard, renameWhiteboard } from '@/dialog';
     import type { Asset } from '@/types';
     
@@ -47,9 +47,8 @@
     const searchAssets = () => {
         isLoading = true;
         error = '';
-        searchAsset('', [DRAWIO_EXTENSION]).then(data => {
-            // 按更新时间降序排序
-            assets = data.sort((a, b) => b.updated - a.updated);
+        listDrawioFiles().then(data => {
+            assets = data;
             isLoading = false;
         }).catch(err => {
             error = err.message;

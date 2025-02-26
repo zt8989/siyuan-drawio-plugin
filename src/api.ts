@@ -391,7 +391,7 @@ export async function renameFile(newPath: string, path: string) {
     return fetchSyncPost(url, data);
 }
 
-export async function readDir(path: string): Promise<IResReadDir> {
+export async function readDir(path: string): Promise<IResReadDir[]> {
     let data = {
         path: path
     }
@@ -399,6 +399,37 @@ export async function readDir(path: string): Promise<IResReadDir> {
     return request(url, data);
 }
 
+export async function listDrawioFiles(): Promise<Asset[]> {
+    const assets: Asset[] = [];
+    
+    async function scanDirectory(path: string) {
+        try {
+            const files = await readDir(path);
+            for (const file of files) {
+                const fullPath = path + '/' + file.name;
+                if (file.isDir) {
+                    await scanDirectory(fullPath);
+                } else if (file.name.endsWith(DRAWIO_EXTENSION)) {
+                    const nameWithoutExt = file.name.slice(0, -DRAWIO_EXTENSION.length);
+                    const parts = nameWithoutExt.split('-');
+                    const baseName = parts.length >= 3 ? 
+                        nameWithoutExt.slice(0, -(parts.slice(-2).join('-').length + 1)) : 
+                        nameWithoutExt;
+                    assets.push({
+                        path: fullPath.substring(6),  // 移除 '/data/' 前缀
+                        hName: baseName,
+                        updated: file.updated
+                    });
+                }
+            }
+        } catch (err) {
+            console.warn(`Failed to read directory ${path}:`, err);
+        }
+    }
+    
+    await scanDirectory(DATA_PATH + 'assets');
+    return assets.sort((a, b) => b.updated - a.updated);
+}
 
 // **************************************** Export ****************************************
 
