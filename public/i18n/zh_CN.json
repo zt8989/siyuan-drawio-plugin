@@ -20,5 +20,23 @@
     "insertDrawio": "插入/选择drawio",
     "linkCopiedToClipboard": "链接已复制到剪贴板",
     "copyAsSiYuanLink": "复制为思源链接",
-    "openDrawio": "打开draw.io"
+    "openDrawio": "打开draw.io",
+    "title": "draw.io",
+    "min": "最小化",
+    "create": "新建",
+    "createWhiteboard": "创建白板",
+    "renameWhiteboard": "重命名白板",
+    "refresh": "刷新",
+    "copyLink": "复制链接",
+    "edit": "修改",
+    "delete": "删除",
+    "empty": "无数据",
+    "deleteWarn": "⚠警告:",
+    "deleteConfirm": "确认删除《${file}》吗?",
+    "nameIsInvalid": "名称: ${name} 无效",
+    "form": {
+        "name": "名称",
+        "nameDesc": "名称为实际文件名，不可包含特殊字符例如: /,*,$, etc.",
+        "save": "保存"
+    }
 }

@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.24
+0.1.25
 
 ## Changelog
+- **v0.1.25 (2025-02-27)**
+  - Added dock bar on the left side with features like rename, delete, and copy.
 - **v0.1.24 (2025-02-17)**
   - Added drawio icon to tabs.
 - **v0.1.23 (2025-02-08)**

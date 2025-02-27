@@ -19,7 +19,6 @@ const zipFilePath = 'package.zip';
 const filesToCopy = [
     { src: path.join(outputDir, 'PostConfig.js'), dest: webappJsDir, type: "moveAndiife" },
     { src: path.join(outputDir, 'PreConfig.js'), dest: webappJsDir, type: "moveAndiife" },
-    { src: path.join(outputDir, 'service-worker.js'), dest: webappDir, type: "move" },
     { src: path.join("client", 'embed.html'), dest: webappDir, type: "copy" },
     { src: path.join("client", 'embed2.js'), dest: webappDir, type: "copy" },
 ];

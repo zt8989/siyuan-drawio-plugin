@@ -19,14 +19,14 @@ import {upDownHint} from "@/util/upDownHint";
 import "@/index.scss";
 
 
-import { checkInvalidPathChar, getIframeFromEventSource } from "./utils";
-import { upload } from "./api";
-import { blankDrawio, CALLBAK_TYPE, COPY_LINK, DRAWIO_CONFIG, drawioPath, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, SET_ITEM, TAB_TYPE, UPDATE_TITLE } from "./constants";
-import { saveContentAsFile } from "./file";
+import { getIframeFromEventSource } from "./utils";
+import { saveDrawIoXml } from "./api";
+import { CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD, DRAWIO_EXTENSION } from "./constants";
 import { createLinkFromTitle, createUrlFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback } from "./types";
 import { genDrawioHTMLByUrl } from "./asset/renderAssets";
-import qs from "query-string"
+import qs from "query-string";
+import Dock from "./components/dock.svelte";
 
 const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
     const frontEnd = getFrontend();
@@ -74,7 +74,7 @@ export default class DrawioPlugin extends Plugin {
         this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
 
         // 图标的制作参见帮助文档
-        this.addIcons(`<symbol id="icon-drawio-standard" viewBox="0 0 32 32">
+        this.addIcons(`<symbol id="${ICON_STANDARD}" viewBox="0 0 32 32">
 <path d="M16.634 11.932l1.756-1.016 5.090 8.814-1.756 1.014-5.090-8.812zM8.526 19.714l5.072-8.784 1.76 1.018-5.070 8.784-1.762-1.018z"></path>
 <path d="M12.276 4.296h7.448c0.9 0 1.348 0.45 1.348 1.348v5.786c0 0.9-0.45 1.348-1.348 1.348h-7.448c-0.9 0-1.348-0.45-1.348-1.348v-5.786c0-0.9 0.45-1.348 1.348-1.348zM19.714 19.224h7.45c0.898 0 1.346 0.448 1.346 1.346v5.788c0 0.898-0.448 1.346-1.346 1.346h-7.45c-0.898 0-1.348-0.448-1.348-1.346v-5.788c0-0.898 0.45-1.346 1.348-1.346zM4.838 19.224h7.448c0.9 0 1.348 0.448 1.348 1.346v5.788c0 0.898-0.45 1.346-1.348 1.346h-7.446c-0.9 0-1.348-0.448-1.348-1.346v-5.788c0-0.898 0.45-1.346 1.348-1.346z"></path>
 </symbol><symbol id="icon-drawio-inverse" viewBox="0 0 32 32">
@@ -82,7 +82,7 @@ export default class DrawioPlugin extends Plugin {
 </symbol>`);
 
         this.addTopBar({
-            icon: "icon-drawio-standard",
+            icon: ICON_STANDARD,
             title: this.i18n.openDrawio,
             position: "right",
             callback: () => {
@@ -120,6 +120,30 @@ export default class DrawioPlugin extends Plugin {
             globalCallback: () => {
                 this.openNewCustomTab()
             },
+        });
+
+        this.addDock({
+            config: {
+                position: "LeftBottom",
+                size: { width: 200, height: 0 },
+                icon: ICON_STANDARD,
+                title: that.i18n.title,
+                hotkey: "⌥⌘W",
+            },
+            data: {
+            },
+            type: DOCK_TYPE,
+            init: (dock) => {
+                new Dock({
+                    target: dock.element,
+                    props: {
+                        plugin: this,
+                    }
+                });
+            },
+            destroy() {
+                console.log("destroy dock:", DOCK_TYPE);
+            }
         });
 
         this.restoreData()
@@ -214,6 +238,15 @@ export default class DrawioPlugin extends Plugin {
         });
     }
 
+    public copyRawLink(link: string){
+        navigator.clipboard.writeText(link).then(() => {
+            showMessage(this.i18n.linkCopiedToClipboard)
+        }).catch(err => {
+            logger.debug('Failed to copy link: ', err);
+            showMessage(err, 6000, "error")
+        });
+    }
+
     public updateTabTitle(frameElement: HTMLIFrameElement, title: string) {
         const dataId = frameElement?.parentElement?.getAttribute('data-id');
         if (dataId) {
@@ -233,7 +266,7 @@ export default class DrawioPlugin extends Plugin {
             x: 500,
             y: 500
         }
-        const exts = [".drawio"]
+        const exts = [DRAWIO_EXTENSION]
         const createDiv = showCreate ? `<div class="search__tip">
             <kbd>shift ↵</kbd> 创建
             <kbd>Esc</kbd> 退出搜索
@@ -336,29 +369,29 @@ export default class DrawioPlugin extends Plugin {
                 this.onSave(dialog, value, protyle)
             } else {
                 dialog.destroy()
-                protyle.insert(genDrawioHTMLByUrl(url, protyle.protyle), true, true)
+                protyle.insert(genDrawioHTMLByUrl(url), true, true)
             }
             
         })
     }
 
     private onSave(dialog: Dialog, value: string, protyle: Protyle){
-        if(!value || checkInvalidPathChar(value)) {
-            showMessage(`Drawio: 名称 ${value} 不合法`)
-            return
-        }
-        const drawio = ".drawio";
-        if(!value.endsWith(drawio)) {
-            value += drawio
-        }
-        upload(drawioPath, [saveContentAsFile(value, blankDrawio)]).then((data) => {
+        // if(!value || checkInvalidPathChar(value)) {
+        //     showMessage(`Drawio: 名称 ${value} 不合法`)
+        //     return
+        // }
+        // const drawio = ".drawio";
+        // if(!value.endsWith(drawio)) {
+        //     value += drawio
+        // }
+        saveDrawIoXml(value).then((data) => {
             dialog.destroy()
             // const textNode = document.createTextNode(createLink(data["succMap"][value]));
             // range.insertNode(textNode);
             // range.setEnd(textNode, value.length);
             // range.collapse(false);
             // focusByRange(range);
-            const url = data["succMap"][value]
+            const url = data["succMap"][value] || data["succMap"][value + DRAWIO_EXTENSION]
             protyle.insert(genDrawioHTMLByUrl(url, protyle.protyle), true, true)
             this.openCustomTab(getTitleFromPath(url), undefined, {
                 url
@@ -388,7 +421,7 @@ export default class DrawioPlugin extends Plugin {
         return openTab({   
             app: this.app,
             custom: {
-                icon:  icon || "icon-drawio-standard",
+                icon:  icon || ICON_STANDARD,
                 title: title || "drawio",
                 data: data,
                 id: this.name + TAB_TYPE,
@@ -413,7 +446,7 @@ export default class DrawioPlugin extends Plugin {
     bindClickEvent(element: HTMLElement) {
         const list = element.querySelectorAll('[data-type="a"]')
         list.forEach((item: HTMLElement) => {
-            if(item.dataset.href && item.dataset.href.endsWith(".drawio")) {
+            if(item.dataset.href && item.dataset.href.endsWith(DRAWIO_EXTENSION)) {
               item.addEventListener("click", this.onClickEvent)
             }
         })

@@ -7,6 +7,11 @@
  */
 
 import { fetchPost, fetchSyncPost, IWebSocketData } from "siyuan";
+import { checkInvalidPathChar } from "./utils";
+import { blankDrawio, DRAWIO_EXTENSION, drawioPath, DATA_PATH } from "./constants";
+import { saveContentAsFile } from "./file";
+import { createUrlFromTitle } from "./link";
+import { Asset } from "./types";
 
 
 export async function request(url: string, data: any) {
@@ -377,9 +382,16 @@ export async function removeFile(path: string) {
     return request(url, data);
 }
 
+export async function renameFile(newPath: string, path: string) {
+    let data = {
+        newPath,
+        path
+    }
+    let url = '/api/file/renameFile';
+    return fetchSyncPost(url, data);
+}
 
-
-export async function readDir(path: string): Promise<IResReadDir> {
+export async function readDir(path: string): Promise<IResReadDir[]> {
     let data = {
         path: path
     }
@@ -387,6 +399,37 @@ export async function readDir(path: string): Promise<IResReadDir> {
     return request(url, data);
 }
 
+export async function listDrawioFiles(): Promise<Asset[]> {
+    const assets: Asset[] = [];
+    
+    async function scanDirectory(path: string) {
+        try {
+            const files = await readDir(path);
+            for (const file of files) {
+                const fullPath = path + '/' + file.name;
+                if (file.isDir) {
+                    await scanDirectory(fullPath);
+                } else if (file.name.endsWith(DRAWIO_EXTENSION)) {
+                    const nameWithoutExt = file.name.slice(0, -DRAWIO_EXTENSION.length);
+                    const parts = nameWithoutExt.split('-');
+                    const baseName = parts.length >= 3 ? 
+                        nameWithoutExt.slice(0, -(parts.slice(-2).join('-').length + 1)) : 
+                        nameWithoutExt;
+                    assets.push({
+                        path: fullPath.substring(6),  // 移除 '/data/' 前缀
+                        hName: baseName,
+                        updated: file.updated
+                    });
+                }
+            }
+        } catch (err) {
+            console.warn(`Failed to read directory ${path}:`, err);
+        }
+    }
+    
+    await scanDirectory(DATA_PATH + 'assets');
+    return assets.sort((a, b) => b.updated - a.updated);
+}
 
 // **************************************** Export ****************************************
 
@@ -476,3 +519,39 @@ export async function version(): Promise<string> {
 export async function currentTime(): Promise<number> {
     return request('/api/system/currentTime', {});
 }
+
+export async function searchAsset(k: string, exts: string[]): Promise<Asset[]> {
+    return request('/api/search/searchAsset', { k, exts });
+}
+
+export async function saveDrawIoXml(value: string) {
+    if(!value || checkInvalidPathChar(value)) {
+        // showMessage(`Drawio: 名称 ${value} 不合法`)
+        throw new Error(`Drawio: 名称 ${value} 不合法`)
+    }
+    if(!value.endsWith(DRAWIO_EXTENSION)) {
+        value += DRAWIO_EXTENSION
+    }
+    return upload(drawioPath, [saveContentAsFile(value, blankDrawio)])
+}
+
+export async function renameDrawIo(name: string, oldPath: string) {
+    if(!name || checkInvalidPathChar(name)) {
+        throw new Error(`Drawio: 名称 ${name} 不合法`)
+    }
+    // 从旧路径提取时间戳和ID部分
+    const oldName = oldPath.split('/').pop() || '';
+    const oldPathWithoutFileName = oldPath.slice(0, -oldName.length);
+    const parts = oldName.split('-');
+    const suffix = parts.length >= 3 ? `-${parts.slice(-2).join('-')}` : '';
+    
+    const newName = name.endsWith(DRAWIO_EXTENSION) ? name : name + suffix;
+    const newPath = DATA_PATH + oldPathWithoutFileName + newName;
+    const res = await renameFile(newPath, DATA_PATH + oldPath)
+    if(res.code === 0) {
+        return res.data
+    } else {
+        throw new Error(res.msg)
+    }
+}
+

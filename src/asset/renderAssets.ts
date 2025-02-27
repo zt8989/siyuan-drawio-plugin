@@ -19,9 +19,9 @@ export const renderAssetsPreview = (pathString: string) => {
     }
 };
 
-export const genDrawioHTMLByUrl = (assetUrl: string, protyle: IProtyle)  => {
+export const genDrawioHTMLByUrl = (assetUrl: string)  => {
     const title = getTitleFromPath(assetUrl)
-    return genDrawioIFrameHTML(assetUrl, getDrawioIframe(title, assetUrl), protyle)
+    return genDrawioIFrameHTML(assetUrl, getDrawioIframe(title, assetUrl), getIdFromTitle(title))
 }
 
 export const getDrawioIframe = (title: string, assetUrl: string) => {
@@ -48,13 +48,14 @@ function formatDate(date) {
     return `${year}${month}${day}${hours}${minutes}${seconds}`;
 }
 
-export const genDrawioIFrameHTML = (assetUrl: string, iframeSrc: string, protyle: IProtyle, width = "100%", height = "200px") => {
-    const tempElement = document.createElement("template");
+export const genDrawioIFrameHTML = (assetUrl: string, iframeSrc: string, id: string, width = "100%", height = "200px") => {
+    // const tempElement = document.createElement("template");
     const html = `<iframe frameborder="0" style="width:${width};height:${height};" src="${iframeSrc}"></iframe>`
-    tempElement.innerHTML = protyle.lute.SpinBlockDOM(html)
-    const nodeIFrame = tempElement.content.querySelector(`div[data-type="NodeIFrame"]`)
-    nodeIFrame?.setAttribute('custom-data-assets', assetUrl);
-    return protyle.lute.SpinBlockDOM(tempElement.innerHTML)
+    // tempElement.innerHTML = protyle.lute.SpinBlockDOM(html)
+    // const nodeIFrame = tempElement.content.querySelector(`div[data-type="NodeIFrame"]`)
+    // nodeIFrame?.setAttribute('custom-data-assets', assetUrl);
+    const meta = `{: id="${id}" custom-data-assets="${assetUrl}" }`
+    return html + "\n" + meta
 };
 
 export const genDrawioEmbedHTML = (assetUrl: string, iframeSrc: string, protyle: IProtyle, width = "100%", height = "200px") => {
@@ -65,3 +66,8 @@ export const genDrawioEmbedHTML = (assetUrl: string, iframeSrc: string, protyle:
     nodeIFrame?.setAttribute('custom-data-assets', assetUrl);
     return protyle.lute.SpinBlockDOM(tempElement.innerHTML)
 };
+
+function getIdFromTitle(title: string): string {
+    return title.split(".")[0]
+}
+
