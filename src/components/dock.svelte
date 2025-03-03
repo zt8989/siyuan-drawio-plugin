@@ -108,38 +108,45 @@
         {:else}
             <div class="b3-list">
                 {#each assets as asset}
-                    <div class="b3-list-item" data-name={asset.path}>
-                        <span on:click={() => handleOpen(asset.path)}>{asset.hName}</span>
-                        <span
-                            class="fileicon editfile b3-tooltips b3-tooltips__s"
-                            aria-label={plugin.i18n.edit}
-                            data-name={asset.path}
-                            on:click={(e) => handleEdit(asset, e)}
-                        >
-                            <svg>
-                                <use xlink:href="#iconEdit"></use>
-                            </svg>
-                        </span>
-                        <span
-                            class="fileicon copyfile b3-tooltips b3-tooltips__s"
-                            aria-label={plugin.i18n.copyLink}
-                            data-name={asset.path}
-                            on:click={(e) => handleCopy(asset.path, e)}
-                        >
-                            <svg>
-                                <use xlink:href="#iconCopy"></use>
-                            </svg>
-                        </span>
-                        <span
-                            class="fileicon deletefile b3-tooltips b3-tooltips__s"
-                            aria-label={plugin.i18n.delete}
-                            data-name={asset.path}
-                            on:click={(e) => handleDelete(asset, e)}
-                        >
-                            <svg>
-                                <use xlink:href="#iconTrashcan"></use>
-                            </svg>
-                        </span>
+                    <div class="b3-list-item align-between" data-name={asset.path}>
+                        <div class="b3-list-item__content">
+                            <span>
+                                <svg><use xlink:href="#{ICON_STANDARD}"></use></svg>
+                            </span>
+                            <span on:click={() => handleOpen(asset.path)}>{asset.hName}</span>
+                        </div>
+                        <div class="b3-list-item__operate">
+                            <span
+                                class="fileicon editfile b3-tooltips b3-tooltips__s"
+                                aria-label={plugin.i18n.edit}
+                                data-name={asset.path}
+                                on:click={(e) => handleEdit(asset, e)}
+                            >
+                                <svg>
+                                    <use xlink:href="#iconEdit"></use>
+                                </svg>
+                            </span>
+                            <span
+                                class="fileicon copyfile b3-tooltips b3-tooltips__s"
+                                aria-label={plugin.i18n.copyLink}
+                                data-name={asset.path}
+                                on:click={(e) => handleCopy(asset.path, e)}
+                            >
+                                <svg>
+                                    <use xlink:href="#iconCopy"></use>
+                                </svg>
+                            </span>
+                            <span
+                                class="fileicon deletefile b3-tooltips b3-tooltips__s"
+                                aria-label={plugin.i18n.delete}
+                                data-name={asset.path}
+                                on:click={(e) => handleDelete(asset, e)}
+                            >
+                                <svg>
+                                    <use xlink:href="#iconTrashcan"></use>
+                                </svg>
+                            </span>
+                        </div>
                     </div>
                 {/each}
             </div>

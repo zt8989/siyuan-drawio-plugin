@@ -42,3 +42,18 @@
 .w-full {
     width: 100%;
 }
+
+.b3-list-item {
+    &__content {
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    &__operate {
+        flex: none;
+    }
+}
+
+.align-between {
+    display: flex;
+    // justify-content: space-between;
+}
