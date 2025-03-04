@@ -95,7 +95,6 @@ if (window.parent.siyuan) {
 
     var loadTemplate = App.prototype.loadTemplate
     App.prototype.loadTemplate = function (url, onload, onerror, templateFilename, asLibrary) {
-        console.log(url)
         if (url.startsWith("assets/") || url.startsWith("storage/petal/siyuan-drawio-plugin/")) {
             getFileContent({ path: url }).then((text) => {
                 onload(text)
