@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.25
+0.1.26
 
 ## Changelog
+- **v0.1.26 (2025-03-04)**
+  - Added auto-save feature and optimized the display of file management buttons.
 - **v0.1.25 (2025-02-27)**
   - Added dock bar on the left side with features like rename, delete, and copy.
 - **v0.1.24 (2025-02-17)**
