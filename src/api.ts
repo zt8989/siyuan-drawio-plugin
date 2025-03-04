@@ -489,7 +489,7 @@ export async function saveDrawIoXml(value: string) {
         // Return standardized format to work with both older and newer versions
         return {
                 succMap: {
-                [filenameNoId]: DATA_PATH + STORAGE_PATH + '/' + filename 
+                [filenameNoId]: STORAGE_PATH + '/' + filename 
             }
         };
     } catch (error) {
