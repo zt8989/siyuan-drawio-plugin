@@ -96,3 +96,5 @@ cowboy
 - ONIONLYONE ￥20
 - 凌风 ￥10
 - Manfred ￥10
+- Achuan-2 ￥10 +￥20
+- Flynn ￥10
