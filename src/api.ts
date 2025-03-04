@@ -482,14 +482,14 @@ export async function saveDrawIoXml(value: string) {
     filenameNoId = value + DRAWIO_EXTENSION
     
     const file = saveContentAsFile(value, blankDrawio);
-    const path = DATA_PATH + STORAGE_PATH + '/' + value;
+    const path = DATA_PATH + STORAGE_PATH + '/' + filename;
     
     try {
         const response = await putFile(path, false, file);
         // Return standardized format to work with both older and newer versions
         return {
                 succMap: {
-                    [filenameNoId]: STORAGE_PATH + '/' + filename
+                [filenameNoId]: DATA_PATH + STORAGE_PATH + '/' + filename 
             }
         };
     } catch (error) {
