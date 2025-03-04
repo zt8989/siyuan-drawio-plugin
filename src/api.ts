@@ -8,7 +8,7 @@
 
 import { fetchPost, fetchSyncPost, IWebSocketData } from "siyuan";
 import { checkInvalidPathChar } from "./utils";
-import { blankDrawio, DRAWIO_EXTENSION, drawioPath, DATA_PATH } from "./constants";
+import { blankDrawio, DRAWIO_EXTENSION, drawioAssetsPath, DATA_PATH, STORAGE_PATH } from "./constants";
 import { saveContentAsFile } from "./file";
 import { createUrlFromTitle } from "./link";
 import { Asset } from "./types";
@@ -399,9 +399,21 @@ export async function readDir(path: string): Promise<IResReadDir[]> {
     return request(url, data);
 }
 
-export async function listDrawioFiles(): Promise<Asset[]> {
+/**
+ * List drawio files from specified directories
+ * @param dirs Array of directory paths to search in (without DATA_PATH prefix)
+ * @returns Array of Asset objects
+ */
+export async function listDrawioFiles(dirs?: string[]): Promise<Asset[]> {
     const assets: Asset[] = [];
     
+    // Use default directories if none specified
+    const dirsToSearch = dirs || [
+        STORAGE_PATH, // New location
+        drawioAssetsPath // Old location
+    ];
+    
+    // Helper function to scan a directory for drawio files
     async function scanDirectory(path: string) {
         try {
             const files = await readDir(path);
@@ -427,8 +439,106 @@ export async function listDrawioFiles(): Promise<Asset[]> {
         }
     }
     
-    await scanDirectory(DATA_PATH + 'assets');
+    // Scan all specified directories
+    for (const dir of dirsToSearch) {
+        await scanDirectory(DATA_PATH + dir);
+    }
+    
     return assets.sort((a, b) => b.updated - a.updated);
+}
+
+/**
+ * Search for drawio files matching a keyword
+ * @param keyword Search keyword
+ * @param dirs Optional array of directory paths to search in
+ * @returns Filtered array of Asset objects
+ */
+export async function searchDrawioFiles(keyword: string, dirs?: string[]): Promise<Asset[]> {
+    const assets = await listDrawioFiles(dirs);
+    if (!keyword) {
+        return assets;
+    }
+    
+    const lowerKeyword = keyword.toLowerCase();
+    return assets.filter(asset => 
+        asset.hName.toLowerCase().includes(lowerKeyword) || 
+        asset.path.toLowerCase().includes(lowerKeyword)
+    );
+}
+
+/**
+ * Save drawio XML content to file
+ * @param value Filename to save
+ * @returns Object with success status and path
+ */
+export async function saveDrawIoXml(value: string) {
+    if(!value || checkInvalidPathChar(value)) {
+        throw new Error(`Drawio: 名称 ${value} 不合法`);
+    }
+    let filename;
+    let filenameNoId;
+
+    filename = value + "-" + generateSiyuanId() + DRAWIO_EXTENSION;
+    filenameNoId = value + DRAWIO_EXTENSION
+    
+    const file = saveContentAsFile(value, blankDrawio);
+    const path = DATA_PATH + STORAGE_PATH + '/' + value;
+    
+    try {
+        const response = await putFile(path, false, file);
+        // Return standardized format to work with both older and newer versions
+        return {
+                succMap: {
+                    [filenameNoId]: STORAGE_PATH + '/' + filename
+            }
+        };
+    } catch (error) {
+        console.error("Error saving drawio file:", error);
+        throw error;
+    }
+}
+
+function generateSiyuanId() {
+    const now = new Date();
+
+    // 生成时间戳部分 YYYYMMDDHHMMSS
+    const year = now.getFullYear().toString();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+
+    const timestamp = `${year}${month}${day}${hours}${minutes}${seconds}`;
+
+    // 生成 7 位随机字母
+    const characters = 'abcdefghijklmnopqrstuvwxyz';
+    let random = '';
+    for (let i = 0; i < 7; i++) {
+        random += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+
+    return `${timestamp}-${random}`;
+}
+
+export async function renameDrawIo(name: string, oldPath: string) {
+    if(!name || checkInvalidPathChar(name)) {
+        throw new Error(`Drawio: 名称 ${name} 不合法`)
+    }
+    // 从旧路径提取时间戳和ID部分
+    const oldName = oldPath.split('/').pop() || '';
+    const oldPathWithoutFileName = oldPath.slice(0, -oldName.length);
+    const parts = oldName.split('-');
+    const suffix = parts.length >= 3 ? `-${parts.slice(-2).join('-')}` : '';
+    
+    const newName = name.endsWith(DRAWIO_EXTENSION) ? name : name + suffix;
+    const newPath = DATA_PATH + oldPathWithoutFileName + newName;
+    const res = await renameFile(newPath, DATA_PATH + oldPath)
+    if(res.code === 0) {
+        return res.data
+    } else {
+        throw new Error(res.msg)
+    }
 }
 
 // **************************************** Export ****************************************
@@ -522,36 +632,5 @@ export async function currentTime(): Promise<number> {
 
 export async function searchAsset(k: string, exts: string[]): Promise<Asset[]> {
     return request('/api/search/searchAsset', { k, exts });
-}
-
-export async function saveDrawIoXml(value: string) {
-    if(!value || checkInvalidPathChar(value)) {
-        // showMessage(`Drawio: 名称 ${value} 不合法`)
-        throw new Error(`Drawio: 名称 ${value} 不合法`)
-    }
-    if(!value.endsWith(DRAWIO_EXTENSION)) {
-        value += DRAWIO_EXTENSION
-    }
-    return upload(drawioPath, [saveContentAsFile(value, blankDrawio)])
-}
-
-export async function renameDrawIo(name: string, oldPath: string) {
-    if(!name || checkInvalidPathChar(name)) {
-        throw new Error(`Drawio: 名称 ${name} 不合法`)
-    }
-    // 从旧路径提取时间戳和ID部分
-    const oldName = oldPath.split('/').pop() || '';
-    const oldPathWithoutFileName = oldPath.slice(0, -oldName.length);
-    const parts = oldName.split('-');
-    const suffix = parts.length >= 3 ? `-${parts.slice(-2).join('-')}` : '';
-    
-    const newName = name.endsWith(DRAWIO_EXTENSION) ? name : name + suffix;
-    const newPath = DATA_PATH + oldPathWithoutFileName + newName;
-    const res = await renameFile(newPath, DATA_PATH + oldPath)
-    if(res.code === 0) {
-        return res.data
-    } else {
-        throw new Error(res.msg)
-    }
 }
 

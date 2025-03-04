@@ -13,46 +13,88 @@ import {
 import { logger } from "./logger";
 import {
     hasClosestByAttribute,
-    hasClosestByClassName} from "@/protyle/util/hasClosest";
-import {upDownHint} from "@/util/upDownHint";
+    hasClosestByClassName
+} from "@/protyle/util/hasClosest";
+import { upDownHint } from "@/util/upDownHint";
 
 import "@/index.scss";
 
 
 import { getIframeFromEventSource } from "./utils";
-import { saveDrawIoXml } from "./api";
-import { CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD, DRAWIO_EXTENSION } from "./constants";
+import { saveDrawIoXml, searchDrawioFiles } from "./api";
+import { CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD, DRAWIO_EXTENSION, drawioAssetsPath, STORAGE_PATH } from "./constants";
 import { createLinkFromTitle, createUrlFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback } from "./types";
 import { genDrawioHTMLByUrl } from "./asset/renderAssets";
 import qs from "query-string";
 import Dock from "./components/dock.svelte";
 
-const renderAssetList = (element: Element, k: string, position: IPosition, exts: string[] = []) => {
+const renderAssetList = async (element: Element, k: string, position: IPosition, exts: string[] = []) => {
     const frontEnd = getFrontend();
     const isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
 
-    fetchPost("/api/search/searchAsset", {
-        k,
-        exts
-    }, (response) => {
-        let searchHTML = "";
-        response.data.forEach((item: { path: string, hName: string }, index: number) => {
-            searchHTML += `<div data-value="${item.path}" class="b3-list-item${index === 0 ? " b3-list-item--focus" : ""}"><div class="b3-list-item__text">${item.path}</div></div>`;
-        });
+    try {
+        // If we're specifically looking for drawio files, use our custom search
+        if (exts.includes(DRAWIO_EXTENSION)) {
+            // Search in both new and old locations
+            const searchDirs = [STORAGE_PATH, drawioAssetsPath];
+            const response = await searchDrawioFiles(k, searchDirs);
 
-        const listElement = element.querySelector(".b3-list");
-        const inputElement = element.querySelector("input");
-        listElement.innerHTML = searchHTML || `<li class="b3-list--empty">${window.siyuan.languages.emptyContent}</li>`;
-        if(isMobile){
-            window.siyuan.menus.menu.fullscreen();
+            let searchHTML = "";
+            response.forEach((item: { path: string, hName: string }, index: number) => {
+                searchHTML += `<div data-value="${item.path}" class="b3-list-item${index === 0 ? " b3-list-item--focus" : ""}" style="display:block">
+                    <div class="b3-list-item__text">
+                        ${item.hName}</div>
+                    <div class="b3-list-item__text" style="font-size: 0.7em">
+                        ${item.path}</div>
+                </div>`;
+            });
+
+            const listElement = element.querySelector(".b3-list");
+            const inputElement = element.querySelector("input");
+            listElement.innerHTML = searchHTML || `<li class="b3-list--empty">${window.siyuan.languages.emptyContent}</li>`;
+            if (isMobile) {
+                window.siyuan.menus.menu.fullscreen();
+            } else {
+                window.siyuan.menus.menu.popup(position);
+            }
+            if (!k) {
+                inputElement.select();
+            }
         } else {
-            window.siyuan.menus.menu.popup(position);
+            // For other file types, use the standard API
+            fetchPost("/api/search/searchAsset", {
+                k,
+                exts
+            }, (response) => {
+                let searchHTML = "";
+                response.data.forEach((item: { path: string, hName: string }, index: number) => {
+                    searchHTML += `<div data-value="${item.path}" class="b3-list-item${index === 0 ? " b3-list-item--focus" : ""}" style="display:block">
+                    <div class="b3-list-item__text">
+                        ${item.hName}</div>
+                    <div class="b3-list-item__text" style="font-size: 0.7em">
+                        ${item.path}</div>
+                </div>`;
+                });
+
+                const listElement = element.querySelector(".b3-list");
+                const inputElement = element.querySelector("input");
+                listElement.innerHTML = searchHTML || `<li class="b3-list--empty">${window.siyuan.languages.emptyContent}</li>`;
+                if (isMobile) {
+                    window.siyuan.menus.menu.fullscreen();
+                } else {
+                    window.siyuan.menus.menu.popup(position);
+                }
+                if (!k) {
+                    inputElement.select();
+                }
+            });
         }
-        if (!k) {
-            inputElement.select();
-        }
-    });
+    } catch (error) {
+        console.error("Error rendering asset list:", error);
+        const listElement = element.querySelector(".b3-list");
+        listElement.innerHTML = `<li class="b3-list--empty">${window.siyuan.languages.emptyContent}</li>`;
+    }
 };
 
 export default class DrawioPlugin extends Plugin {

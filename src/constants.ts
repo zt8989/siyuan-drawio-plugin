@@ -1,5 +1,6 @@
 export const blankDrawio = '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel>'
-export const drawioPath = "/assets/drawio/";
+export const drawioAssetsPath = 'assets/drawio'; // without DATA_PATH prefix
+export const STORAGE_PATH = 'storage/petal/siyuan-drawio-plugin';
 export const xml = 'text/xml';
 
 export const diagramFileTypes = [
@@ -37,4 +38,5 @@ export const DRAWIO_CONFIG = '.drawio-config'
 export const DRAWIO_EXTENSION = '.drawio'
 export const ICON_STANDARD = "icon-drawio-standard"
 export const DOCK_TYPE = PREFIX + "dock"
-export const DATA_PATH = "/data/"
+export const DATA_PATH = '/data/';
+
