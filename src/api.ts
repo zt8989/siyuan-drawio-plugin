@@ -407,8 +407,9 @@ export async function listDrawioFiles(dirs?: string[]): Promise<Asset[]> {
     
     // Use default directories if none specified
     const dirsToSearch = dirs || [
-        STORAGE_PATH, // New location
-        drawioAssetsPath // Old location
+        STORAGE_PATH, // plugin location
+        'assets' // assets location
+        
     ];
     
     // Helper function to scan a directory for drawio files
