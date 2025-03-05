@@ -1,23 +1,55 @@
 <script lang="ts">
-    import type DrawioPlugin from '@/index'
-    import { confirm } from "siyuan";
+    import type DrawioPlugin from '@/index';
+    import { confirm } from 'siyuan';
     import { onMount } from 'svelte';
     import { removeFile, listDrawioFiles } from '@/api';
-    import {ICON_STANDARD, DATA_PATH} from "@/constants"
+    import { ICON_STANDARD, DATA_PATH } from '@/constants';
     import { addWhiteboard, renameWhiteboard } from '@/dialog';
     import type { Asset } from '@/types';
     import { genDrawioHTMLByUrl } from '@/asset/renderAssets';
-    
+
     export let plugin: DrawioPlugin;
 
     let assets: Asset[] = [];
     let isLoading = false;
     let error = '';
+    let showSortMenu = false;
+    let sortMethod = 'nameAsc'; // Default sort method
 
-    const add = () => addWhiteboard(plugin, (path) => {
-        plugin.openCustomTabByPath(path);
-        searchAssets();    
-    })
+    // Sort options
+    const sortOptions = [
+        { id: 'nameAsc', label: 'sortNameAsc' },
+        { id: 'nameDesc', label: 'sortNameDesc' },
+        { id: 'updateAsc', label: 'sortUpdateAsc' },
+        { id: 'updateDesc', label: 'sortUpdateDesc' },
+    ];
+
+    // Load saved sort preference
+    const loadSortPreference = async () => {
+        try {
+            const savedSort = await plugin.loadData('drawioSortPreference');
+            if (savedSort) {
+                sortMethod = savedSort;
+            }
+        } catch (e) {
+            console.error('Failed to load sort preference:', e);
+        }
+    };
+
+    // Save sort preference
+    const saveSortPreference = async (method: string) => {
+        try {
+            await plugin.saveData('drawioSortPreference', method);
+        } catch (e) {
+            console.error('Failed to save sort preference:', e);
+        }
+    };
+
+    const add = () =>
+        addWhiteboard(plugin, path => {
+            plugin.openCustomTabByPath(path);
+            searchAssets();
+        });
 
     const handleOpen = (path: string) => {
         plugin.openCustomTabByPath(path);
@@ -32,32 +64,91 @@
         e.stopPropagation();
         renameWhiteboard(plugin, file, () => {
             searchAssets();
-        })
+        });
     };
 
     const handleDelete = (file: Asset, event) => {
         event.stopPropagation();
-        confirm(plugin.i18n.deleteWarn + ":" + plugin.i18n.title, plugin.i18n.deleteConfirm.replace("${file}", file.hName), () => {
-            removeFile(DATA_PATH + file.path).then(() => {
-                searchAssets();
-            });
-        })
+        confirm(
+            plugin.i18n.deleteWarn + ':' + plugin.i18n.title,
+            plugin.i18n.deleteConfirm.replace('${file}', file.hName),
+            () => {
+                removeFile(DATA_PATH + file.path).then(() => {
+                    searchAssets();
+                });
+            }
+        );
     };
 
     const searchAssets = () => {
         isLoading = true;
         error = '';
-        listDrawioFiles().then(data => {
-            assets = data;
-            isLoading = false;
-        }).catch(err => {
-            error = err.message;
-            isLoading = false;
-        });
+        listDrawioFiles()
+            .then(data => {
+                assets = data;
+                sortAssets(); // Sort after loading
+                isLoading = false;
+            })
+            .catch(err => {
+                error = err.message;
+                isLoading = false;
+            });
     };
 
-    onMount(() => {
+    const toggleSortMenu = (event: MouseEvent) => {
+        event.stopPropagation();
+        showSortMenu = !showSortMenu;
+        if (showSortMenu) {
+            document.addEventListener('click', closeSortMenu);
+        }
+    };
+
+    const closeSortMenu = () => {
+        showSortMenu = false;
+        document.removeEventListener('click', closeSortMenu);
+    };
+
+    const setSortMethod = (method: string, event: MouseEvent) => {
+        event.stopPropagation();
+        sortMethod = method;
+        saveSortPreference(method);
+        sortAssets();
+        closeSortMenu();
+    };
+
+    const sortAssets = () => {
+        switch (sortMethod) {
+            case 'nameAsc':
+                assets = [...assets].sort((a, b) =>
+                    a.hName.localeCompare(b.hName, undefined, {
+                        numeric: true,
+                        sensitivity: 'base',
+                    })
+                );
+                break;
+            case 'nameDesc':
+                assets = [...assets].sort((a, b) =>
+                    b.hName.localeCompare(a.hName, undefined, {
+                        numeric: true,
+                        sensitivity: 'base',
+                    })
+                );
+                break;
+            case 'updateAsc':
+                assets = [...assets].sort((a, b) => a.updated - b.updated);
+                break;
+            case 'updateDesc':
+                assets = [...assets].sort((a, b) => b.updated - a.updated);
+                break;
+        }
+    };
+
+    onMount(async () => {
+        await loadSortPreference();
         searchAssets();
+        return () => {
+            document.removeEventListener('click', closeSortMenu);
+        };
     });
 </script>
 
@@ -74,9 +165,37 @@
             aria-label={plugin.i18n.min}
         >
             <svg>
-            <use xlink:href="#iconMin"></use>
+                <use xlink:href="#iconMin"></use>
             </svg>
         </span>
+        <span
+            class="block__icon b3-tooltips b3-tooltips__sw"
+            aria-label={plugin.i18n.sortFiles}
+            on:click={toggleSortMenu}
+        >
+            <svg><use xlink:href="#iconSort"></use></svg>
+        </span>
+        {#if showSortMenu}
+            <div
+                class="b3-menu"
+                style="position: absolute; top: 40px; right: 5px; z-index: 200;"
+                on:click={e => e.stopPropagation()}
+            >
+                {#each sortOptions as option}
+                    <button class="b3-menu__item" on:click={e => setSortMethod(option.id, e)}>
+                        <svg
+                            class="b3-menu__icon"
+                            style={sortMethod === option.id
+                                ? 'visibility: visible'
+                                : 'visibility: hidden'}
+                        >
+                            <use xlink:href="#iconSelect"></use>
+                        </svg>
+                        <span class="b3-menu__label">{plugin.i18n[option.label]}</span>
+                    </button>
+                {/each}
+            </div>
+        {/if}
         <span
             id="add-draw"
             class="block__icon b3-tooltips b3-tooltips__sw"
@@ -84,7 +203,7 @@
             on:click={() => add()}
         >
             <svg>
-            <use xlink:href="#iconAdd"></use>
+                <use xlink:href="#iconAdd"></use>
             </svg>
         </span>
         <span
@@ -94,7 +213,7 @@
             on:click={() => searchAssets()}
         >
             <svg>
-            <use xlink:href="#iconRefresh"></use>
+                <use xlink:href="#iconRefresh"></use>
             </svg>
         </span>
     </div>
@@ -120,7 +239,7 @@
                                 class="fileicon editfile b3-tooltips b3-tooltips__s"
                                 aria-label={plugin.i18n.edit}
                                 data-name={asset.path}
-                                on:click={(e) => handleEdit(asset, e)}
+                                on:click={e => handleEdit(asset, e)}
                             >
                                 <svg>
                                     <use xlink:href="#iconEdit"></use>
@@ -130,7 +249,7 @@
                                 class="fileicon copyfile b3-tooltips b3-tooltips__s"
                                 aria-label={plugin.i18n.copyLink}
                                 data-name={asset.path}
-                                on:click={(e) => handleCopy(asset.path, e)}
+                                on:click={e => handleCopy(asset.path, e)}
                             >
                                 <svg>
                                     <use xlink:href="#iconCopy"></use>
@@ -140,7 +259,7 @@
                                 class="fileicon deletefile b3-tooltips b3-tooltips__s"
                                 aria-label={plugin.i18n.delete}
                                 data-name={asset.path}
-                                on:click={(e) => handleDelete(asset, e)}
+                                on:click={e => handleDelete(asset, e)}
                             >
                                 <svg>
                                     <use xlink:href="#iconTrashcan"></use>
