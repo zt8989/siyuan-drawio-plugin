@@ -366,9 +366,7 @@ export async function putFile(path: string, isDir: boolean, file: any) {
     let form = new FormData();
     form.append('path', path);
     form.append('isDir', isDir.toString());
-    // Copyright (c) 2023, terwer.
-    // https://github.com/terwer/siyuan-plugin-importer/blob/v1.4.1/src/api/kernel-api.ts
-    form.append('modTime', Math.floor(Date.now() / 1000).toString());
+    form.append('modTime', Date.now().toString());
     form.append('file', file);
     let url = '/api/file/putFile';
     return request(url, form);

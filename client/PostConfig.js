@@ -19,7 +19,7 @@ if (window.parent.siyuan) {
         const formData = new FormData();
         formData.append("path", path);
         formData.append("isDir", isDir.toString());
-        formData.append("modTime", Math.floor(Date.now() / 1000).toString());
+        formData.append("modTime", Date.now().toString());
         formData.append("file", file);
 
         return await fetch("/api/file/putFile", {
