@@ -3,7 +3,7 @@
     import { confirm } from 'siyuan';
     import { onMount } from 'svelte';
     import { removeFile, listDrawioFiles } from '@/api';
-    import { ICON_STANDARD, DATA_PATH } from '@/constants';
+    import { ICON_STANDARD, DATA_PATH, PLUGIN_CONFIG } from '@/constants';
     import { addWhiteboard, renameWhiteboard } from '@/dialog';
     import type { Asset } from '@/types';
     import { genDrawioHTMLByUrl } from '@/asset/renderAssets';
@@ -27,9 +27,9 @@
     // Load saved sort preference
     const loadSortPreference = async () => {
         try {
-            const savedSort = await plugin.loadData('drawioSortPreference');
-            if (savedSort) {
-                sortMethod = savedSort;
+            const config = await plugin.loadData(PLUGIN_CONFIG);
+            if (config && config.sortMethod) {
+                sortMethod = config.sortMethod;
             }
         } catch (e) {
             console.error('Failed to load sort preference:', e);
@@ -39,7 +39,9 @@
     // Save sort preference
     const saveSortPreference = async (method: string) => {
         try {
-            await plugin.saveData('drawioSortPreference', method);
+            const config = (await plugin.loadData(PLUGIN_CONFIG)) || {};
+            config.sortMethod = method;
+            await plugin.saveData(PLUGIN_CONFIG, config);
         } catch (e) {
             console.error('Failed to save sort preference:', e);
         }

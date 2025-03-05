@@ -2,6 +2,7 @@ export const blankDrawio = '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" p
 export const drawioAssetsPath = 'assets/drawio'; // without DATA_PATH prefix
 export const STORAGE_PATH = 'storage/petal/siyuan-drawio-plugin';
 export const xml = 'text/xml';
+export const PLUGIN_CONFIG = 'plugin-config.json'; // Config filename
 
 export const diagramFileTypes = [
     {description: 'diagramXmlDesc', extension: 'drawio', mimeType: xml},
