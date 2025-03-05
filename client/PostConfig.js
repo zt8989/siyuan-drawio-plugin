@@ -202,6 +202,14 @@ import { setup as MenuSetup } from "./components/Menus"
         {
             fn(getFullPathName());
         };
+        LocalFile.prototype.isAutosave = function()
+        {
+            return DrawioFile.prototype.isAutosave.apply(this, arguments);
+        }
+        LocalFile.prototype.isAutosaveOptional = function()
+        {
+            return true;
+        };
         //#endregion
   
     
