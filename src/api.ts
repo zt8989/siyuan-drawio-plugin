@@ -442,7 +442,7 @@ export async function listDrawioFiles(dirs?: string[]): Promise<Asset[]> {
         await scanDirectory(DATA_PATH + dir);
     }
     
-    return assets.sort((a, b) => b.updated - a.updated);
+    return assets.sort((a, b) => a.hName.localeCompare(b.hName, undefined, { numeric: true, sensitivity: 'base' }));
 }
 
 /**
@@ -454,14 +454,14 @@ export async function listDrawioFiles(dirs?: string[]): Promise<Asset[]> {
 export async function searchDrawioFiles(keyword: string, dirs?: string[]): Promise<Asset[]> {
     const assets = await listDrawioFiles(dirs);
     if (!keyword) {
-        return assets.sort((a, b) => a.hName.localeCompare(b.hName,undefined,{numeric:true, sensitivity: 'base'}));
+        return assets;
     }
     
     const lowerKeyword = keyword.toLowerCase();
     return assets.filter(asset => 
         asset.hName.toLowerCase().includes(lowerKeyword) || 
         asset.path.toLowerCase().includes(lowerKeyword)
-    ).sort((a, b) => a.hName.localeCompare(b.hName,undefined,{numeric:true, sensitivity: 'base'}));
+    );
 }
 
 /**
