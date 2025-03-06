@@ -38,5 +38,10 @@
         "name": "名称",
         "nameDesc": "名称为实际文件名，不可包含特殊字符例如: /,*,$, etc.",
         "save": "保存"
-    }
+    },
+    "sortFiles": "排序文件",
+    "sortNameAsc": "名称 (A-Z)",
+    "sortNameDesc": "名称 (Z-A)",
+    "sortUpdateAsc": "更新日期 (最早)",
+    "sortUpdateDesc": "更新日期 (最新)"
 }
