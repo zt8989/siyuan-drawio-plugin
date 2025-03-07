@@ -434,7 +434,7 @@ export default class DrawioPlugin extends Plugin {
             // range.collapse(false);
             // focusByRange(range);
             const url = data["succMap"][value] || data["succMap"][value + DRAWIO_EXTENSION]
-            protyle.insert(genDrawioHTMLByUrl(url, protyle.protyle), true, true)
+            protyle.insert(genDrawioHTMLByUrl(url), true, true)
             this.openCustomTab(getTitleFromPath(url), undefined, {
                 url
             })

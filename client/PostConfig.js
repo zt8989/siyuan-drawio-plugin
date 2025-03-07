@@ -2,6 +2,7 @@ import { setup as EditorSetup } from "./components/Editor"
 import { setup as EditorUiSetup } from "./components/EditorUi"
 import { setup as ThemeSetup } from "./components/Theme"
 import { setup as MenuSetup } from "./components/Menus"
+import { formatFileName } from "./api"
 /**
  * Copyright (c) 2006-2024, JGraph Ltd
  * Copyright (c) 2006-2024, draw.io AG
@@ -10,7 +11,8 @@ import { setup as MenuSetup } from "./components/Menus"
 window.VSD_CONVERT_URL = null;
 window.EMF_CONVERT_URL = null;
 window.ICONSEARCH_PATH = null;
-const ASSETS_DIR_PATH = "storage/petal/siyuan-drawio-plugin";
+const PETAL_DIR_PATH = "storage/petal/siyuan-drawio-plugin/";
+const ASSETS_DIR_PATH = "assets/"
 
 if (window.parent.siyuan) {
     const electron = window.electron
@@ -58,23 +60,24 @@ if (window.parent.siyuan) {
         if (fullPathName) {
             return lastSlashIndex !== -1 ? fullPathName.substring(0, lastSlashIndex + 1) : '';
         } else {
-            return ASSETS_DIR_PATH
+            return PETAL_DIR_PATH
         }
     }
 
     async function saveFileToSiyuan(content, title, fileType) {
+        const newTitle = formatFileName(title)
         const blob = new Blob([content], { type: fileType.mimeType });
-        const file = new File([blob], title, { type: fileType.mimeType });
+        const file = new File([blob], newTitle, { type: fileType.mimeType });
 
         // For drawio files, use putFile directly instead of uploadFileToSiyuan
         const fullPath = getFullPath();
-        const filePath = "/data/" + fullPath + title;
+        const filePath = "/data/" + fullPath + newTitle;
 
         const data = await putFileSiyuan(filePath, false, file);
         if (data.code === 0) {
             return {
                 success: true,
-                newTitle: title
+                newTitle: newTitle
             };
         }
 
@@ -95,7 +98,7 @@ if (window.parent.siyuan) {
 
     var loadTemplate = App.prototype.loadTemplate
     App.prototype.loadTemplate = function (url, onload, onerror, templateFilename, asLibrary) {
-        if (url.startsWith("assets/") || url.startsWith("storage/petal/siyuan-drawio-plugin/")) {
+        if (url.startsWith(ASSETS_DIR_PATH) || url.startsWith(PETAL_DIR_PATH)) {
             getFileContent({ path: url }).then((text) => {
                 onload(text)
                 this.setMode(App.MODE_DEVICE)
@@ -112,7 +115,6 @@ if (window.parent.siyuan) {
             this.fileHandle = null;
             this.desc = null;
             this.editable = null;
-            electron.sendMessage("update_title", title)
         }
 
         this.title = title;
@@ -161,7 +163,7 @@ if (window.parent.siyuan) {
                     throw new Error(`Unsupported file extension: ${extension}`);
                 }
                 let content = (binary) ? this.ui.base64ToBlob(data, 'image/png') : data
-                saveFileToSiyuan(content, title, title, fileType).then(result => {
+                saveFileToSiyuan(content, title, fileType).then(result => {
                     if (result.success) {
                         var desc = null
                         this.title = result.newTitle;
@@ -172,6 +174,7 @@ if (window.parent.siyuan) {
 
                         // Deletes draft after saving
                         this.removeDraft();
+                        electron.sendMessage("update_title", result.newTitle)
                     } else {
                         errorWrapper(new Error('Failed to save file to SiYuan'));
                     }

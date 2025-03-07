@@ -13,6 +13,7 @@ class DefaultElectronImpl {
                 return;
             }
 
+            logger.debug('Received message:', event.data, event.payload);
             switch (event.data.type) {
                 case typePrefix + "callback":
                     var message = event.data;
@@ -33,6 +34,7 @@ class DefaultElectronImpl {
         if(callbackId) {
             this.callbacks[callbackId] = callback
         }
+        logger.debug('sendMessage:', type, payload);
         window.parent.postMessage({
             type: typePrefix + type,
             payload,
