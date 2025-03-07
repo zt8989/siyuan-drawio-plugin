@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.26
+0.1.27
 
 ## Changelog
+- **v0.1.27 (2025-03-07)**
+  - Added sorting feature to dock bar and set default save path to `storage/petal/siyuan-drawio-plugin/`
 - **v0.1.26 (2025-03-04)**
   - Added auto-save feature and optimized the display of file management buttons.
 - **v0.1.25 (2025-02-27)**
