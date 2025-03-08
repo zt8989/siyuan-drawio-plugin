@@ -30,7 +30,7 @@ export function createLinkFromPath(path: string){
 }
 
 export function createUrlFromTitle(title: string) {
-    return 'assets/drawio/' + title
+    return 'storage/petal/siyuan-drawio-plugin/' + title
 }
 
 export function createLinkFromTitle(title: string){
