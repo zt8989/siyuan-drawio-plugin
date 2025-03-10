@@ -8,9 +8,8 @@
 
 import { fetchPost, fetchSyncPost, IWebSocketData } from "siyuan";
 import { checkInvalidPathChar } from "./utils";
-import { blankDrawio, DRAWIO_EXTENSION, drawioAssetsPath, DATA_PATH, STORAGE_PATH } from "./constants";
+import { blankDrawio, DRAWIO_EXTENSION, DATA_PATH, STORAGE_PATH, SEARACH_DIRS } from "./constants";
 import { saveContentAsFile } from "./file";
-import { createUrlFromTitle } from "./link";
 import { Asset } from "./types";
 
 
@@ -402,26 +401,23 @@ export async function readDir(path: string): Promise<IResReadDir[]> {
  * @param dirs Array of directory paths to search in (without DATA_PATH prefix)
  * @returns Array of Asset objects
  */
-export async function listDrawioFiles(dirs?: string[]): Promise<Asset[]> {
+export async function listDrawioFiles(dirs: Record<string, string[]> = SEARACH_DIRS): Promise<Asset[]> {
     const assets: Asset[] = [];
     
     // Use default directories if none specified
-    const dirsToSearch = dirs || [
-        STORAGE_PATH, // plugin location
-        'assets' // assets location
-        
-    ];
+    const dirsToSearch = dirs
     
     // Helper function to scan a directory for drawio files
-    async function scanDirectory(path: string) {
+    async function scanDirectory(path: string, exts: string[] = [DRAWIO_EXTENSION]) {
         try {
             const files = await readDir(path);
             for (const file of files) {
                 const fullPath = path + '/' + file.name;
                 if (file.isDir) {
-                    await scanDirectory(fullPath);
-                } else if (file.name.endsWith(DRAWIO_EXTENSION)) {
-                    const nameWithoutExt = file.name.slice(0, -DRAWIO_EXTENSION.length);
+                    await scanDirectory(fullPath, exts);
+                } else if (exts.some(ext => file.name.endsWith(ext))) {
+                    const matchedExt = exts.find(ext => file.name.endsWith(ext));
+                    const nameWithoutExt = file.name.slice(0, -matchedExt.length);
                     const parts = nameWithoutExt.split('-');
                     const baseName = parts.length >= 3 ? 
                         nameWithoutExt.slice(0, -(parts.slice(-2).join('-').length + 1)) : 
@@ -439,8 +435,8 @@ export async function listDrawioFiles(dirs?: string[]): Promise<Asset[]> {
     }
     
     // Scan all specified directories
-    for (const dir of dirsToSearch) {
-        await scanDirectory(DATA_PATH + dir);
+    for (const [basePath, exts] of Object.entries(dirsToSearch)) {
+        await scanDirectory(DATA_PATH + basePath, exts);
     }
     
     return assets.sort((a, b) => a.hName.localeCompare(b.hName, undefined, { numeric: true, sensitivity: 'base' }));
@@ -452,8 +448,8 @@ export async function listDrawioFiles(dirs?: string[]): Promise<Asset[]> {
  * @param dirs Optional array of directory paths to search in
  * @returns Filtered array of Asset objects
  */
-export async function searchDrawioFiles(keyword: string, dirs?: string[]): Promise<Asset[]> {
-    const assets = await listDrawioFiles(dirs);
+export async function searchDrawioFiles(keyword: string): Promise<Asset[]> {
+    const assets = await listDrawioFiles();
     if (!keyword) {
         return assets;
     }

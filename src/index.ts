@@ -36,9 +36,7 @@ const renderAssetList = async (element: Element, k: string, position: IPosition,
     try {
         // If we're specifically looking for drawio files, use our custom search
         if (exts.includes(DRAWIO_EXTENSION)) {
-            // Search in both new and old locations
-            const searchDirs = [STORAGE_PATH, drawioAssetsPath];
-            const response = await searchDrawioFiles(k, searchDirs);
+            const response = await searchDrawioFiles(k);
 
             let searchHTML = "";
             response.forEach((item: { path: string, hName: string }, index: number) => {

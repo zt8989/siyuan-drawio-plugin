@@ -1,6 +1,7 @@
 export const blankDrawio = '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel>'
 export const drawioAssetsPath = 'assets/drawio'; // without DATA_PATH prefix
 export const STORAGE_PATH = 'storage/petal/siyuan-drawio-plugin';
+export const ASSETS_PATH = 'assets';
 export const xml = 'text/xml';
 export const PLUGIN_CONFIG = 'plugin-config.json'; // Config filename
 
@@ -37,7 +38,14 @@ export const OPEN_TAB_BY_PATH = PREFIX + "openTabByPath"
 export const SET_ITEM = PREFIX + "setItem"
 export const DRAWIO_CONFIG = '.drawio-config'
 export const DRAWIO_EXTENSION = '.drawio'
+export const DRAWIO_SVG_EXTENSION = '.drawio.svg'
+export const DRAWIO_PNG_EXTENSION = '.drawio.png'
+export const DRAWIO_HTML_EXTENSION = '.drawio.html'
 export const ICON_STANDARD = "icon-drawio-standard"
 export const DOCK_TYPE = PREFIX + "dock"
 export const DATA_PATH = '/data/';
 
+export const SEARACH_DIRS = {
+    [STORAGE_PATH]: [DRAWIO_EXTENSION, DRAWIO_SVG_EXTENSION, DRAWIO_PNG_EXTENSION, DRAWIO_HTML_EXTENSION], // plugin location
+    [ASSETS_PATH]: [DRAWIO_EXTENSION] // assets location
+};
