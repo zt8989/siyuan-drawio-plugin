@@ -42,6 +42,9 @@ export const DRAWIO_SVG_EXTENSION = '.drawio.svg'
 export const DRAWIO_PNG_EXTENSION = '.drawio.png'
 export const DRAWIO_HTML_EXTENSION = '.drawio.html'
 export const ICON_STANDARD = "icon-drawio-standard"
+export const ICON_DRAWIO_SVG = "icon-drawio-svg"
+export const ICON_DRAWIO_PNG = "icon-drawio-png"
+export const ICON_DRAWIO_HTML = "icon-drawio-html"
 export const DOCK_TYPE = PREFIX + "dock"
 export const DATA_PATH = '/data/';
 

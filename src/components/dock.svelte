@@ -3,7 +3,7 @@
     import { confirm } from 'siyuan';
     import { onMount } from 'svelte';
     import { removeFile, listDrawioFiles } from '@/api';
-    import { ICON_STANDARD, DATA_PATH, PLUGIN_CONFIG } from '@/constants';
+    import { ICON_STANDARD, DATA_PATH, PLUGIN_CONFIG, ICON_DRAWIO_HTML, ICON_DRAWIO_PNG, ICON_DRAWIO_SVG } from '@/constants';
     import { addWhiteboard, renameWhiteboard } from '@/dialog';
     import type { Asset } from '@/types';
     import { genDrawioHTMLByUrl } from '@/asset/renderAssets';
@@ -232,7 +232,7 @@
                     <div class="b3-list-item align-between" data-name={asset.path}>
                         <div class="b3-list-item__content">
                             <span>
-                                <svg><use xlink:href="#{ICON_STANDARD}"></use></svg>
+                                <svg><use xlink:href="#{asset.path.endsWith('.drawio.svg') ? ICON_DRAWIO_SVG : asset.path.endsWith('.drawio.png') ? ICON_DRAWIO_PNG : asset.path.endsWith('.drawio.html') ? ICON_DRAWIO_HTML : ICON_STANDARD}"></use></svg>
                             </span>
                             <span on:click={() => handleOpen(asset.path)}>{asset.hName}</span>
                         </div>
