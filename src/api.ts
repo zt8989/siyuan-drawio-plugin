@@ -497,6 +497,34 @@ export async function saveDrawIoXml(value: string) {
     }
 }
 
+/**
+ * Save drawio file from File object
+ * @param file File object to save
+ * @returns Object with success status and path
+ */
+export async function saveDrawIo(file: File) {
+    const value = file.name.replace(DRAWIO_EXTENSION, '');
+    if(!value || checkInvalidPathChar(value)) {
+        throw new Error(`Drawio: 名称 ${value} 不合法`);
+    }
+    let filename = value + "-" + generateSiyuanId() + DRAWIO_EXTENSION;
+    let filenameNoId = value + DRAWIO_EXTENSION;
+    
+    const path = DATA_PATH + STORAGE_PATH + '/' + filename;
+    
+    try {
+        const response = await putFile(path, false, file);
+        return {
+            succMap: {
+                [filenameNoId]: STORAGE_PATH + '/' + filename 
+            }
+        };
+    } catch (error) {
+        console.error("Error saving drawio file:", error);
+        throw error;
+    }
+}
+
 function generateSiyuanId() {
     const now = new Date();
 

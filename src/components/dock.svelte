@@ -1,8 +1,8 @@
 <script lang="ts">
     import type DrawioPlugin from '@/index';
-    import { confirm } from 'siyuan';
+    import { confirm, showMessage } from 'siyuan';
     import { onMount } from 'svelte';
-    import { removeFile, listDrawioFiles } from '@/api';
+    import { removeFile, listDrawioFiles, saveDrawIo } from '@/api';
     import { ICON_STANDARD, DATA_PATH, PLUGIN_CONFIG } from '@/constants';
     import { addWhiteboard, renameWhiteboard } from '@/dialog';
     import type { Asset } from '@/types';
@@ -13,6 +13,7 @@
     let assets: Asset[] = [];
     let isLoading = false;
     let error = '';
+    let fileInput: HTMLInputElement;
     let showSortMenu = false;
     let sortMethod = 'nameAsc'; // Default sort method
 
@@ -52,6 +53,35 @@
             plugin.openCustomTabByPath(path);
             searchAssets();
         });
+
+    const handleUpload = async (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        if (!target.files || target.files.length === 0) return;
+
+        const files = Array.from(target.files);
+        const drawioFiles = files.filter(file => file.name.endsWith('.drawio'));
+
+        if (drawioFiles.length === 0) {
+            error = plugin.i18n.uploadDrawioOnly || 'Please upload .drawio files only';
+            return;
+        }
+
+        isLoading = true;
+        error = '';
+        try {
+            for (const file of drawioFiles) {
+                await saveDrawIo(file);
+                showMessage(plugin.i18n.uploadSuccess.replace('${fileName}', file.name) || 'Upload successful');
+            }
+            searchAssets();
+        } catch (err) {
+            error = err.message;
+            showMessage(err.message, 6000, 'error');
+        } finally {
+            isLoading = false;
+            target.value = '';
+        }
+    };
 
     const handleOpen = (path: string) => {
         plugin.openCustomTabByPath(path);
@@ -206,6 +236,23 @@
         >
             <svg>
                 <use xlink:href="#iconAdd"></use>
+            </svg>
+        </span>
+        <span
+            class="block__icon b3-tooltips b3-tooltips__sw"
+            aria-label={plugin.i18n.upload || 'Upload'}
+            on:click={() => fileInput.click()}
+        >
+            <input
+                type="file"
+                accept=".drawio"
+                multiple
+                style="display: none"
+                bind:this={fileInput}
+                on:change={handleUpload}
+            />
+            <svg>
+                <use xlink:href="#iconUpload"></use>
             </svg>
         </span>
         <span

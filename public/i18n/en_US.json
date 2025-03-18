@@ -43,5 +43,11 @@
     "sortNameAsc": "Name (A-Z)",
     "sortNameDesc": "Name (Z-A)",
     "sortUpdateAsc": "Update Date (Oldest)",
-    "sortUpdateDesc": "Update Date (Newest)"
+    "sortUpdateDesc": "Update Date (Newest)",
+    "exitSearch": "Exit Search",
+    "selectDrawio": "Select Drawio",
+    "emptyContent": "No related content found",
+    "uploadDrawioOnly": "Please upload .drawio files only",
+    "uploadSuccess": "File ${fileName} uploaded successfully",
+    "upload": "Upload"
 }
