@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.28
+0.1.29
 
 ## Changelog
+- **v0.1.29 (2025-03-28)**
+  - Added harmony platform support
 - **v0.1.28 (2025-03-18)**
   - Added upload feature to dock bar
 - **v0.1.27 (2025-03-07)**
