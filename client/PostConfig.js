@@ -65,13 +65,14 @@ if (window.parent.siyuan) {
     }
 
     async function saveFileToSiyuan(content, title, fileType) {
-        const newTitle = formatFileName(title)
+        const fullPath = getFullPath();
+        const pathPrefix = "/data/" + fullPath
+        const newTitle = formatFileName(title, pathPrefix)
         const blob = new Blob([content], { type: fileType.mimeType });
         const file = new File([blob], newTitle, { type: fileType.mimeType });
 
         // For drawio files, use putFile directly instead of uploadFileToSiyuan
-        const fullPath = getFullPath();
-        const filePath = "/data/" + fullPath + newTitle;
+        const filePath = pathPrefix + newTitle;
 
         const data = await putFileSiyuan(filePath, false, file);
         if (data.code === 0) {
