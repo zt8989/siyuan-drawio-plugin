@@ -23,8 +23,12 @@ function generateSiyuanId() {
 }
 
 // 检查并转换文件名的函数
-export function formatFileName(input) {
-    const regex = /^[^-\s]+-\d{14}-[a-z]{7}\.[a-zA-Z0-9]+$/;
+export function formatFileName(input, pathPrefix) {
+    if(pathPrefix.startsWith("/data/assets")) {
+        return input
+    }
+
+    const regex = /^[^-\s]+-\d{14}-[a-zA-Z0-9]{7}\.[a-zA-Z0-9]+$/;
 
     if (!regex.test(input)) {
         // 如果不匹配，则插入 generateSiyuanId 生成的字符串

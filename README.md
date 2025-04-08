@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.29
+0.1.30
 
 ## Changelog
+- **v0.1.30 (2025-04-07)**
+  - Fixed a bug where uploading would create duplicates
 - **v0.1.29 (2025-03-28)**
   - Added harmony platform support
 - **v0.1.28 (2025-03-18)**
