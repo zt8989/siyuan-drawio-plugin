@@ -28,7 +28,7 @@ export function formatFileName(input, pathPrefix) {
         return input
     }
 
-    const regex = /^[^-\s]+-\d{14}-[a-zA-Z0-9]{7}\.[a-zA-Z0-9]+$/;
+    const regex = /^.+-\d{14}-[a-zA-Z0-9]{7}\.[a-zA-Z0-9]+$/;
 
     if (!regex.test(input)) {
         // 如果不匹配，则插入 generateSiyuanId 生成的字符串
