@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.30
+0.1.31
 
 ## Changelog
+- **v0.1.31 (2025-04-27)**
+  - Fixed a bug where uploading would create duplicates
 - **v0.1.30 (2025-04-07)**
   - Fixed a bug where uploading would create duplicates
 - **v0.1.29 (2025-03-28)**
