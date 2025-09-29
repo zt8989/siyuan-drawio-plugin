@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.31
+0.1.32
 
 ## Changelog
+- **v0.1.32 (2025-09-29)**
+  - Fixed errors related to block IDs, creation time, and modification time
 - **v0.1.31 (2025-04-27)**
   - Fixed a bug where uploading would create duplicates
 - **v0.1.30 (2025-04-07)**
