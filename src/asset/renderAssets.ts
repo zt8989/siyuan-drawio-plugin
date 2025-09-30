@@ -48,13 +48,15 @@ function formatDate(date) {
     return `${year}${month}${day}${hours}${minutes}${seconds}`;
 }
 
+function extractId(originalId) {
+    const regex = /(\d{14}-\w+)$/;
+    const match = originalId.match(regex);
+    return match ? match[1] : null;
+}
+
 export const genDrawioIFrameHTML = (assetUrl: string, iframeSrc: string, id: string, width = "100%", height = "200px") => {
-    // const tempElement = document.createElement("template");
     const html = `<iframe frameborder="0" style="width:${width};height:${height};" src="${iframeSrc}"></iframe>`
-    // tempElement.innerHTML = protyle.lute.SpinBlockDOM(html)
-    // const nodeIFrame = tempElement.content.querySelector(`div[data-type="NodeIFrame"]`)
-    // nodeIFrame?.setAttribute('custom-data-assets', assetUrl);
-    const meta = `{: id="${id}" custom-data-assets="${assetUrl}" }`
+    const meta = `{: id="${extractId(id)}" custom-data-assets="${assetUrl}" }`
     return html + "\n" + meta
 };
 
