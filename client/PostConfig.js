@@ -1,6 +1,6 @@
 import { setup as EditorSetup } from "./components/Editor"
 import { setup as EditorUiSetup } from "./components/EditorUi"
-import { setup as ThemeSetup } from "./components/Theme"
+// import { setup as ThemeSetup } from "./components/Theme"
 import { setup as MenuSetup } from "./components/Menus"
 import { formatFileName } from "./api"
 /**
@@ -250,6 +250,6 @@ if (window.parent.siyuan) {
     //#endregion
 
     //#region theme
-    ThemeSetup()
+    // ThemeSetup()
     //#endregion
 }
