@@ -43,7 +43,19 @@ if (window.parent.siyuan) {
             method: "POST"
         })
         if (response.status === 200) {
-            return response.text()
+            if(binaryTest(data.path)) {
+                // trans png to base64
+                return response.blob().then(blob => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(blob);
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.onerror = reject;
+                    });
+                });
+            } else {
+                return response.text()
+            }
         } else {
             const json = await response.json()
             throw new Error(json.msg)
@@ -68,7 +80,8 @@ if (window.parent.siyuan) {
         const fullPath = getFullPath();
         const pathPrefix = "/data/" + fullPath
         const newTitle = formatFileName(title, pathPrefix)
-        const blob = new Blob([content], { type: fileType.mimeType });
+        const blob = (typeof content === "object" && content instanceof Blob) ? content : 
+            new Blob([content], { type: fileType.mimeType });
         const file = new File([blob], newTitle, { type: fileType.mimeType });
 
         // For drawio files, use putFile directly instead of uploadFileToSiyuan
@@ -85,6 +98,10 @@ if (window.parent.siyuan) {
         return { success: false };
     }
 
+    function binaryTest(title) {
+        return /(\.png)$/i.test(title)
+    }
+
     //#endregion
 
     // #region App 
@@ -97,17 +114,18 @@ if (window.parent.siyuan) {
 
     App.prototype.fetchAndShowNotification = function () { }
 
-    var loadTemplate = App.prototype.loadTemplate
-    App.prototype.loadTemplate = function (url, onload, onerror, templateFilename, asLibrary) {
-        if (url.startsWith(ASSETS_DIR_PATH) || url.startsWith(PETAL_DIR_PATH)) {
-            getFileContent({ path: url }).then((text) => {
-                onload(text)
-                this.setMode(App.MODE_DEVICE)
-            }, onerror)
-        } else {
-            loadTemplate.apply(this, arguments);
-        }
-    }
+    // var loadTemplate = App.prototype.loadTemplate
+    // App.prototype.loadTemplate = function (url, onload, onerror, templateFilename, asLibrary) {
+    //     if (url.startsWith(ASSETS_DIR_PATH) || url.startsWith(PETAL_DIR_PATH)) {
+    //         getFileContent({ path: url }).then((text) => {
+    //             debugger
+    //             onload(text)
+    //             this.setMode(App.MODE_DEVICE)
+    //         }, onerror)
+    //     } else {
+    //         loadTemplate.apply(this, arguments);
+    //     }
+    // }
     // #endregion
 
     // #region LocalFile 
@@ -125,7 +143,7 @@ if (window.parent.siyuan) {
             this.updateFileData();
         }
 
-        var binary = this.ui.useCanvasForExport && /(\.png)$/i.test(this.getTitle());
+        var binary = binaryTest(this.getTitle());
         this.setShadowModified(false);
         var savedData = this.getData();
 
@@ -213,6 +231,22 @@ if (window.parent.siyuan) {
     //#endregion
 
     //#region Editor
+    var loadUrl = Editor.prototype.loadUrl
+    Editor.prototype.loadUrl = function (url, success, error, forceBinary, retry, dataUriPrefix, noBinary, headers) {
+        if (url.startsWith(ASSETS_DIR_PATH) || url.startsWith(PETAL_DIR_PATH)) {
+            getFileContent({ path: url }).then(success, error)
+        } else {
+            loadUrl.apply(this, arguments);
+        }
+    }
+    var isCorsEnabledForUrl = Editor.prototype.isCorsEnabledForUrl
+    Editor.prototype.isCorsEnabledForUrl = function (url) {
+        if (url.startsWith(ASSETS_DIR_PATH) || url.startsWith(PETAL_DIR_PATH)) {
+            return true 
+        } else {
+            return isCorsEnabledForUrl.apply(this, arguments)
+        }
+    }
     Editor.prototype.editAsNew = function (xml, title) {
         const href = decodeURIComponent(location.hash).slice(2)
         electron.sendMessage("openTabByPath", href)

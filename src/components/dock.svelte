@@ -3,7 +3,7 @@
     import { confirm, showMessage } from 'siyuan';
     import { onMount } from 'svelte';
     import { removeFile, listDrawioFiles, saveDrawIo } from '@/api';
-    import { ICON_STANDARD, DATA_PATH, PLUGIN_CONFIG } from '@/constants';
+    import { ICON_STANDARD, DATA_PATH, PLUGIN_CONFIG, drawioAssetsPath } from '@/constants';
     import { addWhiteboard, renameWhiteboard } from '@/dialog';
     import type { Asset } from '@/types';
     import { genDrawioHTMLByUrl } from '@/asset/renderAssets';
@@ -90,6 +90,11 @@
     const handleCopy = (path: string, e: MouseEvent) => {
         e.stopPropagation();
         plugin.copyRawLink(genDrawioHTMLByUrl(path));
+    };
+
+    const handleCopyPath = (path: string, e: MouseEvent) => {
+        e.stopPropagation();
+        plugin.copyRawLink(path);
     };
 
     const handleEdit = (file: Asset, e: MouseEvent) => {
@@ -281,7 +286,7 @@
                             <span>
                                 <svg><use xlink:href="#{ICON_STANDARD}"></use></svg>
                             </span>
-                            <span on:click={() => handleOpen(asset.path)}>{asset.hName}</span>
+                            <span on:click={() => handleOpen(asset.path)}>{asset.hName}[{asset.ext}]</span>
                         </div>
                         <div class="b3-list-item__operate">
                             <span
@@ -304,6 +309,18 @@
                                     <use xlink:href="#iconCopy"></use>
                                 </svg>
                             </span>
+                            {#if ['png', 'svg'].includes(asset.ext) && asset.path.includes(drawioAssetsPath)}
+                            <span
+                                class="fileicon copylink b3-tooltips b3-tooltips__s"
+                                aria-label={plugin.i18n.copyLink}
+                                data-name={asset.path}
+                                on:click={e => handleCopyPath(asset.path, e)}
+                            >
+                                <svg>
+                                    <use xlink:href="#iconLink"></use>
+                                </svg>
+                            </span>
+                            {/if}
                             <span
                                 class="fileicon deletefile b3-tooltips b3-tooltips__s"
                                 aria-label={plugin.i18n.delete}

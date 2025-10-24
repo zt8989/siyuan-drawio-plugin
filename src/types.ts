@@ -8,4 +8,5 @@ export type Asset = {
     path: string;
     hName: string;
     updated: number;
+    ext: string;
 };

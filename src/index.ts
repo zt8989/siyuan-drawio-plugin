@@ -21,7 +21,7 @@ import "@/index.scss";
 
 
 import { getIframeFromEventSource } from "./utils";
-import { saveDrawIoXml, searchDrawioFiles } from "./api";
+import { listDrawioFiles, saveDrawIoXml, searchDrawioFiles } from "./api";
 import { CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD, DRAWIO_EXTENSION, drawioAssetsPath, STORAGE_PATH } from "./constants";
 import { createLinkFromTitle, createUrlFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback } from "./types";
@@ -295,11 +295,11 @@ export default class DrawioPlugin extends Plugin {
                     return;
                 }
                 event.stopPropagation();
-                that.renderAssetList(element, inputElement.value, position, exts);
+                that.renderAssetList(element, inputElement.value, position);
             });
             inputElement.addEventListener("compositionend", (event: InputEvent) => {
                 event.stopPropagation();
-                that.renderAssetList(element, inputElement.value, position, exts);
+                that.renderAssetList(element, inputElement.value, position);
             });
             element.lastElementChild.addEventListener("click", (event) => {
                 const target = event.target as HTMLElement;
@@ -324,7 +324,7 @@ export default class DrawioPlugin extends Plugin {
                     }
                 }
             });
-            that.renderAssetList(element, "", position, exts);
+            that.renderAssetList(element, "", position);
         }
 
         bind(dialog.element)
@@ -460,66 +460,34 @@ export default class DrawioPlugin extends Plugin {
     }
 
 
-    async renderAssetList(element: Element, k: string, position: IPosition, exts: string[] = []) {
+    async renderAssetList(element: Element, k: string, position: IPosition) {
         const frontEnd = getFrontend();
         const isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
     
         try {
-            // If we're specifically looking for drawio files, use our custom search
-            if (exts.includes(DRAWIO_EXTENSION)) {
-                // Search in both new and old locations
-                const searchDirs = [STORAGE_PATH, drawioAssetsPath];
-                const response = await searchDrawioFiles(k, searchDirs);
-    
-                let searchHTML = "";
-                response.forEach((item: { path: string, hName: string }, index: number) => {
-                    searchHTML += `<div data-value="${item.path}" class="b3-list-item${index === 0 ? " b3-list-item--focus" : ""}" style="display:block">
-                        <div class="b3-list-item__text">
-                            ${item.hName}</div>
-                        <div class="b3-list-item__text" style="font-size: 0.7em">
-                            ${item.path}</div>
-                    </div>`;
-                });
-    
-                const listElement = element.querySelector(".b3-list");
-                const inputElement = element.querySelector("input");
-                listElement.innerHTML = searchHTML || `<li class="b3-list--empty">${this.i18n.emptyContent}</li>`;
-                if (isMobile) {
-                    window.siyuan.menus.menu.fullscreen();
-                } else {
-                    window.siyuan.menus.menu.popup(position);
-                }
-                if (!k) {
-                    inputElement.select();
-                }
+            const assets = await listDrawioFiles();
+            const response = await searchDrawioFiles(k, assets);
+
+            let searchHTML = "";
+            response.forEach((item: { path: string, hName: string }, index: number) => {
+                searchHTML += `<div data-value="${item.path}" class="b3-list-item${index === 0 ? " b3-list-item--focus" : ""}" style="display:block">
+                    <div class="b3-list-item__text">
+                        ${item.hName}</div>
+                    <div class="b3-list-item__text" style="font-size: 0.7em">
+                        ${item.path}</div>
+                </div>`;
+            });
+
+            const listElement = element.querySelector(".b3-list");
+            const inputElement = element.querySelector("input");
+            listElement.innerHTML = searchHTML || `<li class="b3-list--empty">${this.i18n.emptyContent}</li>`;
+            if (isMobile) {
+                window.siyuan.menus.menu.fullscreen();
             } else {
-                // For other file types, use the standard API
-                fetchPost("/api/search/searchAsset", {
-                    k,
-                    exts
-                }, (response) => {
-                    let searchHTML = "";
-                    response.data.forEach((item: { path: string, hName: string }, index: number) => {
-                        searchHTML += `<div data-value="${item.path}" class="b3-list-item${index === 0 ? " b3-list-item--focus" : ""}" style="display:block">
-                        <div class="b3-list-item__text">
-                            ${item.hName}</div>
-                        <div class="b3-list-item__text" style="font-size: 0.7em">
-                            ${item.path}</div>
-                    </div>`;
-                    });
-    
-                    const listElement = element.querySelector(".b3-list");
-                    const inputElement = element.querySelector("input");
-                    listElement.innerHTML = searchHTML || `<li class="b3-list--empty">${this.i18n.emptyContent}</li>`;
-                    if (isMobile) {
-                        window.siyuan.menus.menu.fullscreen();
-                    } else {
-                        window.siyuan.menus.menu.popup(position);
-                    }
-                    if (!k) {
-                        inputElement.select();
-                    }
-                });
+                window.siyuan.menus.menu.popup(position);
+            }
+            if (!k) {
+                inputElement.select();
             }
         } catch (error) {
             console.error("Error rendering asset list:", error);

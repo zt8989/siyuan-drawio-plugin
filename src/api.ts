@@ -402,34 +402,37 @@ export async function readDir(path: string): Promise<IResReadDir[]> {
  * @param dirs Array of directory paths to search in (without DATA_PATH prefix)
  * @returns Array of Asset objects
  */
-export async function listDrawioFiles(dirs?: string[]): Promise<Asset[]> {
+export async function listDrawioFiles(dirs?: Record<string, string[]>): Promise<Asset[]> {
     const assets: Asset[] = [];
     
     // Use default directories if none specified
-    const dirsToSearch = dirs || [
-        STORAGE_PATH, // plugin location
-        'assets' // assets location
-        
-    ];
+    const dirsToSearch = dirs || {
+                [STORAGE_PATH]: [".drawio", ".svg", ".png", ".html"], 
+                [drawioAssetsPath]: [".drawio", ".drawio.png", ".drawio.svg", ".drawio.html"]
+    };
     
     // Helper function to scan a directory for drawio files
-    async function scanDirectory(path: string) {
+    async function scanDirectory(path: string, exts = [DRAWIO_EXTENSION]) {
         try {
             const files = await readDir(path);
             for (const file of files) {
                 const fullPath = path + '/' + file.name;
                 if (file.isDir) {
-                    await scanDirectory(fullPath);
-                } else if (file.name.endsWith(DRAWIO_EXTENSION)) {
-                    const nameWithoutExt = file.name.slice(0, -DRAWIO_EXTENSION.length);
+                    await scanDirectory(fullPath, exts);
+                } else if (exts.some(ext => file.name.endsWith(ext))) {
+                    const ext = exts.find(ext => file.name.endsWith(ext)) || DRAWIO_EXTENSION;
+                    const nameWithoutExt = file.name.slice(0, -ext.length);
                     const parts = nameWithoutExt.split('-');
                     const baseName = parts.length >= 3 ? 
                         nameWithoutExt.slice(0, -(parts.slice(-2).join('-').length + 1)) : 
                         nameWithoutExt;
+                    // Extract only the final extension (e.g., 'png' from '.drawio.png')
+                    const finalExt = ext.split('.').pop() || '';
                     assets.push({
-                        path: fullPath.substring(6),  // 移除 '/data/' 前缀
+                        path: fullPath.substring(DATA_PATH.length),  // 移除 '/data/' 前缀
                         hName: baseName,
-                        updated: file.updated
+                        updated: file.updated,
+                        ext: finalExt
                     });
                 }
             }
@@ -439,8 +442,8 @@ export async function listDrawioFiles(dirs?: string[]): Promise<Asset[]> {
     }
     
     // Scan all specified directories
-    for (const dir of dirsToSearch) {
-        await scanDirectory(DATA_PATH + dir);
+    for (const dir in dirsToSearch) {
+        await scanDirectory(DATA_PATH + dir, dirsToSearch[dir]);
     }
     
     return assets.sort((a, b) => a.hName.localeCompare(b.hName, undefined, { numeric: true, sensitivity: 'base' }));
@@ -452,8 +455,7 @@ export async function listDrawioFiles(dirs?: string[]): Promise<Asset[]> {
  * @param dirs Optional array of directory paths to search in
  * @returns Filtered array of Asset objects
  */
-export async function searchDrawioFiles(keyword: string, dirs?: string[]): Promise<Asset[]> {
-    const assets = await listDrawioFiles(dirs);
+export async function searchDrawioFiles(keyword: string, assets: Asset[]): Promise<Asset[]> {
     if (!keyword) {
         return assets;
     }
@@ -525,7 +527,7 @@ export async function saveDrawIo(file: File) {
     }
 }
 
-function generateSiyuanId() {
+export function generateSiyuanIdPrefix() {
     const now = new Date();
 
     // 生成时间戳部分 YYYYMMDDHHMMSS
@@ -538,12 +540,23 @@ function generateSiyuanId() {
 
     const timestamp = `${year}${month}${day}${hours}${minutes}${seconds}`;
 
-    // 生成 7 位随机字母
+    return timestamp
+}
+
+export function generateSiyuanIdSuffix() {
+     // 生成 7 位随机字母
     const characters = 'abcdefghijklmnopqrstuvwxyz';
     let random = '';
     for (let i = 0; i < 7; i++) {
         random += characters.charAt(Math.floor(Math.random() * characters.length));
     }
+
+    return random;
+}
+
+export function generateSiyuanId() {
+    const timestamp = generateSiyuanIdPrefix();
+    const random = generateSiyuanIdSuffix();
 
     return `${timestamp}-${random}`;
 }

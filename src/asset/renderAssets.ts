@@ -2,6 +2,7 @@ import {Constants} from "@/constants";
 import {pathPosix} from "@/util/pathName";
 import { getTitleFromPath } from "@/link";
 import { IProtyle } from "siyuan";
+import { generateSiyuanIdPrefix } from "@/api";
 
 export const renderAssetsPreview = (pathString: string) => {
     if (!pathString) {
@@ -21,7 +22,7 @@ export const renderAssetsPreview = (pathString: string) => {
 
 export const genDrawioHTMLByUrl = (assetUrl: string)  => {
     const title = getTitleFromPath(assetUrl)
-    return genDrawioIFrameHTML(assetUrl, getDrawioIframe(title, assetUrl), getIdFromTitle(title))
+    return genDrawioIFrameHTML(assetUrl, getDrawioIframe(title, assetUrl), getIdFromTitle(title) || generateSiyuanIdPrefix())
 }
 
 export const getDrawioIframe = (title: string, assetUrl: string) => {
@@ -56,7 +57,7 @@ function extractId(originalId) {
 
 export const genDrawioIFrameHTML = (assetUrl: string, iframeSrc: string, id: string, width = "100%", height = "200px") => {
     const html = `<iframe frameborder="0" style="width:${width};height:${height};" src="${iframeSrc}"></iframe>`
-    const meta = `{: id="${extractId(id)}" custom-data-assets="${assetUrl}" }`
+    const meta = `{: id="${id}" custom-data-assets="${assetUrl}" }`
     return html + "\n" + meta
 };
 
@@ -70,6 +71,6 @@ export const genDrawioEmbedHTML = (assetUrl: string, iframeSrc: string, protyle:
 };
 
 function getIdFromTitle(title: string): string {
-    return title.split(".")[0]
+    return title.includes("-") ? extractId(title.split(".")[0]) : ""
 }
 
