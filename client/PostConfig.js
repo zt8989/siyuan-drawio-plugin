@@ -2,7 +2,7 @@ import { setup as EditorSetup } from "./components/Editor"
 import { setup as EditorUiSetup } from "./components/EditorUi"
 // import { setup as ThemeSetup } from "./components/Theme"
 import { setup as MenuSetup } from "./components/Menus"
-import { formatFileName } from "./api"
+import { formatFileName, generateSiyuanId } from "./api"
 /**
  * Copyright (c) 2006-2024, JGraph Ltd
  * Copyright (c) 2006-2024, draw.io AG
@@ -12,7 +12,7 @@ window.VSD_CONVERT_URL = null;
 window.EMF_CONVERT_URL = null;
 window.ICONSEARCH_PATH = null;
 const PETAL_DIR_PATH = "storage/petal/siyuan-drawio-plugin/";
-const ASSETS_DIR_PATH = "assets/"
+const ASSETS_DIR_PATH = "assets/drawio/"
 
 if (window.parent.siyuan) {
     const electron = window.electron
@@ -66,18 +66,18 @@ if (window.parent.siyuan) {
         return decodeURIComponent(location.hash.substring(2))
     }
 
-    function getFullPath() {
+    function getFullPath(title) {
         const fullPathName = getFullPathName()
         const lastSlashIndex = fullPathName.lastIndexOf('/');
         if (fullPathName) {
             return lastSlashIndex !== -1 ? fullPathName.substring(0, lastSlashIndex + 1) : '';
         } else {
-            return PETAL_DIR_PATH
+            return [".drawio.svg", ".drawio.png"].some(it => title.includes(it)) ? ASSETS_DIR_PATH : PETAL_DIR_PATH; 
         }
     }
 
     async function saveFileToSiyuan(content, title, fileType) {
-        const fullPath = getFullPath();
+        const fullPath = getFullPath(title);
         const pathPrefix = "/data/" + fullPath
         const newTitle = formatFileName(title, pathPrefix)
         const blob = (typeof content === "object" && content instanceof Blob) ? content : 

@@ -1,5 +1,5 @@
 // 生成思源 ID 的函数
-function generateSiyuanId() {
+export function generateSiyuanId() {
     const now = new Date();
 
     // 生成时间戳部分 YYYYMMDDHHMMSS
@@ -24,21 +24,24 @@ function generateSiyuanId() {
 
 // 检查并转换文件名的函数
 export function formatFileName(input, pathPrefix) {
-    if(pathPrefix.startsWith("/data/assets")) {
-        return input
+    // 将输入按点拆分
+    const parts = input.split('.');
+    let extension = parts.pop(); // 获取最后一部分作为扩展名
+    if(parts[parts.length - 1] == "drawio") {
+        extension = "drawio." + extension;
+        parts.pop();
     }
-
-    const regex = /^.+-\d{14}-[a-zA-Z0-9]{7}\.[a-zA-Z0-9]+$/;
-
-    if (!regex.test(input)) {
+    const name = parts.join('.'); // 其余部分作为文件名
+    
+    // 定义文件名部分的正则表达式
+    const nameRegex = /^.+-\d{14}-[a-zA-Z0-9]{7}$/;
+    
+    // 检查文件名部分是否符合要求
+    if (!nameRegex.test(name)) {
         // 如果不匹配，则插入 generateSiyuanId 生成的字符串
-        const parts = input.split('.');
-        if (parts.length === 2) {
-            const [name, extension] = parts;
-            return `${name}-${generateSiyuanId()}.${extension}`;
-        }
+        return `${name}-${generateSiyuanId()}.${extension}`;
     }
-
+    
     // 如果已经匹配，直接返回原字符串
     return input;
 }

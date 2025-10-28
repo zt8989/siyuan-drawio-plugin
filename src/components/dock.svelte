@@ -94,7 +94,25 @@
 
     const handleCopyPath = (path: string, e: MouseEvent) => {
         e.stopPropagation();
-        plugin.copyRawLink(path);
+        // 提取文件名和完整路径
+        const pathParts = path.split('/');
+        const fullFileName = pathParts[pathParts.length - 1];
+        
+        // 定义常见图片后缀
+        const imgExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.svg'];
+        
+        // 处理文件名，移除图片后缀
+        let fileName = fullFileName;
+        for (const ext of imgExtensions) {
+            if (fileName.endsWith(ext)) {
+                fileName = fileName.substring(0, fileName.length - ext.length);
+                break;
+            }
+        }
+        
+        // 生成 Markdown 格式的图片链接
+        const markdownLink = `![${fileName}](${path})`;
+        plugin.copyRawLink(markdownLink);
     };
 
     const handleEdit = (file: Asset, e: MouseEvent) => {

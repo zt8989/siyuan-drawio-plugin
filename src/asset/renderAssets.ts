@@ -50,7 +50,7 @@ function formatDate(date) {
 }
 
 function extractId(originalId) {
-    const regex = /(\d{14}-\w+)$/;
+    const regex = /(\d+-\w+)$/;
     const match = originalId.match(regex);
     return match ? match[1] : null;
 }
