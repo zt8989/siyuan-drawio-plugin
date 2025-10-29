@@ -1,8 +1,8 @@
 import { setup as EditorSetup } from "./components/Editor"
 import { setup as EditorUiSetup } from "./components/EditorUi"
-import { setup as ThemeSetup } from "./components/Theme"
+// import { setup as ThemeSetup } from "./components/Theme"
 import { setup as MenuSetup } from "./components/Menus"
-import { formatFileName } from "./api"
+import { formatFileName, generateSiyuanId } from "./api"
 /**
  * Copyright (c) 2006-2024, JGraph Ltd
  * Copyright (c) 2006-2024, draw.io AG
@@ -12,7 +12,7 @@ window.VSD_CONVERT_URL = null;
 window.EMF_CONVERT_URL = null;
 window.ICONSEARCH_PATH = null;
 const PETAL_DIR_PATH = "storage/petal/siyuan-drawio-plugin/";
-const ASSETS_DIR_PATH = "assets/"
+const ASSETS_DIR_PATH = "assets/drawio/"
 
 if (window.parent.siyuan) {
     const electron = window.electron
@@ -43,7 +43,19 @@ if (window.parent.siyuan) {
             method: "POST"
         })
         if (response.status === 200) {
-            return response.text()
+            if(binaryTest(data.path)) {
+                // trans png to base64
+                return response.blob().then(blob => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(blob);
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.onerror = reject;
+                    });
+                });
+            } else {
+                return response.text()
+            }
         } else {
             const json = await response.json()
             throw new Error(json.msg)
@@ -54,21 +66,22 @@ if (window.parent.siyuan) {
         return decodeURIComponent(location.hash.substring(2))
     }
 
-    function getFullPath() {
+    function getFullPath(title) {
         const fullPathName = getFullPathName()
         const lastSlashIndex = fullPathName.lastIndexOf('/');
         if (fullPathName) {
             return lastSlashIndex !== -1 ? fullPathName.substring(0, lastSlashIndex + 1) : '';
         } else {
-            return PETAL_DIR_PATH
+            return [".drawio.svg", ".drawio.png"].some(it => title.includes(it)) ? ASSETS_DIR_PATH : PETAL_DIR_PATH; 
         }
     }
 
     async function saveFileToSiyuan(content, title, fileType) {
-        const fullPath = getFullPath();
+        const fullPath = getFullPath(title);
         const pathPrefix = "/data/" + fullPath
         const newTitle = formatFileName(title, pathPrefix)
-        const blob = new Blob([content], { type: fileType.mimeType });
+        const blob = (typeof content === "object" && content instanceof Blob) ? content : 
+            new Blob([content], { type: fileType.mimeType });
         const file = new File([blob], newTitle, { type: fileType.mimeType });
 
         // For drawio files, use putFile directly instead of uploadFileToSiyuan
@@ -85,6 +98,10 @@ if (window.parent.siyuan) {
         return { success: false };
     }
 
+    function binaryTest(title) {
+        return /(\.png)$/i.test(title)
+    }
+
     //#endregion
 
     // #region App 
@@ -97,17 +114,18 @@ if (window.parent.siyuan) {
 
     App.prototype.fetchAndShowNotification = function () { }
 
-    var loadTemplate = App.prototype.loadTemplate
-    App.prototype.loadTemplate = function (url, onload, onerror, templateFilename, asLibrary) {
-        if (url.startsWith(ASSETS_DIR_PATH) || url.startsWith(PETAL_DIR_PATH)) {
-            getFileContent({ path: url }).then((text) => {
-                onload(text)
-                this.setMode(App.MODE_DEVICE)
-            }, onerror)
-        } else {
-            loadTemplate.apply(this, arguments);
-        }
-    }
+    // var loadTemplate = App.prototype.loadTemplate
+    // App.prototype.loadTemplate = function (url, onload, onerror, templateFilename, asLibrary) {
+    //     if (url.startsWith(ASSETS_DIR_PATH) || url.startsWith(PETAL_DIR_PATH)) {
+    //         getFileContent({ path: url }).then((text) => {
+    //             debugger
+    //             onload(text)
+    //             this.setMode(App.MODE_DEVICE)
+    //         }, onerror)
+    //     } else {
+    //         loadTemplate.apply(this, arguments);
+    //     }
+    // }
     // #endregion
 
     // #region LocalFile 
@@ -125,7 +143,7 @@ if (window.parent.siyuan) {
             this.updateFileData();
         }
 
-        var binary = this.ui.useCanvasForExport && /(\.png)$/i.test(this.getTitle());
+        var binary = binaryTest(this.getTitle());
         this.setShadowModified(false);
         var savedData = this.getData();
 
@@ -213,6 +231,22 @@ if (window.parent.siyuan) {
     //#endregion
 
     //#region Editor
+    var loadUrl = Editor.prototype.loadUrl
+    Editor.prototype.loadUrl = function (url, success, error, forceBinary, retry, dataUriPrefix, noBinary, headers) {
+        if (url.startsWith(ASSETS_DIR_PATH) || url.startsWith(PETAL_DIR_PATH)) {
+            getFileContent({ path: url }).then(success, error)
+        } else {
+            loadUrl.apply(this, arguments);
+        }
+    }
+    var isCorsEnabledForUrl = Editor.prototype.isCorsEnabledForUrl
+    Editor.prototype.isCorsEnabledForUrl = function (url) {
+        if (url.startsWith(ASSETS_DIR_PATH) || url.startsWith(PETAL_DIR_PATH)) {
+            return true 
+        } else {
+            return isCorsEnabledForUrl.apply(this, arguments)
+        }
+    }
     Editor.prototype.editAsNew = function (xml, title) {
         const href = decodeURIComponent(location.hash).slice(2)
         electron.sendMessage("openTabByPath", href)
@@ -250,6 +284,6 @@ if (window.parent.siyuan) {
     //#endregion
 
     //#region theme
-    ThemeSetup()
+    // ThemeSetup()
     //#endregion
 }
