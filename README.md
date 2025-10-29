@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.32
+0.1.33
 
 ## Changelog
+- **v0.1.33 (2025-10-29)**
+  - Added support for svg, png, and html files. Now svg and png can be inserted as images into notes
 - **v0.1.32 (2025-09-29)**
   - Fixed errors related to block IDs, creation time, and modification time
 - **v0.1.31 (2025-04-27)**
