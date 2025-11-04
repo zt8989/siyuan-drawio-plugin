@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.33
+0.1.34
 
 ## Changelog
+- **v0.1.34 (2025-11-04)**
+  - Fixed the bug where selected shapes could not be copied as image
 - **v0.1.33 (2025-10-29)**
   - Added support for svg, png, and html files. Now svg and png can be inserted as images into notes
 - **v0.1.32 (2025-09-29)**
