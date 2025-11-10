@@ -49,5 +49,6 @@
     "emptyContent": "No related content found",
     "uploadDrawioOnly": "Please upload .drawio files only",
     "uploadSuccess": "File ${fileName} uploaded successfully",
-    "upload": "Upload"
+    "upload": "Upload",
+    "editDrawio": "Edit Drawio"
 }

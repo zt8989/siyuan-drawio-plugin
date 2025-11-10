@@ -12,6 +12,7 @@ window.VSD_CONVERT_URL = null;
 window.EMF_CONVERT_URL = null;
 window.ICONSEARCH_PATH = null;
 const PETAL_DIR_PATH = "storage/petal/siyuan-drawio-plugin/";
+const ASSETS = "assets"
 const ASSETS_DIR_PATH = "assets/drawio/"
 
 if (window.parent.siyuan) {
@@ -233,7 +234,7 @@ if (window.parent.siyuan) {
     //#region Editor
     var loadUrl = Editor.prototype.loadUrl
     Editor.prototype.loadUrl = function (url, success, error, forceBinary, retry, dataUriPrefix, noBinary, headers) {
-        if (url.startsWith(ASSETS_DIR_PATH) || url.startsWith(PETAL_DIR_PATH)) {
+        if (url.startsWith(ASSETS) || url.startsWith(PETAL_DIR_PATH)) {
             getFileContent({ path: url }).then(success, error)
         } else {
             loadUrl.apply(this, arguments);
@@ -241,7 +242,7 @@ if (window.parent.siyuan) {
     }
     var isCorsEnabledForUrl = Editor.prototype.isCorsEnabledForUrl
     Editor.prototype.isCorsEnabledForUrl = function (url) {
-        if (url.startsWith(ASSETS_DIR_PATH) || url.startsWith(PETAL_DIR_PATH)) {
+        if (url.startsWith(ASSETS) || url.startsWith(PETAL_DIR_PATH)) {
             return true 
         } else {
             return isCorsEnabledForUrl.apply(this, arguments)

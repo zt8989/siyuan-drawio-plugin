@@ -34,12 +34,19 @@ export default class DrawioPlugin extends Plugin {
     private isMobile: boolean;
     private configLoaded = false
 
+    // Pre-bind methods to ensure same reference for event cleanup
+    private boundOnOpenTab = this.onOpenTab.bind(this)
+    private boundBindStaticEvent = this.bindStaticEvent.bind(this)
+    private boundBindWsEvent = this.bindWsEvent.bind(this)
+    private boundOpenMenuImage = this.openMenuImage.bind(this)
+
     async onload() {
         window.drawioPlugin = this
         
-        this.eventBus.on("open-siyuan-url-plugin", this.onOpenTab.bind(this));
-        this.eventBus.on("loaded-protyle-static", this.bindStaticEvent.bind(this))
-        this.eventBus.on("ws-main", this.bindWsEvent.bind(this))
+        this.eventBus.on("open-siyuan-url-plugin", this.boundOnOpenTab);
+        this.eventBus.on("loaded-protyle-static", this.boundBindStaticEvent)
+        this.eventBus.on("ws-main", this.boundBindWsEvent)
+        this.eventBus.on("open-menu-image", this.boundOpenMenuImage);
 
         window.addEventListener("message", this.onMessage)
         window.addEventListener('storage', this.onStorage)
@@ -139,8 +146,13 @@ export default class DrawioPlugin extends Plugin {
     }
 
     async onunload() {
+        this.eventBus.off("open-siyuan-url-plugin", this.boundOnOpenTab);
+        this.eventBus.off("loaded-protyle-static", this.boundBindStaticEvent)
+        this.eventBus.off("ws-main", this.boundBindWsEvent)
+        this.eventBus.off("open-menu-image", this.boundOpenMenuImage);
+        
         window.removeEventListener("message", this.onMessage)
-        window.addEventListener('storage', this.onStorage)
+        window.removeEventListener('storage', this.onStorage)
     }
 
     uninstall() {
@@ -409,6 +421,23 @@ export default class DrawioPlugin extends Plugin {
         this.openCustomTab(getTitleFromPath(path), undefined, {
             url: path
         })
+    }
+
+    private openMenuImage({ detail }) {
+        const selectedElement = detail.element;
+        const imageElement = selectedElement.querySelector("img") as HTMLImageElement;
+        const imageURL = imageElement.dataset.src;
+        if (imageURL && imageURL.startsWith(drawioAssetsPath)) {
+            window.siyuan.menus.menu.addItem({
+            id: "edit-drawio",
+            icon: 'iconEdit',
+            label: `${this.i18n.editDrawio}`,
+            index: 1,
+            click: () => {
+                    this.openCustomTabByPath(imageURL);
+                }
+            })
+        }
     }
 
     bindStaticEvent(data: CustomEvent<{ protyle: IProtyle }>) {

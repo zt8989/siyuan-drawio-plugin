@@ -49,5 +49,6 @@
     "emptyContent": "未找到相关内容",
     "uploadDrawioOnly": "请只上传.drawio文件",
     "uploadSuccess": "文件 ${fileName} 上传成功",
-    "upload": "上传"
+    "upload": "上传",
+    "editDrawio": "修改 drawio"
 }

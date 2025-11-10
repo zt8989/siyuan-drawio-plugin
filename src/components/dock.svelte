@@ -309,7 +309,7 @@
                         <div class="b3-list-item__operate">
                             <span
                                 class="fileicon editfile b3-tooltips b3-tooltips__s"
-                                aria-label={plugin.i18n.edit}
+                                aria-label={plugin.i18n.renameWhiteboard}
                                 data-name={asset.path}
                                 on:click={e => handleEdit(asset, e)}
                             >
