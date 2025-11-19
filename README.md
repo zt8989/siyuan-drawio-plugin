@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.34
+0.1.35
 
 ## Changelog
+- **v0.1.35 (2025-11-04)**
+  - Added support for right-click editing of images in drawio
 - **v0.1.34 (2025-11-04)**
   - Fixed the bug where selected shapes could not be copied as image
 - **v0.1.33 (2025-10-29)**
