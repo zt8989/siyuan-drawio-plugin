@@ -3,10 +3,11 @@
  * @Author       : frostime
  * @Date         : 2024-03-23 21:37:33
  * @FilePath     : /src/libs/dialog.ts
- * @LastEditTime : 2024-10-16 14:48:42
+ * @LastEditTime : 2024-10-16 14:31:04
  * @Description  : Kits about dialogs
  */
 import { Dialog } from "siyuan";
+import { type SvelteComponent } from "svelte";
 
 export const inputDialog = (args: {
     title: string, placeholder?: string, defaultText?: string,
@@ -138,4 +139,26 @@ export const simpleDialog = (args: {
         dialog,
         close: dialog.destroy.bind(dialog)
     };
+}
+
+
+export const svelteDialog = (args: {
+    title: string, constructor: (container: HTMLElement) => SvelteComponent,
+    width?: string, height?: string,
+    callback?: () => void;
+}) => {
+    let container = document.createElement('div')
+    container.style.display = 'contents';
+    let component = args.constructor(container);
+    const { dialog, close } = simpleDialog({
+        ...args, ele: container, callback: () => {
+            component.$destroy();
+            if (args.callback) args.callback();
+        }
+    });
+    return {
+        component,
+        dialog,
+        close
+    }
 }
