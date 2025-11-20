@@ -62,14 +62,16 @@ export default class DrawioPlugin extends Plugin {
 <path d="M31.454 31.454h-31.454v-31.454h31.454v31.454zM18.241 20.403v4.545c0 0.944 0.765 1.709 1.709 1.709h5.893c0.944 0 1.709-0.765 1.709-1.709v-4.545c0-0.944-0.765-1.709-1.709-1.709h-3.266l-3.476-5.92c0.753-0.179 1.313-0.855 1.313-1.662v-4.606c0-0.944-0.765-1.709-1.709-1.709h-5.893c-0.944 0-1.709 0.765-1.709 1.709v4.606c0 0.788 0.533 1.45 1.258 1.648l-3.484 5.934h-3.266c-0.944 0-1.709 0.765-1.709 1.709v4.545c0 0.944 0.765 1.709 1.709 1.709h5.893c0.944 0 1.709-0.765 1.709-1.709v-4.545c0-1.032-0.53-1.709-2.199-1.709l3.448-5.873h2.651l3.448 5.873c-1.681-0.116-2.366 0.988-2.322 1.709z"></path>
 </symbol>`);
 
-        this.addTopBar({
-            icon: ICON_STANDARD,
-            title: this.i18n.openDrawio,
-            position: "right",
-            callback: () => {
-                this.openNewCustomTab()
-            }
-        });
+        if(!this.isMobile) {
+            this.addTopBar({
+                icon: ICON_STANDARD,
+                title: this.i18n.openDrawio,
+                position: "right",
+                callback: () => {
+                    this.openNewCustomTab()
+                }
+            });
+        }
 
         const that = this
         this.customTab = this.addTab({
@@ -77,8 +79,7 @@ export default class DrawioPlugin extends Plugin {
             init() {
                 const checkConfig = () => {
                     if (that.configLoaded) {
-                        const urlObj = qs.stringify(this.data || {})
-                        this.element.innerHTML = `<iframe class="siyuan-drawio-plugin__custom-tab" src="/plugins/siyuan-drawio-plugin/webapp/?${urlObj.toString()}"></iframe>`
+                        this.element.innerHTML = that.getIframeHtml(this.data || {})
                     } else {
                         setTimeout(checkConfig, 100);
                     }
@@ -128,6 +129,11 @@ export default class DrawioPlugin extends Plugin {
         });
 
         this.restoreData()
+    }
+
+    private getIframeHtml(data: any = {}) {
+        const urlObj = qs.stringify(data)
+        return `<iframe class="siyuan-drawio-plugin__custom-tab" src="/plugins/siyuan-drawio-plugin/webapp/?${urlObj.toString()}"></iframe>`
     }
 
     async restoreData(){
@@ -253,7 +259,6 @@ export default class DrawioPlugin extends Plugin {
             x: 500,
             y: 500
         }
-        const exts = [DRAWIO_EXTENSION]
         const createDiv = showCreate ? `<div class="search__tip">
             <kbd>shift ↵</kbd> ${this.i18n.create}
             <kbd>Esc</kbd> ${this.i18n.exitSearch}
@@ -342,7 +347,16 @@ export default class DrawioPlugin extends Plugin {
         bind(dialog.element)
     }
 
-
+    public showDrawioDialog(title: string, data: Record<string, any>) {
+        const that = this
+        const dialog = new Dialog({
+            title: title || 'drawio',
+            content: that.getIframeHtml({ ...data, ui: 'min' }),
+            width: "100vw",
+            height: "100vh",
+        });
+        return dialog
+    }
 
     showInsertDialog = (protyle: Protyle) => {
         const range = protyle.protyle.toolbar.range;
@@ -405,7 +419,7 @@ export default class DrawioPlugin extends Plugin {
     }
 
     openCustomTab(title?: string, icon?: string, data?: any,) {
-        return openTab({   
+        this.isMobile ? this.showDrawioDialog(title, data || {}) : openTab({   
             app: this.app,
             custom: {
                 icon:  icon || ICON_STANDARD,
@@ -422,6 +436,8 @@ export default class DrawioPlugin extends Plugin {
             url: path
         })
     }
+
+    
 
     private openMenuImage({ detail }) {
         const selectedElement = detail.element;
