@@ -20,9 +20,15 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-0.1.37
+1.0.39
 
 ## Changelog
+- **v1.0.39**
+  - Added default save path setting (Petal directory vs Assets directory)
+  - Auto-copy client files to webapp dir on each dev rebuild for instant preview
+  - Added CDP debugging skill for Electron apps
+  - Fixed settings dialog mounting and UI issues
+  - Removed deprecated custom libraries settings in favor of streamlined save settings
 - **v0.1.36 (2025-11-19)**
   - Added mobile support
 - **v0.1.35 (2025-11-10)**

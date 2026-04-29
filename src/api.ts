@@ -472,7 +472,7 @@ export async function searchDrawioFiles(keyword: string, assets: Asset[]): Promi
  * @param value Filename to save
  * @returns Object with success status and path
  */
-export async function saveDrawIoXml(value: string) {
+export async function saveDrawIoXml(value: string, savePath: string = STORAGE_PATH) {
     if(!value || checkInvalidPathChar(value)) {
         throw new Error(`Drawio: 名称 ${value} 不合法`);
     }
@@ -483,14 +483,13 @@ export async function saveDrawIoXml(value: string) {
     filenameNoId = value + DRAWIO_EXTENSION
     
     const file = saveContentAsFile(value, blankDrawio);
-    const path = DATA_PATH + STORAGE_PATH + '/' + filename;
+    const path = DATA_PATH + savePath + '/' + filename;
     
     try {
         const response = await putFile(path, false, file);
-        // Return standardized format to work with both older and newer versions
         return {
                 succMap: {
-                [filenameNoId]: STORAGE_PATH + '/' + filename 
+                [filenameNoId]: savePath + '/' + filename 
             }
         };
     } catch (error) {
@@ -504,7 +503,7 @@ export async function saveDrawIoXml(value: string) {
  * @param file File object to save
  * @returns Object with success status and path
  */
-export async function saveDrawIo(file: File) {
+export async function saveDrawIo(file: File, savePath: string = STORAGE_PATH) {
     const value = file.name.replace(DRAWIO_EXTENSION, '');
     if(!value || checkInvalidPathChar(value)) {
         throw new Error(`Drawio: 名称 ${value} 不合法`);
@@ -512,13 +511,13 @@ export async function saveDrawIo(file: File) {
     let filename = value + "-" + generateSiyuanId() + DRAWIO_EXTENSION;
     let filenameNoId = value + DRAWIO_EXTENSION;
     
-    const path = DATA_PATH + STORAGE_PATH + '/' + filename;
+    const path = DATA_PATH + savePath + '/' + filename;
     
     try {
         const response = await putFile(path, false, file);
         return {
             succMap: {
-                [filenameNoId]: STORAGE_PATH + '/' + filename 
+                [filenameNoId]: savePath + '/' + filename 
             }
         };
     } catch (error) {
