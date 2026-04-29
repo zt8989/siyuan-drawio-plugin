@@ -69,8 +69,9 @@
         isLoading = true;
         error = '';
         try {
+            const savePath = plugin.getDrawioConfig()?.defaultSavePath;
             for (const file of drawioFiles) {
-                await saveDrawIo(file);
+                await saveDrawIo(file, savePath);
                 showMessage(plugin.i18n.uploadSuccess.replace('${fileName}', file.name) || 'Upload successful');
             }
             searchAssets();

@@ -1,19 +1,30 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`src/` hosts the TypeScript + Svelte runtime that injects Draw.io into Siyuan; key helpers such as `src/link.ts` handle URL generation while `src/file.ts` writes diagram assets. Draw.io’s upstream assets and bridge scripts stay in `client/` and `drawio/`, static marketing media in `asset/`, and raw public files for Vite in `public/`. Build artifacts appear in `dev/` (hot reload) and `dist/` (production), with packaging helpers and symlink utilities inside `scripts/`.
+`src/` hosts the TypeScript + Svelte runtime. Key helpers: `src/link.ts` (URL generation), `src/asset/renderAssets.ts` (iframe HTML), `src/api.ts` (Siyuan API calls). Draw.io upstream assets and bridge scripts live in `drawio/` and `client/` (`PostConfig.js`, `PreConfig.js`, `embed.html`, `embed2.js`). Public files for Vite in `public/`. Build artifacts in `dev/` (hot reload) and `dist/` (production). Symlink utilities in `scripts/`. Plugin config stored at `.opencode/skill/` for embedded skills.
 
 ## Build, Test, and Development Commands
-Run `pnpm install` once, then `pnpm dev` for a watch build with inline source maps. `pnpm make-link` (or `pnpm make-link-win`) symlinks `dev/` into your Siyuan plugin directory for instant preview; `pnpm make-build-link` instead links the optimized `dist/` output. Ship-ready bundles come from `pnpm build`, followed by `pnpm make-install` to populate `package.zip`. Use `pnpm update-version` whenever both `plugin.json` and `package.json` need version bumps.
+- `pnpm dev` — watch build with inline sourcemaps. **Client files (`client/*.js`) auto-copy into `dev/webapp/` on each rebuild** (IIFE-wrapped via `auto-copy-client` plugin in `vite.config.ts`).
+- `pnpm make-link` — symlink `dev/` into Siyuan plugin dir for instant preview.
+- `pnpm build` — production bundle. `postbuild` runs `scripts/copy_and_bundle_build.js` to create `package.zip`.
+- `pnpm make-install` combines build + install. Use `pnpm update-version` to bump both `plugin.json` and `package.json`.
+- **Siyuan cache**: Electron V8 caches compiled JS. If changes don't reflect, reload the Electron window (Shift+F5 or DevTools reload) instead of restarting SiYuan.
+
+## Architecture
+- **Entry**: `src/index.ts` → `DrawioPlugin` class extends Siyuan `Plugin`.
+- **Settings**: `openSetting()` spawns `DrawioSettings` Svelte component. Config typed as `DrawioConfig` in `src/types.ts`, persisted via `saveDrawioConfig()` and Siyuan `loadData`/`saveData`.
+- **Dialogs**: Siyuan's `new Dialog({ content })` wraps HTML. When mounting Svelte components, **always use `.b3-dialog__content` as target** — custom ID selectors return null on first render.
+- **i18n**: YAML in `public/i18n/` → auto-converted to JSON in `dev/dist/i18n/` by `vitePluginYamlI18n`. Siyuan loads by locale. No `set` calls needed — the i18n plugin handles it.
+- **Mobile**: `this.isMobile` flag from `getFrontend()` controls UI paths. Dock components and dialogs adapt for mobile viewports.
 
 ## Coding Style & Naming Conventions
-Honor the prevailing 4-space indentation in `.ts` files and keep Svelte blocks in the `<script>/<style>` order produced by the official formatter. Stick to camelCase for variables and functions, kebab-case filenames, and prefer TypeScript interfaces over `any`. The repo is ESM (`"type": "module"`), so avoid introducing CommonJS imports; rely on Vite’s module resolution and relative paths rooted at `src/`.
+4-space indentation in `.ts`. Prefer TypeScript interfaces over `any`. ESM only — no CommonJS imports. Vite resolves via `@/` alias → `src/`. Svelte 4 with `@sveltejs/vite-plugin-svelte`.
 
 ## Testing Guidelines
-Automated tests are not yet in place, so validate changes manually inside Siyuan. After `pnpm dev` and `pnpm make-link`, open a note, insert `/drawio`, and exercise save, upload, rename, and “Copy as Image” flows across at least one desktop frontend. Capture Siyuan console logs plus the affected asset path (`storage/petal/siyuan-drawio-plugin/<file>.drawio`) when filing or fixing regressions, and include reproduction steps in PR descriptions.
+No automated tests. Manual verification in Siyuan: `pnpm dev` → `pnpm make-link` → insert `/drawio`. Test save, upload, rename, "Copy as Image". For debugging Electron apps, use [electron-cdp-debug skill](.opencode/skill/electron-cdp-debug/SKILL.md) (CDP protocol inspection, error capture, E2E UI testing).
 
 ## Commit & Pull Request Guidelines
-Commits follow a light Conventional Commits style (`feat(scope):`, `fix(client):`, `chore:`); keep scopes meaningful and messages under ~72 characters. PRs should explain the user-facing impact, note Siyuan version(s) tested, and attach screenshots or GIFs whenever UI chrome changes (dock bar buttons, command menu labels). Reference issues with `Fixes #ID`, ensure generated bundles stay ignored, and request review once ESLint/Vite warnings are resolved locally.
+Conventional Commits (`feat(scope):`, `fix(client):`, `chore:`). PRs: user-facing impact, Siyuan versions tested, screenshots for UI changes. Generated bundles stay `.gitignore`'d.
 
-## Security & Configuration Tips
-Keep personal Siyuan paths out of commits; scripts honor `SIYUAN_PLUGIN_DIR` for local overrides. Validate that exported diagrams remain under `storage/petal/siyuan-drawio-plugin/` and do not expose unrelated notebooks. When bumping Draw.io in `drawio/`, review upstream licenses separately so the plugin remains shippable in official marketplaces.
+## Security & Configuration
+Personal Siyuan paths stay out of commits; `SIYUAN_PLUGIN_DIR` env for local overrides. When bumping Draw.io upstream in `drawio/`, review licenses for marketplace compatibility.

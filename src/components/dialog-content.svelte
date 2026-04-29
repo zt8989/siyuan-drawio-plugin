@@ -30,14 +30,15 @@
 
   let name = asset ? getFileName(asset.hName) : '';
 
-  const save = (name) => {
+  const save = async (name) => {
     const result = name.trim();
     if (!result || InvalidPathChar.some((v) => result.indexOf(v) !== -1)) {
       showMessage(plugin.i18n.nameIsInvalid.replace("${name}", name));
       return;
     }
     if (type === "create") {
-      saveDrawIoXml(name).then((data) => {
+      const savePath = plugin.getDrawioConfig()?.defaultSavePath;
+      saveDrawIoXml(name, savePath).then((data) => {
           const url = data["succMap"][name] || data["succMap"][name + DRAWIO_EXTENSION]
           onSave && onSave(url);
         }).catch(e => {

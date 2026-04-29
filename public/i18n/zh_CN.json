@@ -50,5 +50,6 @@
     "uploadDrawioOnly": "请只上传.drawio文件",
     "uploadSuccess": "文件 ${fileName} 上传成功",
     "upload": "上传",
-    "editDrawio": "修改 drawio"
+    "editDrawio": "修改 drawio",
+    "setting": "Draw.io 设置"
 }
