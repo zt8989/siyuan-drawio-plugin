@@ -22,17 +22,19 @@ import "@/index.scss";
 
 import { getIframeFromEventSource } from "./utils";
 import { listDrawioFiles, saveDrawIoXml, searchDrawioFiles } from "./api";
-import { CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD, DRAWIO_EXTENSION, drawioAssetsPath, STORAGE_PATH } from "./constants";
+import { CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, DRAWIO_CONFIG_KEYS, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD, DRAWIO_EXTENSION, drawioAssetsPath, STORAGE_PATH } from "./constants";
 import { createLinkFromTitle, createUrlFromTitle, getTitleFromPath } from "./link";
-import { ShowDialogCallback } from "./types";
+import { ShowDialogCallback, DrawioConfig } from "./types";
 import { genDrawioHTMLByUrl } from "./asset/renderAssets";
 import qs from "query-string";
 import Dock from "./components/dock.svelte";
+import DrawioSettings from "./components/drawio-settings.svelte";
 
 export default class DrawioPlugin extends Plugin {
     customTab: () => Custom;
     private isMobile: boolean;
     private configLoaded = false
+    private drawioConfig: DrawioConfig | null = null
 
     // Pre-bind methods to ensure same reference for event cleanup
     private boundOnOpenTab = this.onOpenTab.bind(this)
@@ -145,6 +147,9 @@ export default class DrawioPlugin extends Plugin {
             logger.debug("localStorage.setItem(DRAWIO_CONFIG)")
             localStorage.setItem(DRAWIO_CONFIG, remoteData)
         }
+        if (remoteDataObj) {
+            this.drawioConfig = typeof remoteDataObj === 'string' ? JSON.parse(remoteDataObj) : remoteDataObj;
+        }
         this.configLoaded = true
     }
 
@@ -166,9 +171,12 @@ export default class DrawioPlugin extends Plugin {
 
     onStorage = (ev: { key: string, newValue: string, oldValue: string }) => {
         const { key, newValue, oldValue } = ev
-        if (key == DRAWIO_CONFIG && newValue != oldValue) {
+        if (DRAWIO_CONFIG_KEYS.includes(key) && newValue != oldValue) {
             logger.debug("this.saveData", key, newValue)
             this.saveData(key, newValue)
+            if (key === DRAWIO_CONFIG) {
+                this.drawioConfig = JSON.parse(newValue);
+            }
         }
     }
 
@@ -215,9 +223,37 @@ export default class DrawioPlugin extends Plugin {
     }
 
     setStorageItem({ key, value }: any) {
-        if (key == DRAWIO_CONFIG) {
+        if (DRAWIO_CONFIG_KEYS.includes(key)) {
             this.saveData(key, typeof value == 'string' ? value : JSON.stringify(value))
+            if (key === DRAWIO_CONFIG) {
+                this.drawioConfig = typeof value === 'string' ? JSON.parse(value) : value;
+            }
         }
+    }
+
+    public getDrawioConfig(): DrawioConfig | null {
+        return this.drawioConfig;
+    }
+
+    public async saveDrawioConfig(config: DrawioConfig) {
+        this.drawioConfig = config;
+        localStorage.setItem(DRAWIO_CONFIG, JSON.stringify(config));
+        await this.saveData(DRAWIO_CONFIG, JSON.stringify(config));
+    }
+
+    public openSetting() {
+        const dialog = new Dialog({
+            title: `${this.i18n.setting}`,
+            content: `<div class="b3-dialog__content" style="height: 100%;"></div>`,
+            width: "80vw",
+            height: "80vh",
+        });
+        new DrawioSettings({
+            target: dialog.element.querySelector(".b3-dialog__content"),
+            props: {
+                plugin: this,
+            },
+        });
     }
 
     public copyLink(title: string){
@@ -385,7 +421,7 @@ export default class DrawioPlugin extends Plugin {
         // if(!value.endsWith(drawio)) {
         //     value += drawio
         // }
-        saveDrawIoXml(value).then((data) => {
+        saveDrawIoXml(value, this.drawioConfig?.defaultSavePath).then((data) => {
             dialog.destroy()
             // const textNode = document.createTextNode(createLink(data["succMap"][value]));
             // range.insertNode(textNode);

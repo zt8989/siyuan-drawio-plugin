@@ -10,3 +10,12 @@ export type Asset = {
     updated: number;
     ext: string;
 };
+
+export interface DrawioConfig {
+    language: string;
+    configVersion: number | null;
+    customFonts: string[];
+    libraries: string;
+    customLibraries: string[];
+    defaultSavePath: string; // 新增：默认保存路径
+}
