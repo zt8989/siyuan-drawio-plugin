@@ -14,17 +14,18 @@ if(process.env.NODE_ENV === 'development'){
    */
   // Overrides of global vars need to be pre-loaded
   function getLang(){
-    let lang = parent?.siyuan.config.lang
+    let lang = parent?.siyuan?.config?.lang
 
     if (lang != null)
       {
-        var dash = lang.indexOf('_');
-        
-        if (dash >= 0)
+        // SiYuan 3.7+ uses BCP 47 (zh-CN); older versions use zh_CN. Draw.io expects "zh".
+        var sep = lang.search(/[_-]/);
+
+        if (sep >= 0)
         {
-          lang = lang.substring(0, dash);
+          lang = lang.substring(0, sep);
         }
-        
+
         lang = lang.toLowerCase();
       }
 
