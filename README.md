@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-1.0.39
+1.0.40
 
 ## Changelog
+- **v1.0.40**
+  - Fix draw.io editor language not following SiYuan language (BCP 47: zh-CN, etc. now correctly maps to draw.io locale instead of falling back to English)
 - **v1.0.39**
   - Added default save path setting (Petal directory vs Assets directory)
   - Auto-copy client files to webapp dir on each dev rebuild for instant preview
