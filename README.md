@@ -20,7 +20,7 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-1.0.40
+1.0.41
 
 ## Changelog
 - **v1.0.40**
