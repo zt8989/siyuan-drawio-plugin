@@ -10,3 +10,7 @@ build
 tmp
 .auto-coder-chat-lite/
 output.txt
+.playwright-cli/
+
+.worktrees/
+.worktrees
