@@ -29,6 +29,7 @@
     "zh_CN": "Draw.io以插件形式集成到思源中"
   },
   "readme": {
+    "default": "README.md",
     "en_US": "README.md",
     "zh_CN": "README_zh_CN.md"
   },
