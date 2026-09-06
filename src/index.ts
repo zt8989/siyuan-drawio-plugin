@@ -415,15 +415,8 @@ export default class DrawioPlugin extends Plugin {
     }
 
     private onSave(dialog: Dialog, value: string, protyle: Protyle){
-        // if(!value || checkInvalidPathChar(value)) {
-        //     showMessage(`Drawio: 名称 ${value} 不合法`)
-        //     return
-        // }
-        // const drawio = ".drawio";
-        // if(!value.endsWith(drawio)) {
-        //     value += drawio
-        // }
-        saveDrawIoXml(value, this.drawioConfig?.defaultSavePath).then((data) => {
+        // Deep: creation now goes through AssetStore save (DrawioAsset owns suffix)
+        this.assetStore.save(value, this.drawioConfig?.defaultSavePath).then((data) => {
             dialog.destroy()
             // const textNode = document.createTextNode(createLink(data["succMap"][value]));
             // range.insertNode(textNode);

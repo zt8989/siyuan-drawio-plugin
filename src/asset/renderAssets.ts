@@ -3,6 +3,7 @@ import {pathPosix} from "@/util/pathName";
 import { getTitleFromPath } from "@/link";
 import { IProtyle } from "siyuan";
 import { generateSiyuanIdPrefix } from "@/api";
+import { DrawioAsset } from "./DrawioAsset";
 
 export const renderAssetsPreview = (pathString: string) => {
     if (!pathString) {
@@ -50,9 +51,8 @@ function formatDate(date) {
 }
 
 function extractId(originalId) {
-    const regex = /(\d+-\w+)$/;
-    const match = originalId.match(regex);
-    return match ? match[1] : null;
+    // Delegate to DrawioAsset single source of truth (locality) — expand: old wrapper keeps interface
+    return DrawioAsset.extractId(originalId);
 }
 
 export const genDrawioIFrameHTML = (assetUrl: string, iframeSrc: string, id: string, width = "100%", height = "200px") => {

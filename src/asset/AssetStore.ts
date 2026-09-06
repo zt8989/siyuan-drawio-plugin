@@ -7,6 +7,7 @@ import {
     renameDrawIo,
 } from "@/api";
 import { STORAGE_PATH } from "@/constants";
+import { DrawioAsset } from "./DrawioAsset";
 
 /**
  * AssetStore — deep module owning asset persistence.
@@ -91,18 +92,12 @@ export class FakeAssetStore implements AssetStore {
         if (!title || /[\\/:*?"<>|]/.test(title)) {
             throw new Error(`Drawio: 名称 ${title} 不合法`);
         }
-        // mimic generateSiyuanId suffix without importing api (keep fake self-contained)
-        const now = new Date();
-        const pad = (n: number) => String(n).padStart(2, "0");
-        const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-        const rand = Array.from({ length: 7 }, () => "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)]).join("");
-        const suffix = `${ts}-${rand}`;
-        const filename = `${title}-${suffix}.drawio`;
-        const path = `${savePath}/${filename}`;
-        const asset: Asset = { path, hName: title, updated: Date.now(), ext: "drawio" };
+        // Delegate suffix generation to DrawioAsset (single source of truth, locality)
+        const assetValue = DrawioAsset.fromTitle(title, savePath);
+        const asset: Asset = { path: assetValue.path, hName: assetValue.hName, updated: Date.now(), ext: assetValue.ext };
         this.assets.push(asset);
         this.sort();
-        return { succMap: { [`${title}.drawio`]: path } };
+        return { succMap: { [`${title}.drawio`]: assetValue.path } };
     }
 
     async saveFile(file: File, savePath: string = STORAGE_PATH): Promise<{ succMap: Record<string, string> }> {
@@ -117,14 +112,7 @@ export class FakeAssetStore implements AssetStore {
         const idx = this.assets.findIndex((a) => a.path === oldPath);
         if (idx === -1) throw new Error(`Asset not found: ${oldPath}`);
         const old = this.assets[idx];
-        // preserve suffix as real renameDrawIo does: keep last two dash segments if present
-        const oldFileName = old.path.split("/").pop() || "";
-        const parts = oldFileName.split("-");
-        const suffix = parts.length >= 3 ? `-${parts.slice(-2).join("-")}` : "";
-        const newFile = newName.endsWith(".drawio") ? newName : newName + suffix;
-        const prefix = old.path.slice(0, -oldFileName.length);
-        const newPath = prefix + newFile;
-        // hName is without suffix
+        const newPath = DrawioAsset.renamePath(newName, old.path);
         const newHName = newName.replace(/\.drawio$/, "");
         this.assets[idx] = { ...old, path: newPath, hName: newHName };
         this.sort();

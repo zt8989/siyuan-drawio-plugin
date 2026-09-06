@@ -2,7 +2,7 @@
     import type DrawioPlugin from '@/index';
     import { confirm, showMessage } from 'siyuan';
     import { onMount } from 'svelte';
-    import { removeFile, saveDrawIo } from '@/api';
+    import { removeFile } from '@/api';
     import { ICON_STANDARD, DATA_PATH, PLUGIN_CONFIG, drawioAssetsPath } from '@/constants';
     import type { AssetStore } from '@/asset/AssetStore';
     import { defaultAssetStore } from '@/asset/AssetStore';
@@ -73,8 +73,9 @@
         error = '';
         try {
             const savePath = plugin.getDrawioConfig()?.defaultSavePath;
+            const store: AssetStore = assetStore ?? (plugin as unknown as { assetStore?: AssetStore })?.assetStore ?? defaultAssetStore;
             for (const file of drawioFiles) {
-                await saveDrawIo(file, savePath);
+                await store.saveFile(file, savePath);
                 showMessage(plugin.i18n.uploadSuccess.replace('${fileName}', file.name) || 'Upload successful');
             }
             searchAssets();
