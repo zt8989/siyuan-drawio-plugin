@@ -46,5 +46,10 @@
     "sortUpdateDesc": "Update Date (Newest)",
     "exitSearch": "Exit Search",
     "selectDrawio": "Select Drawio",
-    "emptyContent": "No related content found"
+    "emptyContent": "No related content found",
+    "settingTitle": "Siyuan Draw.io Settings",
+    "saveGroup": "Save Settings",
+    "aiGroup": "AI Settings",
+    "aiEnableTitle": "Enable AI Generate",
+    "aiEnableDesc": "When enabled, you can use Generate (AI diagram) in Draw.io. Model is selected in Draw.io, API key is reused from Siyuan AI config"
 }

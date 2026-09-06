@@ -1,122 +1,111 @@
 <script lang="ts">
-    import SettingPanel from "@/libs/components/setting-panel.svelte";
     import type DrawioPlugin from "@/index";
     import { onMount } from "svelte";
     import { showMessage } from "siyuan";
+    import type { Dialog } from "siyuan";
 
     const SAVE_PATH_KEY = "defaultSavePath";
     const AI_ENABLED_KEY = "aiEnabled";
 
     export let plugin: DrawioPlugin;
+    export let dialog: Dialog | null = null;
 
-    let saveItems: ISettingItem[] = [
-        {
-            type: "select",
-            title: "默认保存位置",
-            description: "新建 Draw.io 文件时的默认保存路径",
-            key: SAVE_PATH_KEY,
-            value: "storage/petal/siyuan-drawio-plugin/",
-            direction: "row",
-            options: {
-                "storage/petal/siyuan-drawio-plugin/": "Petal 目录 (storage/petal/siyuan-drawio-plugin/)",
-                "assets/drawio/": "Assets 目录 (assets/drawio/)",
-            },
-        } as ISettingItem,
-    ];
+    let pendingSavePath: string = "storage/petal/siyuan-drawio-plugin/";
+    let pendingAiEnabled: boolean = true;
+    let hasChanged = false;
 
-    let aiItems: ISettingItem[] = [
-        {
-            type: "checkbox",
-            title: (plugin?.i18n as unknown as Record<string, string>)?.aiEnableTitle || "启用 AI 生成",
-            description: (plugin?.i18n as unknown as Record<string, string>)?.aiEnableDesc || "开启后可在 Draw.io 中使用 Generate（AI 生成图表）功能，模型选择由 Draw.io 原生下拉提供，密钥复用思源的 AI 配置",
-            key: AI_ENABLED_KEY,
-            value: true,
-            direction: "row",
-        } as ISettingItem,
-    ];
-
-    $: {
-        const i18n = plugin?.i18n as unknown as Record<string, string>;
-        if (i18n?.aiEnableTitle) {
-            aiItems = aiItems.map((it) => it.key === AI_ENABLED_KEY ? { ...it, title: i18n.aiEnableTitle, description: i18n.aiEnableDesc } : it);
-        }
-        if (i18n?.saveGroup) {
-            // keep titles in sync if needed
-        }
-    }
-
-    const resetValue = () => {
+    const syncChanged = () => {
         const cfg = plugin.getDrawioConfig();
-        const defaultSavePath = cfg?.defaultSavePath || "storage/petal/siyuan-drawio-plugin/";
-        const aiEnabled = cfg?.aiEnabled ?? true;
-        saveItems = saveItems.map((item) => item.key === SAVE_PATH_KEY ? { ...item, value: defaultSavePath } : item);
-        aiItems = aiItems.map((item) => item.key === AI_ENABLED_KEY ? { ...item, value: aiEnabled } : item);
+        const curPath = cfg?.defaultSavePath || "storage/petal/siyuan-drawio-plugin/";
+        const curAi = cfg?.aiEnabled ?? true;
+        hasChanged = pendingSavePath !== curPath || pendingAiEnabled !== curAi;
+    };
+
+    const resetPending = () => {
+        const cfg = plugin.getDrawioConfig();
+        pendingSavePath = cfg?.defaultSavePath || "storage/petal/siyuan-drawio-plugin/";
+        pendingAiEnabled = cfg?.aiEnabled ?? true;
+        hasChanged = false;
     };
 
     onMount(() => {
-        resetValue();
+        resetPending();
     });
 
-    const onSaveChanged = async ({ detail }: CustomEvent<{ group: string; key: string; value: any }>) => {
-        saveItems = saveItems.map((item) => item.key === detail.key ? { ...item, value: detail.value } : item);
+    const handleSave = async () => {
         const cfg = (plugin.getDrawioConfig() ?? {}) as Record<string, unknown>;
-        if (detail.key === SAVE_PATH_KEY) cfg.defaultSavePath = detail.value;
+        cfg.defaultSavePath = pendingSavePath;
+        cfg.aiEnabled = pendingAiEnabled;
         try {
             await plugin.saveDrawioConfig(cfg as unknown as import("@/types").DrawioConfig);
+            showMessage(plugin.i18n?.save || "保存成功", 2000, "info");
+            dialog?.destroy();
         } catch (error: unknown) {
             console.error("保存设置失败", error);
             showMessage((error as Error)?.message ?? "保存设置失败", 6000, "error");
         }
     };
 
-    const onAiChanged = async ({ detail }: CustomEvent<{ group: string; key: string; value: any }>) => {
-        aiItems = aiItems.map((item) => item.key === detail.key ? { ...item, value: detail.value } : item);
-        const cfg = (plugin.getDrawioConfig() ?? {}) as Record<string, unknown>;
-        if (detail.key === AI_ENABLED_KEY) cfg.aiEnabled = detail.value;
-        try {
-            await plugin.saveDrawioConfig(cfg as unknown as import("@/types").DrawioConfig);
-        } catch (error: unknown) {
-            console.error("保存设置失败", error);
-            showMessage((error as Error)?.message ?? "保存设置失败", 6000, "error");
-        }
+    const handleCancel = () => {
+        dialog?.destroy();
     };
 
     $: saveGroupTitle = (plugin?.i18n as unknown as Record<string, string>)?.saveGroup || "保存设置";
     $: aiGroupTitle = (plugin?.i18n as unknown as Record<string, string>)?.aiGroup || "AI 设置";
+    $: cancelText = (plugin?.i18n as unknown as Record<string, string>)?.cancel || "取消";
+    $: saveText = (plugin?.i18n as unknown as Record<string, string>)?.save || "保存";
+    $: saveDesc = "新建 Draw.io 文件时的默认保存路径";
+    $: aiDesc = (plugin?.i18n as unknown as Record<string, string>)?.aiEnableDesc || "开启后可在 Draw.io 中使用 Generate（AI 生成图表）功能，模型选择由 Draw.io 原生下拉提供，密钥复用思源的 AI 配置";
 </script>
 
-<div class="fn__flex-1 config__panel">
-    <div class="config__section">
-        <div class="b3-label"><span class="b3-label__text">{saveGroupTitle}</span></div>
-        <SettingPanel
-            group={saveGroupTitle}
-            settingItems={saveItems}
-            on:changed={onSaveChanged}
-        >
-            <div class="fn__flex b3-label">设置 Draw.io 新建文件时的默认保存路径。</div>
-        </SettingPanel>
+<div class="fn__flex-1" style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+    <div style="flex:1;overflow:auto;padding:16px 24px;">
+        <!-- 保存设置: 单行, 左标题右控件, 与嵌入式系列一致 -->
+        <div class="fn__flex b3-label config__item">
+            <div class="fn__flex-1">
+                默认保存位置
+                <div class="b3-label__text">{saveDesc}</div>
+            </div>
+            <span class="fn__space"></span>
+            <select
+                class="b3-select fn__flex-center fn__size200"
+                bind:value={pendingSavePath}
+                on:change={syncChanged}
+            >
+                <option value="storage/petal/siyuan-drawio-plugin/">Petal 目录 (storage/petal/siyuan-drawio-plugin/)</option>
+                <option value="assets/drawio/">Assets 目录 (assets/drawio/)</option>
+            </select>
+        </div>
+        <div class="fn__hr"></div>
+        <div class="fn__flex b3-label config__item">
+            <div class="fn__flex-1">
+                启用 AI 生成
+                <div class="b3-label__text">{aiDesc}</div>
+            </div>
+            <span class="fn__space"></span>
+            <input
+                type="checkbox"
+                class="b3-switch fn__flex-center"
+                bind:checked={pendingAiEnabled}
+                on:change={syncChanged}
+            />
+        </div>
     </div>
-    <div class="config__section">
-        <div class="b3-label"><span class="b3-label__text">{aiGroupTitle}</span></div>
-        <SettingPanel
-            group={aiGroupTitle}
-            settingItems={aiItems}
-            on:changed={onAiChanged}
-        >
-            <div class="fn__flex b3-label">控制 Draw.io 的 AI 生成（Generate）功能是否启用。启用时复用思源的 AI 密钥，模型由 Draw.io 侧选择。</div>
-        </SettingPanel>
+    <div class="b3-dialog__action">
+        <button class="b3-button b3-button--cancel" data-type="cancel" on:click={handleCancel}>{cancelText}</button>
+        <div class="fn__space"></div>
+        <button class="b3-button b3-button--text" data-type="confirm" on:click={handleSave} disabled={!hasChanged}>{saveText}</button>
     </div>
 </div>
 
 <style>
-    .config__panel {
-        height: 100%;
-        overflow-y: auto;
-        padding: 16px 24px;
+    .config__item {
+        padding: 12px 0;
     }
-    .config__section + .config__section {
-        margin-top: 24px;
-        padding-top: 16px;
-        border-top: 1px solid var(--b3-border-color);
+    .fn__hr {
+        height: 1px;
+        background-color: var(--b3-border-color);
+        border: none;
+        margin: 0;
     }
 </style>

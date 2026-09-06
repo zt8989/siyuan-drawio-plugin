@@ -104,6 +104,58 @@ function getLang(){
       }
   }
   window.DRAWIO_CONFIG = getAiDrawioConfig(); // Replace with your custom draw.io configurations. For more details, https://www.drawio.com/doc/faq/configure-diagram-editor
+  // Patch AI response: strip markdown fences (```mermaid) that DeepSeek returns — fixes "Text is not SVG"
+  (function patchAiFence() {
+      try {
+          const origOpen = XMLHttpRequest.prototype.open;
+          const origSend = XMLHttpRequest.prototype.send;
+          XMLHttpRequest.prototype.open = function(m, u) { this._aiUrl = u; return origOpen.apply(this, arguments); };
+          XMLHttpRequest.prototype.send = function(b) {
+              if (this._aiUrl && (this._aiUrl.includes('deepseek') || this._aiUrl.includes('chat/completions'))) {
+                  this.addEventListener('readystatechange', function() {
+                      if (this.readyState === 4 && this.status === 200) {
+                          try {
+                              const j = JSON.parse(this.responseText);
+                              const c = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+                              if (c && c.includes('```')) {
+                                  const stripped = c.replace(/```mermaid\s*/g, '').replace(/```\s*/g, '').trim();
+                                  j.choices[0].message.content = stripped;
+                                  const patched = JSON.stringify(j);
+                                  Object.defineProperty(this, 'responseText', { value: patched, configurable: true });
+                                  Object.defineProperty(this, 'response', { value: patched, configurable: true });
+                              }
+                          } catch (e) {}
+                      }
+                  });
+              }
+              return origSend.apply(this, arguments);
+          };
+          if (window.fetch) {
+              const origFetch = window.fetch;
+              window.fetch = async function(input, init) {
+                  const url = typeof input === 'string' ? input : (input && input.url) || '';
+                  const res = await origFetch.apply(this, arguments);
+                  if (url.includes('deepseek') || url.includes('chat/completions')) {
+                      try {
+                          const clone = res.clone();
+                          const txt = await clone.text();
+                          if (txt.includes('```')) {
+                              const j = JSON.parse(txt);
+                              const c = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+                              if (c && c.includes('```')) {
+                                  const stripped = c.replace(/```mermaid\s*/g, '').replace(/```\s*/g, '').trim();
+                                  j.choices[0].message.content = stripped;
+                                  const patched = JSON.stringify(j);
+                                  return new Response(patched, { status: res.status, statusText: res.statusText, headers: res.headers });
+                              }
+                          }
+                      } catch (e) {}
+                  }
+                  return res;
+              };
+          }
+      } catch (e) {}
+  })();
   urlParams['sync'] = 'manual';
   // urlParams['offline'] = '1';
   urlParams['mode'] = 'device'

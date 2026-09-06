@@ -258,16 +258,18 @@ export default class DrawioPlugin extends Plugin {
     }
 
     public openSetting() {
+        const title = (this.i18n as unknown as Record<string, string>).settingTitle || (this.i18n as unknown as Record<string, string>).title || "设置";
         const dialog = new Dialog({
-            title: `${this.i18n.setting}`,
-            content: `<div class="b3-dialog__content" style="height: 100%;"></div>`,
-            width: "80vw",
+            title,
+            content: `<div class="b3-dialog__content" style="display:flex;flex-direction:column;height:100%;"></div>`,
+            width: "768px",
             height: "80vh",
         });
         new DrawioSettings({
-            target: dialog.element.querySelector(".b3-dialog__content"),
+            target: dialog.element.querySelector(".b3-dialog__content") as HTMLElement,
             props: {
                 plugin: this,
+                dialog,
             },
         });
     }

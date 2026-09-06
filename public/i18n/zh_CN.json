@@ -46,5 +46,10 @@
     "sortUpdateDesc": "更新日期 (最新)",
     "exitSearch": "退出搜索",
     "selectDrawio": "选择drawio",
-    "emptyContent": "未找到相关内容"
+    "emptyContent": "未找到相关内容",
+    "settingTitle": "思源 Draw.io 插件设置",
+    "saveGroup": "保存设置",
+    "aiGroup": "AI 设置",
+    "aiEnableTitle": "启用 AI 生成",
+    "aiEnableDesc": "开启后可在 Draw.io 中使用 Generate（AI 生成图表）功能，模型选择由 Draw.io 原生下拉提供，密钥复用思源的 AI 配置"
 }
