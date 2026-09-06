@@ -21,7 +21,7 @@ import "@/index.scss";
 
 
 import { getIframeFromEventSource } from "./utils";
-import { listDrawioFiles, saveDrawIoXml, searchDrawioFiles } from "./api";
+import { saveDrawIoXml } from "./api";
 import { CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, DRAWIO_CONFIG_KEYS, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD, DRAWIO_EXTENSION, drawioAssetsPath, STORAGE_PATH } from "./constants";
 import { SiyuanAssetStore, type AssetStore } from "./asset/AssetStore";
 import { createLinkFromTitle, createUrlFromTitle, getTitleFromPath } from "./link";
@@ -548,8 +548,8 @@ export default class DrawioPlugin extends Plugin {
         const isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
     
         try {
-            const assets = await listDrawioFiles();
-            const response = await searchDrawioFiles(k, assets);
+            // Deep module seam: dialog filtering now goes through AssetStore interface (locality)
+            const response = await this.assetStore.search(k);
 
             let searchHTML = "";
             response.forEach((item: { path: string, hName: string }, index: number) => {
