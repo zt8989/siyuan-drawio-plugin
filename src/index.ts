@@ -2,35 +2,26 @@ import {
     Plugin,
     showMessage,
     Dialog,
-    openTab,
     Custom,
     Protyle,
-    fetchPost,
     IProtyle,
     IWebSocketData,
     getFrontend,
 } from "siyuan";
 import { logger } from "./logger";
-import {
-    hasClosestByAttribute,
-    hasClosestByClassName
-} from "@/protyle/util/hasClosest";
-import { upDownHint } from "@/util/upDownHint";
 
 import "@/index.scss";
 
 
 import { getIframeFromEventSource } from "./utils";
-import { saveDrawIoXml } from "./api";
-import { CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, DRAWIO_CONFIG_KEYS, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD, DRAWIO_EXTENSION, drawioAssetsPath, STORAGE_PATH } from "./constants";
+import { CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, DRAWIO_CONFIG_KEYS, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD, DRAWIO_EXTENSION, drawioAssetsPath } from "./constants";
 import { SiyuanAssetStore, type AssetStore } from "./asset/AssetStore";
-import { createLinkFromTitle, createUrlFromTitle, getTitleFromPath } from "./link";
+import { createLinkFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback, DrawioConfig } from "./types";
 import { genDrawioHTMLByUrl } from "./asset/renderAssets";
 import { isValidBridgeMessage } from "./bridge/DrawioBridge";
 import { TabManager } from "./tabs/TabManager";
 import { AssetPickerDialog } from "./dialog/AssetPickerDialog";
-import qs from "query-string";
 import Dock from "./components/dock.svelte";
 import DrawioSettings from "./components/drawio-settings.svelte";
 
