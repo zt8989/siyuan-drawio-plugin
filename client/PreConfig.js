@@ -1,5 +1,6 @@
 import { DefaultElectronImpl } from './Electron.js';
 import Storage from './Storage.js';
+import { getDrawioLang } from '@/bridge/DrawioBridge';
 
 window.isLocalStorage = true
 const storage = window.storage = new Storage();
@@ -8,28 +9,14 @@ if(process.env.NODE_ENV === 'development'){
     urlParams['test'] = '1';
   }
 
-  /**
-   * Copyright (c) 2006-2024, JGraph Ltd
-   * Copyright (c) 2006-2024, draw.io AG
-   */
-  // Overrides of global vars need to be pre-loaded
+   /**
+    * Copyright (c) 2006-2024, JGraph Ltd
+    * Copyright (c) 2006-2024, draw.io AG
+    */
+   // Overrides of global vars need to be pre-loaded
+  // Delegate to DrawioBridge single source of truth (locality) — client previously duplicated this logic
   function getLang(){
-    let lang = parent?.siyuan?.config?.lang
-
-    if (lang != null)
-      {
-        // SiYuan 3.7+ uses BCP 47 (zh-CN); older versions use zh_CN. Draw.io expects "zh".
-        var sep = lang.search(/[_-]/);
-
-        if (sep >= 0)
-        {
-          lang = lang.substring(0, sep);
-        }
-
-        lang = lang.toLowerCase();
-      }
-
-      return lang
+    return getDrawioLang(parent?.siyuan?.config?.lang)
   }
   window.DRAWIO_PUBLIC_BUILD = true;
   window.PLANT_URL = parent?.siyuan?.config?.editor?.plantUMLServePath.replace("/svg/~1", "") ?? 'https://www.plantuml.com/plantuml';;

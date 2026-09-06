@@ -31,6 +31,11 @@ const entryPath = entryMap[clientEntry] || entryMap.PreConfig;
 const entryName = clientEntry;
 
 export default defineConfig({
+    resolve: {
+        alias: {
+            "@": resolve(__dirname, "src"),
+        },
+    },
     plugins: [
         {
             name: 'copy-client-embed',

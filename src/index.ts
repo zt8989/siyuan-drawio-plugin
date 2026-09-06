@@ -27,6 +27,7 @@ import { SiyuanAssetStore, type AssetStore } from "./asset/AssetStore";
 import { createLinkFromTitle, createUrlFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback, DrawioConfig } from "./types";
 import { genDrawioHTMLByUrl } from "./asset/renderAssets";
+import { isValidBridgeMessage } from "./bridge/DrawioBridge";
 import qs from "query-string";
 import Dock from "./components/dock.svelte";
 import DrawioSettings from "./components/drawio-settings.svelte";
@@ -183,9 +184,13 @@ export default class DrawioPlugin extends Plugin {
     }
 
     onMessage = (ev: MessageEvent<{ type: string, payload: any, callbackId?: string }>) => {
-        // Only process messages from same origin
+        // Only process messages from same origin + valid BridgeMessage (typed seam, test surface)
         if (ev.origin !== window.location.origin) {
             logger.debug('Rejected message from invalid origin:', ev.origin);
+            return;
+        }
+        if (!isValidBridgeMessage(ev.data)) {
+            logger.debug('Rejected invalid bridge message:', ev.data);
             return;
         }
         
