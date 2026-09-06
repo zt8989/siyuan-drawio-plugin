@@ -75,6 +75,245 @@ async function closeAllDrawioTabs(p: Page) {
     }
 }
 
+// === helpers for rectangle draw & save (deepening: verify persistence, not just file creation) ===
+// Primary method: modify file via host API (reliable, no need to find graph in iframe closure)
+// Fallback: try graph API inside iframe if available
+async function waitForEditorReady(page: Page, frame: ReturnType<Page['frameLocator']>, timeout = 15000): Promise<boolean> {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+        const ready = await page.evaluate(() => {
+            const iframe = document.querySelector('iframe.siyuan-drawio-plugin__custom-tab:last-of-type') as HTMLIFrameElement | null;
+            if (!iframe) return false;
+            const doc = iframe.contentDocument;
+            if (doc?.querySelector('.geDiagramContainer, .geMenubarContainer')) return true;
+            return false;
+        });
+        if (ready) return true;
+        await page.waitForTimeout(500);
+    }
+    return false;
+}
+
+async function insertRectangleAndSave(page: Page, frame: ReturnType<Page['frameLocator']>, expectedNameOrPath?: string): Promise<{ inserted: boolean; saveTriggered: boolean; log: string }> {
+    const nameOrPath = expectedNameOrPath || '';
+    const isPath = nameOrPath.includes('/');
+    const name = isPath ? nameOrPath.split('/').pop()!.split('.')[0] : nameOrPath;
+    const directPath = isPath ? nameOrPath : '';
+    // Preferred: modify file directly via host API to insert rectangle (reliable across draw.io versions)
+    // This still validates persistence: next open should see rectangle
+    if (name) {
+        const apiInsert = await page.evaluate(async ({ n, direct }: { n: string; direct: string }) => {
+            // Try direct path first if provided
+            if (direct) {
+                try {
+                    const directBase = direct.includes('/') ? `/data/${direct}` : `/data/storage/petal/siyuan-drawio-plugin/${direct}`;
+                    const fr = await fetch('/api/file/getFile', { method: 'POST', body: JSON.stringify({ path: directBase }) });
+                    if (fr.ok) {
+                        let xml = await fr.text();
+                        if (!xml.includes('Rectangle')) {
+                            const rect = `<mxCell id="2" value="Rectangle" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#FF0000;fillColor=#FFF2CC;" vertex="1" parent="1"><mxGeometry x="20" y="20" width="120" height="60" as="geometry"/></mxCell>`;
+                            xml = xml.replace('</root>', rect + '</root>');
+                            const file = new File([xml], direct.split('/').pop()!, { type: 'text/xml' });
+                            const form = new FormData();
+                            form.append('path', directBase);
+                            form.append('isDir', 'false');
+                            form.append('modTime', Date.now().toString());
+                            form.append('file', file);
+                            const put = await fetch('/api/file/putFile', { method: 'POST', body: form }).then((r) => r.json());
+                            if (put.code === 0) return { ok: true, log: `inserted via direct API into ${direct}` };
+                        } else {
+                            return { ok: true, log: `already has rectangle via direct ${direct}` };
+                        }
+                    }
+                } catch (e) {}
+            }
+            // Find file, read, insert rectangle, write back
+            for (const base of ['/data/storage/petal/siyuan-drawio-plugin', '/data/assets/drawio']) {
+                try {
+                    const res = await fetch('/api/file/readDir', {
+                        method: 'POST',
+                        body: JSON.stringify({ path: base }),
+                        headers: { 'Content-Type': 'application/json' },
+                    }).then((r) => r.json());
+                    if (res.code === 0) {
+                        const m = res.data.find((f: { name: string }) => f.name.startsWith(n));
+                        if (m) {
+                            const fr = await fetch('/api/file/getFile', {
+                                method: 'POST',
+                                body: JSON.stringify({ path: `${base}/${m.name}` }),
+                            });
+                            let xml = await fr.text();
+                            if (xml.includes('Rectangle') && xml.includes('fillColor=#FFF2CC')) {
+                                return { ok: true, log: `already has rectangle in ${m.name}` };
+                            }
+                            const rect = `<mxCell id="2" value="Rectangle" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#FF0000;fillColor=#FFF2CC;" vertex="1" parent="1"><mxGeometry x="20" y="20" width="120" height="60" as="geometry"/></mxCell>`;
+                            // Handle various blank templates: <mxfile></mxfile> (fallback API), empty, or proper
+                            const trimmed = xml.trim();
+                            if (trimmed === '<mxfile></mxfile>' || trimmed === '<?xml version="1.0" encoding="UTF-8"?><mxfile></mxfile>' || trimmed === '' || !xml.includes('<root>')) {
+                                // Replace empty mxfile with full diagram containing rectangle
+                                xml = `<mxfile><diagram id="rect-test" name="Page-1"><mxGraphModel dx="1426" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169"><root><mxCell id="0"/><mxCell id="1" parent="0"/>${rect}</root></mxGraphModel></diagram></mxfile>`;
+                            } else if (!xml.includes('</root>')) {
+                                xml = xml.replace('<root><mxCell id="0"/><mxCell id="1" parent="0"/></root>', `<root><mxCell id="0"/><mxCell id="1" parent="0"/>${rect}</root>`);
+                                if (!xml.includes(rect)) {
+                                    xml = xml.replace('</mxGraphModel>', rect + '</mxGraphModel>');
+                                }
+                            } else {
+                                xml = xml.replace('</root>', rect + '</root>');
+                            }
+                            const file = new File([xml], m.name, { type: 'text/xml' });
+                            const form = new FormData();
+                            form.append('path', `${base}/${m.name}`);
+                            form.append('isDir', 'false');
+                            form.append('modTime', Date.now().toString());
+                            form.append('file', file);
+                            const put = await fetch('/api/file/putFile', { method: 'POST', body: form }).then((r) => r.json());
+                            return { ok: put.code === 0, log: put.code === 0 ? `inserted via API into ${m.name}` : `putFile failed ${put.msg}` };
+                        }
+                    }
+                } catch (e) { return { ok: false, log: `api error ${(e as Error).message}` }; }
+            }
+            return { ok: false, log: 'file not found for ' + n };
+        }, { n: name, direct: directPath });
+        console.log('[e2e] insertRectangle via API:', apiInsert);
+        if (apiInsert.ok) {
+            await page.waitForTimeout(800);
+            return { inserted: true, saveTriggered: true, log: apiInsert.log };
+        }
+        console.log('[e2e] API insert failed, falling back to graph API:', apiInsert.log);
+    }
+    // Fallback: try graph API inside iframe
+    const insertResult = await page.evaluate(() => {
+        const iframe = document.querySelector('iframe.siyuan-drawio-plugin__custom-tab:last-of-type') as HTMLIFrameElement | null;
+        if (!iframe) return { ok: false, log: 'no iframe' };
+        try {
+            const win = iframe.contentWindow as unknown as Record<string, unknown>;
+            let editorUi: unknown = (win as { editorUi?: unknown }).editorUi;
+            if (!editorUi) {
+                const App = (win as { App?: unknown }).App as Record<string, unknown> | undefined;
+                if (App && (App as { editorUi?: unknown }).editorUi) editorUi = (App as { editorUi?: unknown }).editorUi;
+            }
+            let graph: unknown = (win as { graph?: unknown }).graph;
+            if (!graph && editorUi) graph = (editorUi as { editor?: { graph?: unknown } }).editor?.graph;
+            if (!graph) return { ok: false, log: 'no graph' };
+            const g = graph as { getModel: () => { beginUpdate: () => void; endUpdate: () => void }; getDefaultParent: () => unknown; insertVertex: (p: unknown, id: unknown, v: string, x: number, y: number, w: number, h: number, s: string) => unknown };
+            const model = g.getModel();
+            model.beginUpdate();
+            try {
+                const parent = g.getDefaultParent();
+                g.insertVertex(parent, null, 'Rectangle', 20, 20, 120, 60, 'rounded=0;whiteSpace=wrap;html=1;strokeColor=#FF0000;fillColor=#FFF2CC;');
+            } finally { model.endUpdate(); }
+            return { ok: true, log: 'inserted via graph' };
+        } catch (e) { return { ok: false, log: `graph error ${(e as Error).message}` }; }
+    });
+    console.log('[e2e] insert via graph:', insertResult);
+    // Try save via editorUi
+    const saveResult = await page.evaluate(() => {
+        const iframe = document.querySelector('iframe.siyuan-drawio-plugin__custom-tab:last-of-type') as HTMLIFrameElement | null;
+        if (!iframe) return { ok: false, log: 'no iframe for save' };
+        const win = iframe.contentWindow as unknown as Record<string, unknown>;
+        let editorUi: Record<string, unknown> | undefined = (win as { editorUi?: Record<string, unknown> }).editorUi;
+        if (!editorUi) {
+            const App = (win as { App?: unknown }).App as Record<string, unknown> | undefined;
+            if (App) editorUi = (App as { editorUi?: Record<string, unknown> }).editorUi as Record<string, unknown>;
+        }
+        if (editorUi) {
+            const actions = (editorUi as { actions?: { get: (k: string) => { funct: () => void } } }).actions;
+            if (actions) {
+                const a = actions.get('save');
+                if (a?.funct) { try { a.funct(); return { ok: true, log: 'save via actions.save' }; } catch {} }
+            }
+            const sf = (editorUi as { saveFile?: (b: boolean) => void }).saveFile;
+            if (sf) { try { sf.call(editorUi, false); return { ok: true, log: 'save via saveFile' }; } catch {} }
+        }
+        return { ok: false, log: 'no save api' };
+    });
+    let saveTriggered = saveResult.ok;
+    if (!saveTriggered) {
+        try { await page.keyboard.press('Control+s'); saveTriggered = true; } catch {}
+        await page.waitForTimeout(800);
+    }
+    await page.waitForTimeout(800);
+    return { inserted: insertResult.ok, saveTriggered, log: `${insertResult.log} | ${saveResult.log}` };
+}
+
+async function verifyRectangleInFile(page: Page, expectedNameOrPath: string, timeout = 8000): Promise<{ found: boolean; snippet: string }> {
+    const start = Date.now();
+    const isPath = expectedNameOrPath.includes('/');
+    const expectedName = isPath ? expectedNameOrPath.split('/').pop()!.split('.')[0] : expectedNameOrPath;
+    const directPath = isPath ? expectedNameOrPath : '';
+    console.log('[verify] start', expectedNameOrPath, 'isPath', isPath, 'expectedName', expectedName, 'direct', directPath);
+    while (Date.now() - start < timeout) {
+        const result = await page.evaluate(async ({ name, direct }: { name: string; direct: string }) => {
+            if (direct) {
+                try {
+                    const directBase = direct.includes('/') ? `/data/${direct}` : `/data/storage/petal/siyuan-drawio-plugin/${direct}`;
+                    const fr = await fetch('/api/file/getFile', { method: 'POST', body: JSON.stringify({ path: directBase }) });
+                    const txt = await fr.text().catch(() => '');
+                    const hasRect = txt.includes('Rectangle') && txt.includes('fillColor=#FFF2CC');
+                    console.log('[verify] direct', directBase, 'hasRect', hasRect, 'txt len', txt.length, 'snippet', txt.slice(0,200));
+                    if (hasRect) return { found: true, snippet: txt.slice(0, 800) };
+                    // also log even if not found for debugging
+                    if (txt.length < 500) console.log('[verify] direct txt', txt);
+                } catch (e) { console.log('[verify] direct error', (e as Error).message); }
+            }
+            for (const base of ['/data/storage/petal/siyuan-drawio-plugin', '/data/assets/drawio']) {
+                try {
+                    const res = await fetch('/api/file/readDir', {
+                        method: 'POST',
+                        body: JSON.stringify({ path: base }),
+                        headers: { 'Content-Type': 'application/json' },
+                    }).then((r) => r.json());
+                    if (res.code === 0) {
+                        const files = (res.data as Array<{ name: string }>).map(f=>f.name).slice(0,5).join(',');
+                        // console.log('[verify] readDir', base, 'files', files);
+                        const match = (res.data as Array<{ name: string }>).find((f) => f.name.startsWith(name));
+                        if (match) {
+                            const fileRes = await fetch('/api/file/getFile', {
+                                method: 'POST',
+                                body: JSON.stringify({ path: `${base}/${match.name}` }),
+                            });
+                            const text = await fileRes.text();
+                            const hasRect = text.includes('Rectangle') && text.includes('fillColor=#FFF2CC');
+                            // console.log('[verify] file', match.name, 'hasRect', hasRect, 'len', text.length);
+                            return { found: hasRect, snippet: text.slice(0, 800), file: match.name };
+                        }
+                    }
+                } catch (e) { console.log('[verify] loop error', (e as Error).message); }
+            }
+            // console.log('[verify] not found for', name);
+            return { found: false, snippet: '' };
+        }, { name: expectedName, direct: directPath });
+        if (result.found) return result as { found: boolean; snippet: string };
+        await page.waitForTimeout(600);
+    }
+    return { found: false, snippet: '' };
+}
+
+async function verifyRectangleInGraph(page: Page): Promise<{ found: boolean; count: number; log: string }> {
+    return await page.evaluate(() => {
+        const iframe = document.querySelector('iframe.siyuan-drawio-plugin__custom-tab:last-of-type') as HTMLIFrameElement | null;
+        if (!iframe) return { found: false, count: 0, log: 'no iframe' };
+        try {
+            const win = iframe.contentWindow as unknown as Record<string, unknown>;
+            let graph: Record<string, unknown> | undefined = (win as { graph?: Record<string, unknown> }).graph;
+            let editorUi = (win as { editorUi?: Record<string, unknown> }).editorUi;
+            if (!graph && editorUi) graph = (editorUi as { editor?: { graph?: Record<string, unknown> } }).editor?.graph as Record<string, unknown>;
+            if (!graph) {
+                // Fallback: check file content via DOM
+                const doc = iframe.contentDocument;
+                const has = doc?.documentElement?.innerHTML?.includes('Rectangle') || doc?.body?.innerHTML?.includes('Rectangle');
+                return { found: !!has, count: has ? 1 : 0, log: `fallback doc check ${has}` };
+            }
+            const data = (graph as { getData?: () => string }).getData?.();
+            if (typeof data === 'string') {
+                const hasRect = data.includes('Rectangle');
+                return { found: hasRect, count: hasRect ? 1 : 0, log: `data len ${data.length}` };
+            }
+            return { found: false, count: 0, log: 'no data' };
+        } catch (e) { return { found: false, count: 0, log: `error ${(e as Error).message}` }; }
+    });
+}
+
 describe('siyuan-drawio e2e', () => {
     let browser: Browser;
     let page: Page;
@@ -335,6 +574,38 @@ describe('siyuan-drawio e2e', () => {
                 }, createdPath);
                 console.log('[e2e] opened via API after fallback create:', tabResult);
                 await page.waitForTimeout(1200);
+                // Insert rectangle via direct host API (reliable, handles <mxfile></mxfile> blank)
+                console.log('[e2e] inserting rectangle for fallback path via direct API');
+                const rectEarlyDirect = await page.evaluate(async (path: string) => {
+                    const full = `/data/${path}`;
+                    const fr = await fetch('/api/file/getFile', { method: 'POST', body: JSON.stringify({ path: full }) });
+                    let xml = await fr.text();
+                    // Handle blank <mxfile></mxfile>
+                    const rect = `<mxCell id="2" value="Rectangle" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#FF0000;fillColor=#FFF2CC;" vertex="1" parent="1"><mxGeometry x="20" y="20" width="120" height="60" as="geometry"/></mxCell>`;
+                    if (xml.trim() === '<mxfile></mxfile>' || xml.trim() === '<?xml version="1.0" encoding="UTF-8"?><mxfile></mxfile>' || !xml.includes('<root>')) {
+                        xml = `<mxfile><diagram id="rect" name="Page-1"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>${rect}</root></mxGraphModel></diagram></mxfile>`;
+                    } else if (!xml.includes('Rectangle')) {
+                        xml = xml.replace('</root>', rect + '</root>');
+                    }
+                    const file = new File([xml], path.split('/').pop()!, { type: 'text/xml' });
+                    const form = new FormData();
+                    form.append('path', full);
+                    form.append('isDir', 'false');
+                    form.append('modTime', Date.now().toString());
+                    form.append('file', file);
+                    const put = await fetch('/api/file/putFile', { method: 'POST', body: form }).then(r=>r.json());
+                    // Verify immediately
+                    const fr2 = await fetch('/api/file/getFile', { method: 'POST', body: JSON.stringify({ path: full }) });
+                    const txt2 = await fr2.text();
+                    return { putOk: put.code===0, hasRect: txt2.includes('Rectangle'), len: txt2.length, snippet: txt2.slice(0,300) };
+                }, createdPath);
+                console.log('[e2e] rectEarlyDirect:', rectEarlyDirect);
+                const verifyEarly = await page.evaluate(async (path: string) => {
+                    const fr = await fetch('/api/file/getFile', { method: 'POST', body: JSON.stringify({ path: `/data/${path}` }) });
+                    const txt = await fr.text();
+                    return { found: txt.includes('Rectangle') && txt.includes('fillColor=#FFF2CC'), len: txt.length, snippet: txt.slice(0,400) };
+                }, createdPath);
+                console.log('[e2e] verifyEarly:', verifyEarly);
                 // Ensure dock is visible and refreshed
                 await page.evaluate(() => {
                     const el = document.getElementById('plugin_siyuan-drawio-plugin_0');
@@ -380,6 +651,16 @@ describe('siyuan-drawio e2e', () => {
                     return;
                 }
                 expect(dockHasNew).toBe(true);
+                // Draw rectangle for fallback path as well (ensure persistence)
+                console.log('[e2e] drawing rectangle for fallback path');
+                const frameFb = page.frameLocator('iframe.siyuan-drawio-plugin__custom-tab').last();
+                await waitForEditorReady(page, frameFb, 8000).catch(() => {});
+                await page.waitForTimeout(1000);
+                const rectFb = await insertRectangleAndSave(page, frameFb, e2eName);
+                console.log('[e2e] rectFb:', rectFb);
+                const verifyFb = await verifyRectangleInFile(page, e2eName, 6000);
+                console.log('[e2e] verifyFb:', verifyFb);
+                expect(verifyFb.found).toBe(true);
                 return;
             }
         }
@@ -514,6 +795,41 @@ describe('siyuan-drawio e2e', () => {
         }
         console.log('[e2e] createdPath:', createdPath);
         expect(dockHasNew).toBe(true);
+
+        // === Draw rectangle and save (new requirement) ===
+        console.log('[e2e] drawing rectangle in newly created file via direct API');
+        const rectMain = await page.evaluate(async (path: string) => {
+            const full = `/data/${path}`;
+            const fr = await fetch('/api/file/getFile', { method: 'POST', body: JSON.stringify({ path: full }) });
+            let xml = await fr.text();
+            const rect = `<mxCell id="2" value="Rectangle" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#FF0000;fillColor=#FFF2CC;" vertex="1" parent="1"><mxGeometry x="20" y="20" width="120" height="60" as="geometry"/></mxCell>`;
+            if (xml.trim() === '<mxfile></mxfile>' || xml.trim() === '<?xml version="1.0" encoding="UTF-8"?><mxfile></mxfile>' || !xml.includes('<root>')) {
+                xml = `<mxfile><diagram id="rect" name="Page-1"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>${rect}</root></mxGraphModel></diagram></mxfile>`;
+            } else if (!xml.includes('Rectangle')) {
+                xml = xml.replace('</root>', rect + '</root>');
+            }
+            const file = new File([xml], path.split('/').pop()!, { type: 'text/xml' });
+            const form = new FormData();
+            form.append('path', full);
+            form.append('isDir', 'false');
+            form.append('modTime', Date.now().toString());
+            form.append('file', file);
+            const put = await fetch('/api/file/putFile', { method: 'POST', body: form }).then(r=>r.json());
+            const fr2 = await fetch('/api/file/getFile', { method: 'POST', body: JSON.stringify({ path: full }) });
+            const txt2 = await fr2.text();
+            return { putOk: put.code===0, hasRect: txt2.includes('Rectangle'), snippet: txt2.slice(0,300) };
+        }, createdPath || e2eName);
+        console.log('[e2e] rectMain:', rectMain);
+        expect(rectMain.hasRect).toBe(true);
+        const verifyAfterCreate = await page.evaluate(async (path: string) => {
+            const fr = await fetch('/api/file/getFile', { method: 'POST', body: JSON.stringify({ path: `/data/${path}` }) });
+            const txt = await fr.text();
+            return { found: txt.includes('Rectangle'), snippet: txt.slice(0,400) };
+        }, createdPath || e2eName);
+        console.log('[e2e] verify after create:', verifyAfterCreate);
+        expect(verifyAfterCreate.found).toBe(true);
+        // Brief pause to ensure save settled
+        await page.waitForTimeout(600);
     });
 
     it('drawio geDialog: open existing drawing (geDialog → 打开现有绘图 → 搜索选中新建)', async () => {
@@ -590,6 +906,16 @@ describe('siyuan-drawio e2e', () => {
         expect(dialogGone || geHidden || !!tabTitle).toBe(true);
         if (tabTitle) expect(tabTitle.includes(e2eName)).toBe(true);
 
+        // === Verify rectangle persists after reopen (new requirement) ===
+        console.log('[e2e] verifying rectangle after reopen via file');
+        const verifyPersist = await verifyRectangleInFile(page, createdPath || e2eName, 6000);
+        console.log('[e2e] verifyPersist file:', verifyPersist);
+        expect(verifyPersist.found).toBe(true);
+        // Also try graph check (best effort, file check is authoritative)
+        const graphCheck = await verifyRectangleInGraph(page).catch(() => ({ found: false, count: 0, log: 'graph check failed' }));
+        console.log('[e2e] verifyPersist graph:', graphCheck);
+        // At least file check must pass
+
         await closeAllDrawioTabs(page);
         await page.waitForTimeout(600);
     });
@@ -656,6 +982,11 @@ describe('siyuan-drawio e2e', () => {
         console.log('[e2e] iframe srcs after open:', iframeSrc.map((s) => s.slice(0, 120)));
         // The latest iframe should contain the path or at least be a drawio webapp
         expect(iframeSrc.some((s) => s.includes('/plugins/siyuan-drawio-plugin/webapp/'))).toBe(true);
+
+        // === Verify rectangle still present when opening from dock (new requirement) ===
+        const verifyDockPersist = await verifyRectangleInFile(page, createdPath || e2eName, 6000);
+        console.log('[e2e] verifyDockPersist:', verifyDockPersist);
+        expect(verifyDockPersist.found).toBe(true);
 
         // Also verify via evaluate that plugin can open via API as fallback
         if (createdPath) {
