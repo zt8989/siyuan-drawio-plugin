@@ -21,7 +21,13 @@
 4-space indentation in `.ts`. Prefer TypeScript interfaces over `any`. ESM only — no CommonJS imports. Vite resolves via `@/` alias → `src/`. Svelte 4 with `@sveltejs/vite-plugin-svelte`.
 
 ## Testing Guidelines
-No automated tests. Manual verification in Siyuan: `pnpm dev` → `pnpm make-link` → insert `/drawio`. Test save, upload, rename, "Copy as Image". For E2E automation, use `pnpm e2e` (`vitest` + `playwright` via CDP `http://127.0.0.1:9222`, `e2e/drawio.test.ts`, 30s timeout; requires SiYuan started with `--remote-debugging-port=9222`).
+
+> **铁律：E2E 必须先探后固化 — 不允许直接编写 e2e**
+> 1. 任何新增/修改 `e2e/` 用例前，**必须先通过 Playwright MCP 或 `playwright-cli` skill 在真实 Siyuan/Electron 环境中探明并验证交互路径**（CDP `http://127.0.0.1:9222`，需 SiYuan 以 `--remote-debugging-port=9222` 启动）。
+> 2. 只有在 Playwright 交互已跑通后，才可将路径固化为 `e2e/` 内的可复现脚本（`pnpm e2e`，`vitest` + `playwright`，`e2e/drawio.test.ts`，30s timeout）。
+> 3. **禁止直接手写/猜测 e2e 用例**（含选择器、时序、Dialog/Dock 挂载逻辑）而不经过浏览器实测验证；评审时以 Playwright 实测轨迹为依据。
+
+No automated tests beyond E2E. Manual verification in Siyuan: `pnpm dev` → `pnpm make-link` → insert `/drawio`. Test save, upload, rename, "Copy as Image". For E2E automation, use `pnpm e2e` (`vitest` + `playwright` via CDP `http://127.0.0.1:9222`, `e2e/drawio.test.ts`, 30s timeout; requires SiYuan started with `--remote-debugging-port=9222`).
 
 ## Commit & Pull Request Guidelines
 Conventional Commits (`feat(scope):`, `fix(client):`, `chore:`). PRs: user-facing impact, Siyuan versions tested, screenshots for UI changes. Generated bundles stay `.gitignore`'d.
