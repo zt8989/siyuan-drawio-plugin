@@ -23,6 +23,7 @@ import "@/index.scss";
 import { getIframeFromEventSource } from "./utils";
 import { listDrawioFiles, saveDrawIoXml, searchDrawioFiles } from "./api";
 import { CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, DRAWIO_CONFIG_KEYS, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD, DRAWIO_EXTENSION, drawioAssetsPath, STORAGE_PATH } from "./constants";
+import { SiyuanAssetStore, type AssetStore } from "./asset/AssetStore";
 import { createLinkFromTitle, createUrlFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback, DrawioConfig } from "./types";
 import { genDrawioHTMLByUrl } from "./asset/renderAssets";
@@ -35,6 +36,7 @@ export default class DrawioPlugin extends Plugin {
     private isMobile: boolean;
     private configLoaded = false
     private drawioConfig: DrawioConfig | null = null
+    public assetStore: AssetStore = new SiyuanAssetStore()
 
     // Pre-bind methods to ensure same reference for event cleanup
     private boundOnOpenTab = this.onOpenTab.bind(this)
