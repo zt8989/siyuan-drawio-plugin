@@ -1,27 +1,24 @@
-import { resolve, dirname } from "path"
+import { resolve } from "path"
 import { defineConfig, loadEnv } from "vite"
 import { viteStaticCopy } from "vite-plugin-static-copy"
 import livereload from "rollup-plugin-livereload"
 import fg from 'fast-glob';
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import packageJson from './package.json'
-import { fileURLToPath } from 'url';
 export const version = packageJson.version
 
 import vitePluginYamlI18n from './yaml-plugin';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const env = process.env;
 const isSrcmap = env.VITE_SOURCEMAP === 'inline';
 const isDev = env.NODE_ENV === 'development';
 
-const outputDir = isDev ? "dev" : "dist"
+const outputDir = isDev ? "dev" : "dist";
 
 console.log("isDev=>", isDev);
 console.log("isSrcmap=>", isSrcmap);
 console.log("outputDir=>", outputDir);
+console.log(resolve(__dirname, outputDir, "PostConfig.js"))
 
 export default defineConfig({
     resolve: {
@@ -45,9 +42,7 @@ export default defineConfig({
                 { src: "./preview.png", dest: "./" },
                 { src: "./icon.png", dest: "./" },
             ],
-        }),
-
-
+        })
     ],
 
     define: {
@@ -63,10 +58,8 @@ export default defineConfig({
         sourcemap: isSrcmap ? 'inline' : false,
 
         lib: {
-            entry: {
-                index: resolve(__dirname, "src/index.ts"),
-            },
-            fileName: (fromat, entryName) => `${entryName}.js`,
+            entry: resolve(__dirname, "src/index.ts"),
+            fileName: () => `index.js`,
             formats: ["cjs"],
         },
         rollupOptions: {
@@ -80,6 +73,7 @@ export default defineConfig({
                                 'public/i18n/**',
                                 './README*.md',
                                 './plugin.json',
+                                // './client/*.js',
                             ]);
                             for (let file of files) {
                                 this.addWatchFile(file);
@@ -87,6 +81,11 @@ export default defineConfig({
                         }
                     }
                 ] : [
+                    // zipPack({
+                    //     inDir: './dist',
+                    //     outDir: './',
+                    //     outFileName: 'package.zip'
+                    // })
                 ])
             ],
 
