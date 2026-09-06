@@ -10,7 +10,7 @@ import { fetchPost, fetchSyncPost, IWebSocketData } from "siyuan";
 import { checkInvalidPathChar } from "./utils";
 import { blankDrawio, DRAWIO_EXTENSION, drawioAssetsPath, DATA_PATH, STORAGE_PATH } from "./constants";
 import { saveContentAsFile } from "./file";
-import { createUrlFromTitle } from "./link";
+import { DrawioAsset } from "./asset/DrawioAsset";
 import { Asset } from "./types";
 
 
@@ -421,18 +421,14 @@ export async function listDrawioFiles(dirs?: Record<string, string[]>): Promise<
                     await scanDirectory(fullPath, exts);
                 } else if (exts.some(ext => file.name.endsWith(ext))) {
                     const ext = exts.find(ext => file.name.endsWith(ext)) || DRAWIO_EXTENSION;
-                    const nameWithoutExt = file.name.slice(0, -ext.length);
-                    const parts = nameWithoutExt.split('-');
-                    const baseName = parts.length >= 3 ? 
-                        nameWithoutExt.slice(0, -(parts.slice(-2).join('-').length + 1)) : 
-                        nameWithoutExt;
-                    // Extract only the final extension (e.g., 'png' from '.drawio.png')
-                    const finalExt = ext.split('.').pop() || '';
+                    // Delegate hName/ext/id slicing to DrawioAsset single source of truth (contract)
+                    const tmpPath = fullPath.substring(DATA_PATH.length);
+                    const parsed = DrawioAsset.fromPath(tmpPath);
                     assets.push({
-                        path: fullPath.substring(DATA_PATH.length),  // 移除 '/data/' 前缀
-                        hName: baseName,
+                        path: tmpPath,
+                        hName: parsed.hName,
                         updated: file.updated,
-                        ext: finalExt
+                        ext: parsed.ext || ext.split('.').pop() || ''
                     });
                 }
             }
@@ -564,14 +560,8 @@ export async function renameDrawIo(name: string, oldPath: string) {
     if(!name || checkInvalidPathChar(name)) {
         throw new Error(`Drawio: 名称 ${name} 不合法`)
     }
-    // 从旧路径提取时间戳和ID部分
-    const oldName = oldPath.split('/').pop() || '';
-    const oldPathWithoutFileName = oldPath.slice(0, -oldName.length);
-    const parts = oldName.split('-');
-    const suffix = parts.length >= 3 ? `-${parts.slice(-2).join('-')}` : '';
-    
-    const newName = name.endsWith(DRAWIO_EXTENSION) ? name : name + suffix;
-    const newPath = DATA_PATH + oldPathWithoutFileName + newName;
+    // Delegate suffix preservation to DrawioAsset single source of truth (contract)
+    const newPath = DATA_PATH + DrawioAsset.renamePath(name, oldPath).replace(/^\//, "");
     const res = await renameFile(newPath, DATA_PATH + oldPath)
     if(res.code === 0) {
         return res.data

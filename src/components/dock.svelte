@@ -2,13 +2,16 @@
     import type DrawioPlugin from '@/index';
     import { confirm, showMessage } from 'siyuan';
     import { onMount } from 'svelte';
-    import { removeFile, listDrawioFiles, saveDrawIo } from '@/api';
+    import { removeFile } from '@/api';
     import { ICON_STANDARD, DATA_PATH, PLUGIN_CONFIG, drawioAssetsPath } from '@/constants';
+    import type { AssetStore } from '@/asset/AssetStore';
+    import { defaultAssetStore } from '@/asset/AssetStore';
     import { addWhiteboard, renameWhiteboard } from '@/dialog';
     import type { Asset } from '@/types';
     import { genDrawioHTMLByUrl } from '@/asset/renderAssets';
 
     export let plugin: DrawioPlugin;
+    export let assetStore: AssetStore | undefined = undefined;
 
     let assets: Asset[] = [];
     let isLoading = false;
@@ -70,8 +73,9 @@
         error = '';
         try {
             const savePath = plugin.getDrawioConfig()?.defaultSavePath;
+            const store: AssetStore = assetStore ?? (plugin as unknown as { assetStore?: AssetStore })?.assetStore ?? defaultAssetStore;
             for (const file of drawioFiles) {
-                await saveDrawIo(file, savePath);
+                await store.saveFile(file, savePath);
                 showMessage(plugin.i18n.uploadSuccess.replace('${fileName}', file.name) || 'Upload successful');
             }
             searchAssets();
@@ -139,7 +143,8 @@
     const searchAssets = () => {
         isLoading = true;
         error = '';
-        listDrawioFiles()
+        const store: AssetStore = assetStore ?? (plugin as unknown as { assetStore?: AssetStore })?.assetStore ?? defaultAssetStore;
+        store.list()
             .then(data => {
                 assets = data;
                 sortAssets(); // Sort after loading
@@ -199,9 +204,11 @@
         }
     };
 
-    onMount(async () => {
-        await loadSortPreference();
-        searchAssets();
+    onMount(() => {
+        (async () => {
+            await loadSortPreference();
+            searchAssets();
+        })();
         return () => {
             document.removeEventListener('click', closeSortMenu);
         };

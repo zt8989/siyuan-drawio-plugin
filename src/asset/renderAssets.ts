@@ -3,6 +3,7 @@ import {pathPosix} from "@/util/pathName";
 import { getTitleFromPath } from "@/link";
 import { IProtyle } from "siyuan";
 import { generateSiyuanIdPrefix } from "@/api";
+import { DrawioAsset } from "./DrawioAsset";
 
 export const renderAssetsPreview = (pathString: string) => {
     if (!pathString) {
@@ -22,7 +23,8 @@ export const renderAssetsPreview = (pathString: string) => {
 
 export const genDrawioHTMLByUrl = (assetUrl: string)  => {
     const title = getTitleFromPath(assetUrl)
-    return genDrawioIFrameHTML(assetUrl, getDrawioIframe(title, assetUrl), getIdFromTitle(title) || generateSiyuanIdPrefix())
+    const id = title.includes("-") ? (DrawioAsset.extractId(title.split(".")[0]) || "") : "";
+    return genDrawioIFrameHTML(assetUrl, getDrawioIframe(title, assetUrl), id || generateSiyuanIdPrefix())
 }
 
 export const getDrawioIframe = (title: string, assetUrl: string) => {
@@ -35,25 +37,8 @@ export const getDrawioIframe = (title: string, assetUrl: string) => {
 }
 
 
-// 定义一个函数来格式化日期和时间
-function formatDate(date) {
-    const pad = (num) => String(num).padStart(2, '0');
-
-    const year = date.getFullYear();
-    const month = pad(date.getMonth() + 1); // 月份从 0 开始，需要加 1
-    const day = pad(date.getDate());
-    const hours = pad(date.getHours());
-    const minutes = pad(date.getMinutes());
-    const seconds = pad(date.getSeconds());
-
-    return `${year}${month}${day}${hours}${minutes}${seconds}`;
-}
-
-function extractId(originalId) {
-    const regex = /(\d+-\w+)$/;
-    const match = originalId.match(regex);
-    return match ? match[1] : null;
-}
+// Contract: extractId/formatDate removed — single source of truth is DrawioAsset.extractId / DrawioAsset.generateId
+// Deleted formatDate and extractId wrappers (old shallow helpers) — callers now use DrawioAsset directly
 
 export const genDrawioIFrameHTML = (assetUrl: string, iframeSrc: string, id: string, width = "100%", height = "200px") => {
     const html = `<iframe frameborder="0" style="width:${width};height:${height};" src="${iframeSrc}"></iframe>`
@@ -69,8 +54,4 @@ export const genDrawioEmbedHTML = (assetUrl: string, iframeSrc: string, protyle:
     nodeIFrame?.setAttribute('custom-data-assets', assetUrl);
     return protyle.lute.SpinBlockDOM(tempElement.innerHTML)
 };
-
-function getIdFromTitle(title: string): string {
-    return title.includes("-") ? extractId(title.split(".")[0]) : ""
-}
 

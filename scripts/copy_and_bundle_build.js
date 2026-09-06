@@ -17,8 +17,8 @@ const webappDir = path.join(outputDir, 'webapp');
 const zipFilePath = 'package.zip';
 
 const filesToCopy = [
-    { src: path.join(outputDir, 'PostConfig.js'), dest: webappJsDir, type: "moveAndiife" },
-    { src: path.join(outputDir, 'PreConfig.js'), dest: webappJsDir, type: "moveAndiife" },
+    // PreConfig/PostConfig are now built directly to webapp/js via vite.client.config.ts as IIFE with correct sourcemap.
+    // Do not move/wrap here – just ensure embed files are copied (client config also does, but keep for safety).
     { src: path.join("client", 'embed.html'), dest: webappDir, type: "copy" },
     { src: path.join("client", 'embed2.js'), dest: webappDir, type: "copy" },
 ];
@@ -54,13 +54,27 @@ filesToCopy.forEach(({ src, dest, type }) => {
     if(type == "moveAndiife") {
         if (fs.existsSync(src)) {
             const destFile = path.join(dest, path.basename(src));
-            const fileContent = fs.readFileSync(src, 'utf8');
-            const wrappedContent = `(function() {\n${fileContent}\n})();`;
-            fs.writeFileSync(destFile, wrappedContent);
-            fs.unlinkSync(src);
-            console.log(`Moved and wrapped with IIFE: ${src} to ${destFile}`);
+            if (fs.existsSync(destFile)) {
+                // New vite.client.config already outputs IIFE with correct sourcemap to webapp/js
+                // Don't overwrite – just remove the leftover in outputDir
+                fs.unlinkSync(src);
+                console.log(`Removed leftover ${src} (already built at ${destFile})`);
+            } else {
+                // Fallback for old single-config build: wrap manually
+                const fileContent = fs.readFileSync(src, 'utf8');
+                const wrappedContent = `(function() {\n${fileContent}\n})();`;
+                fs.writeFileSync(destFile, wrappedContent);
+                fs.unlinkSync(src);
+                console.log(`Moved and wrapped with IIFE: ${src} to ${destFile}`);
+            }
         } else {
-            console.log(`Source file not found: ${src}`);
+            // No legacy file, check if new client build already produced the file
+            const destFile = path.join(dest, path.basename(src));
+            if (fs.existsSync(destFile)) {
+                console.log(`Skipped ${src} -> ${destFile} (already exists via vite.client.config)`);
+            } else {
+                console.log(`Source file not found: ${src}`);
+            }
         }
     }
 })
