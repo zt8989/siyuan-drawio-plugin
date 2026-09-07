@@ -40,6 +40,7 @@ import {
 
 var lastScrollAt = 0;
 var THINK_ROW_ATTR = 'data-siyuan-ai-think';
+var streamSeq = 0;
 // Full reasoning per row (collapsed preview can't hold it); WeakMap so
 // detached rows never leak.
 var thinkFullTexts = (typeof WeakMap !== 'undefined') ? new WeakMap() : null;
@@ -100,13 +101,18 @@ function findThinkRow(waiting) {
 // The thinking row lives as the waiting bubble's previous sibling so the
 // upstream final render (target.innerHTML = '') can't wipe it; it persists
 // across the exchange and flips 思考中 -> 思考 on completion. Click toggles
-// collapsed preview <-> full reasoning.
-function ensureThinkRow(waiting) {
+// collapsed preview <-> full reasoning. streamId separates a continuing
+// stream (preserve expanded, keep tailing) from a retry/new stream (reset).
+function ensureThinkRow(waiting, streamId) {
     var row = findThinkRow(waiting);
     if (row != null) {
         try {
-            row.dataset.expanded = '';
-            setThinkCollapsedStyle(row);
+            if (row.dataset.streamId !== String(streamId)) {
+                row.dataset.streamId = String(streamId);
+                row.dataset.expanded = '';
+                row.dataset.thinkState = 'streaming';
+                setThinkCollapsedStyle(row);
+            }
         } catch (e) { /* ignore */ }
         return row;
     }
@@ -114,6 +120,7 @@ function ensureThinkRow(waiting) {
     try {
         row = document.createElement('div');
         row.setAttribute(THINK_ROW_ATTR, '1');
+        row.dataset.streamId = String(streamId);
         row.dataset.expanded = '';
         row.dataset.thinkState = 'streaming';
         row.style.color = '#888';
@@ -144,7 +151,8 @@ function ensureThinkRow(waiting) {
 }
 
 // Finalizes the persistent row: done label, or removal when nothing was
-// ever thought (keeps "no thinking -> no row").
+// ever thought (keeps "no thinking -> no row"). An expanded row stays
+// expanded, only the label flips.
 function finalizeThinkRow(waiting, reasoning) {
     var row = findThinkRow(waiting);
     if (row == null) return;
@@ -154,9 +162,15 @@ function finalizeThinkRow(waiting, reasoning) {
             return;
         }
         rememberThinkFull(row, reasoning);
-        row.dataset.expanded = '';
-        setThinkCollapsedStyle(row);
-        paintThinkRow(row, 'done', formatThinkingPreview(reasoning));
+        if (row.dataset.expanded === '1') {
+            row.dataset.thinkState = 'done';
+            setThinkExpandedStyle(row);
+            row.textContent = formatThinkingText('done', '') + '\n' + reasoning;
+            row.scrollTop = row.scrollHeight;
+        } else {
+            setThinkCollapsedStyle(row);
+            paintThinkRow(row, 'done', formatThinkingPreview(reasoning));
+        }
     } catch (e) { /* ignore */ }
 }
 
@@ -183,17 +197,25 @@ function findWaitingBubble() {
     return null;
 }
 
-function renderProgress(waiting, reasoning, content) {
+function renderProgress(waiting, reasoning, content, streamId) {
     if (waiting == null || waiting.parentNode == null) return;
     if (reasoning === '' && content === '') return;
     try {
         waiting.innerHTML = '';
         if (reasoning !== '') {
             var preview = formatThinkingPreview(reasoning);
-            var thinkRow = ensureThinkRow(waiting);
+            var thinkRow = ensureThinkRow(waiting, streamId);
             if (thinkRow != null) {
                 rememberThinkFull(thinkRow, reasoning);
-                paintThinkRow(thinkRow, 'streaming', preview);
+                if (thinkRow.dataset.expanded === '1') {
+                    // Expanded stays expanded across refreshes: keep tailing
+                    // the scrollable full text instead of collapsing.
+                    setThinkExpandedStyle(thinkRow);
+                    thinkRow.textContent = formatThinkingText('streaming', '') + '\n' + reasoning;
+                    thinkRow.scrollTop = thinkRow.scrollHeight;
+                } else {
+                    paintThinkRow(thinkRow, 'streaming', preview);
+                }
             }
             emit('drawio-ai-stream-thinking', { preview: preview });
         }
@@ -280,6 +302,7 @@ function runStream(xhr, url, streamBody, originalBody, fetchFn) {
         var content = '';
         var reasoning = '';
         var gotFirst = false;
+        var streamId = ++streamSeq;
 
         var pump = function () {
             return reader.read().then(function (step) {
@@ -297,11 +320,11 @@ function runStream(xhr, url, streamBody, originalBody, fetchFn) {
                     reasoning += d.reasoning;
                     if (d.done) {
                         try { reader.cancel(); } catch (e) { /* ignore */ }
-                        renderProgress(waiting, reasoning, content);
+                        renderProgress(waiting, reasoning, content, streamId);
                         return false;
                     }
                 }
-                renderProgress(waiting, reasoning, content);
+                renderProgress(waiting, reasoning, content, streamId);
                 return true;
             });
         };

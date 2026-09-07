@@ -196,6 +196,7 @@ describe('drawio ai chat streaming', () => {
                         const f = (fs.find((x) => (x as HTMLElement).offsetParent !== null) || fs[fs.length - 1]) as HTMLIFrameElement;
                         const previews: string[] = [];
                         let thinkStyle: Record<string, string> | null = null;
+                        let expandedMidStream = false;
                         const timer = setTimeout(() => reject(new Error('no stream done event')), 25000);
                         const doc = f.contentDocument!;
                         f.contentWindow!.addEventListener('drawio-ai-stream-thinking', (e) => {
@@ -210,6 +211,15 @@ describe('drawio ai chat streaming', () => {
                                     const cs = f.contentWindow!.getComputedStyle(row);
                                     thinkStyle = { whiteSpace: cs.whiteSpace, overflow: cs.overflow, textOverflow: cs.textOverflow };
                                 }
+                            }
+                            // Expand mid-stream: later refreshes and completion
+                            // must not collapse it back.
+                            if (!expandedMidStream) {
+                                expandedMidStream = true;
+                                const row = [...doc.querySelectorAll('div')].find((el) =>
+                                    (el.textContent || '').startsWith('思考中：'),
+                                ) as HTMLElement | undefined;
+                                row?.click();
                             }
                         });
                         f.contentWindow!.addEventListener(
@@ -308,8 +318,9 @@ describe('drawio ai chat streaming', () => {
             console.log('[e2e-stream] final:', finalState);
             expect(finalState.ok).toBe(true);
 
-            // 9) Thinking row persists as 思考：<last line>, click expands
-            // to the full reasoning, click again collapses.
+            // 9) Thinking row persists as 思考：<last line>; it was expanded
+            // mid-stream and must still be expanded (refreshes and completion
+            // never collapse it). Click collapses back to the preview.
             const expandState = await page.evaluate(() => {
                 const fs = [...document.querySelectorAll('iframe.siyuan-drawio-plugin__custom-tab')];
                 const f = (fs.find((x) => (x as HTMLElement).offsetParent !== null) ||
@@ -319,31 +330,28 @@ describe('drawio ai chat streaming', () => {
                     (el.textContent || '').startsWith('思考：'),
                 ) as HTMLElement | undefined;
                 if (!row) return { found: false };
-                const collapsedLen = (row.textContent || '').length;
-                row.click();
+                const stillExpanded =
+                    row.dataset.expanded === '1' && f.contentWindow!.getComputedStyle(row).whiteSpace === 'pre-wrap';
                 const expandedText = row.textContent || '';
-                const expandedWhiteSpace = f.contentWindow!.getComputedStyle(row).whiteSpace;
                 row.click();
                 const collapsedAgain = row.textContent || '';
                 return {
                     found: true,
-                    collapsedLen,
+                    stillExpanded,
                     expandedLen: expandedText.length,
-                    expandedWhiteSpace,
                     expandedStartsWithLabel: expandedText.startsWith('思考：'),
+                    collapsedLen: collapsedAgain.length,
                     collapsedAgain,
                 };
             });
             console.log('[e2e-stream] think-row:', JSON.stringify(expandState).slice(0, 300));
             expect(expandState.found).toBe(true);
             if (expandState.found) {
-                // Collapsed shows only the last line; expanded holds the whole stream.
                 const expectedFull = fixtureExpectations(SSE_BODY).fullReasoning;
-                expect(expandState.collapsedLen).toBeLessThan(150);
+                expect(expandState.stillExpanded).toBe(true);
                 expect(expandState.expandedLen).toBe('思考：\n'.length + expectedFull.length);
-                expect(expandState.expandedLen).toBeGreaterThan(expandState.collapsedLen);
-                expect(expandState.expandedWhiteSpace).toBe('pre-wrap');
                 expect(expandState.expandedStartsWithLabel).toBe(true);
+                expect(expandState.collapsedLen).toBeLessThan(150);
                 expect(expandState.collapsedAgain).toBe(
                     `思考：${fixtureExpectations(SSE_BODY).finalPreview}`,
                 );
