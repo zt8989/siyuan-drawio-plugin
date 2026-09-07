@@ -39,6 +39,14 @@ import {
 
 var lastScrollAt = 0;
 
+function emit(name, detail) {
+    // Observability hook for e2e (and debugging): thinking progress and
+    // completion are visible even when the stream resolves in one read.
+    try {
+        window.dispatchEvent(new CustomEvent(name, { detail: detail || {} }));
+    } catch (e) { /* ignore */ }
+}
+
 function thinkingLabel() {
     try {
         var v = window.mxResources ? window.mxResources.get('thinking') : null;
@@ -75,6 +83,7 @@ function renderProgress(waiting, reasoning, content) {
             think.style.whiteSpace = 'pre-wrap';
             think.textContent = thinkingLabel() + ' ' + (preview !== '' ? preview : '') + '...';
             waiting.appendChild(think);
+            emit('drawio-ai-stream-thinking', { preview: preview });
         }
         if (content !== '') {
             var body = document.createElement('div');
@@ -207,6 +216,7 @@ function runStream(xhr, url, streamBody, originalBody, fetchFn) {
                     return;
                 }
                 completeXhr(xhr, 200, buildChatCompletionsJson(content, reasoning));
+                emit('drawio-ai-stream-done', { hadThinking: reasoning !== '' });
             }, function () {
                 // Read aborted (overall timeout) or failed mid-stream.
                 clearTimers();
@@ -216,6 +226,7 @@ function runStream(xhr, url, streamBody, originalBody, fetchFn) {
                 }
                 // Partial content finalizes; upstream truncation-repair shows its partial hint.
                 completeXhr(xhr, 200, buildChatCompletionsJson(content, reasoning));
+                emit('drawio-ai-stream-done', { hadThinking: reasoning !== '', partial: true });
             });
         };
         return loop();

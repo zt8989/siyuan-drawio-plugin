@@ -4,10 +4,10 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** verified — Playwright 实测通过（真机 DeepSeek 鲸鱼 ~2.5min 无超时；mock SSE e2e 断言 stream:true）
 
-- [ ] gpt 配置路径请求带 stream:true，用 fetch/SSE 逐 delta 拼接 content
-- [ ] 解析 reasoning_content/thinking 增量并向上传递（供 02 显示），无思考字段时行为不变
-- [ ] 非流式降级可用（服务端不支持 stream 时走原 mxXmlRequest 路径）
-- [ ] 去围栏（```mermaid/```）逻辑在流式拼接结果上仍然生效
-- [ ] 复杂提示词（DeepSeek 鲸鱼）在真实思源环境手动验证不再超时、文字逐步出现
+- [x] gpt 配置路径请求带 stream:true，用 fetch/SSE 逐 delta 拼接 content
+- [x] 解析 reasoning_content/thinking 增量并向上传递（供 02 显示），无思考字段时行为不变
+- [x] 非流式降级可用（服务端不支持 stream 时走原 mxXmlRequest 路径）
+- [x] 去围栏（```mermaid/```）逻辑在流式拼接结果上仍然生效
+- [x] 复杂提示词（DeepSeek 鲸鱼）在真实思源环境手动验证不再超时、文字逐步出现
