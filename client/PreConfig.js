@@ -1,6 +1,11 @@
 import { DefaultElectronImpl } from './Electron.js';
 import Storage from './Storage.js';
 import { getDrawioLang } from '@/bridge/DrawioBridge';
+import { installAiStreamPatch } from './AiStreamPatch.js';
+
+// AI chat streaming (SSE + 思考中 UI): installed before the fence patch so
+// the stream uses pristine fetch; classic fallback still flows through it.
+installAiStreamPatch();
 
 window.isLocalStorage = true
 const storage = window.storage = new Storage();

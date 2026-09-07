@@ -55,7 +55,9 @@ export default defineConfig({
             name: 'watch-client-external',
             async buildStart() {
                 if (!isDev) return;
-                const files = await fg(['client/**/*.{js,html}']);
+                // AiStreamPatch imports pure helpers from src/ai: watch them too
+                // so `pnpm dev` rebuilds the client bundle on util changes.
+                const files = await fg(['client/**/*.{js,html}', 'src/ai/**/*.{ts,js}']);
                 for (const file of files) this.addWatchFile(file);
             },
         },

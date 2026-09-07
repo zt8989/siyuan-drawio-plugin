@@ -3,6 +3,7 @@ import { setup as EditorUiSetup } from "./components/EditorUi"
 // import { setup as ThemeSetup } from "./components/Theme"
 import { setup as MenuSetup } from "./components/Menus"
 import { formatFileName, generateSiyuanId } from "./api"
+import { OVERALL_TIMEOUT_MS } from "@/ai/AiStreamUtils"
 /**
  * Copyright (c) 2006-2024, JGraph Ltd
  * Copyright (c) 2006-2024, draw.io AG
@@ -253,6 +254,18 @@ if (window.parent.siyuan) {
         electron.sendMessage("openTabByPath", href)
     }
     EditorSetup()
+    //#endregion
+
+    //#region AI streaming timeout
+    // AiStreamPatch streams long chain-of-thought answers with live progress,
+    // so the one-shot 90s budget must not kill an active stream first: the
+    // overall 10min budget (see src/ai/AiStreamUtils OVERALL_TIMEOUT_MS) with
+    // its own first-byte timeout owns AI generation timeouts now.
+    try {
+        if (typeof Editor !== 'undefined' && Editor.prototype != null) {
+            Editor.prototype.generateTimeout = OVERALL_TIMEOUT_MS;
+        }
+    } catch (e) { /* keep upstream default when Editor is unavailable */ }
     //#endregion
 
     //#region EditorUi
