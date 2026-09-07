@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-> 详述见 `docs/`：`docs/architecture.md`（结构与架构）、`docs/release.md`（发布）、`docs/contributing.md`（提交与配置）、`CONTEXT.md`（域词汇）
+> 详述见 `docs/`：`docs/architecture.md`（结构与架构）、`docs/release.md`（发布）、`docs/contributing.md`（提交与配置）、`docs/e2e-probe-sop.md`（E2E 探路 SOP：新建 drawio 到新建绘图等前置步骤）、`CONTEXT.md`（域词汇）
 
 ## Build, Test, and Development Commands
 - `pnpm dev` — **必须后台运行**（`vite --watch` + livereload 常驻，不会退出；用 `pty_spawn`/`&` 后台启动，勿前台阻塞）watch build with inline sourcemaps via `concurrently` (`vite.config.ts` for src + `vite.client.config.ts` for client `PreConfig`/`PostConfig` as IIFE to `dev/webapp/js/`). `predev` copies draw.io webapp base to `dev/webapp/`. **只需 `pnpm dev` 即可**：`dev/` 已通过 `pnpm make-link` 一次性 `symlink -> <workspace>/data/plugins/siyuan-drawio-plugin`（`scripts/make_dev_link.js` 经 `getSiYuanDir` 或 `SIYUAN_PLUGIN_DIR` 解析），`vite --watch` 增量编译后自动同步到思源测试 workspace，无需手动 `copy` 到 `resources/test`；`dev` 与 `dist` 隔离，`build` 产 `dist/package.zip` 不影响 `dev`。
@@ -19,5 +19,6 @@
 > 1. 任何新增/修改 `e2e/` 用例前，**必须先通过 Playwright MCP 或 `playwright-cli` skill 在真实 Siyuan/Electron 环境中探明并验证交互路径**（CDP `http://127.0.0.1:9222`，需 SiYuan 以 `--remote-debugging-port=9222` 启动）。
 > 2. 只有在 Playwright 交互已跑通后，才可将路径固化为 `e2e/` 内的可复现脚本（`pnpm e2e`，`vitest` + `playwright`，`e2e/drawio.test.ts`，30s timeout）。
 > 3. **禁止直接手写/猜测 e2e 用例**（含选择器、时序、Dialog/Dock 挂载逻辑）而不经过浏览器实测验证；评审时以 Playwright 实测轨迹为依据。
+> 探路前置步骤（开页签→新建绘图→可见 iframe→聊天路径→坑位）见 `docs/e2e-probe-sop.md`，按 SOP 走通后再固化。
 
 No automated tests beyond E2E. Manual verification in Siyuan: `pnpm dev` → `pnpm make-link` → insert `/drawio`. Test save, upload, rename, "Copy as Image". For E2E automation, use `pnpm e2e` (`vitest` + `playwright` via CDP `http://127.0.0.1:9222`, `e2e/drawio.test.ts`, 30s timeout; requires SiYuan started with `--remote-debugging-port=9222`).
