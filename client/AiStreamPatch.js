@@ -222,7 +222,7 @@ function runStream(xhr, url, streamBody, originalBody, fetchFn) {
                     return;
                 }
                 completeXhr(xhr, 200, buildChatCompletionsJson(content, reasoning));
-                emit('drawio-ai-stream-done', { hadThinking: reasoning !== '' });
+                emit('drawio-ai-stream-done', { hadThinking: reasoning !== '', contentLength: content.length });
             }, function () {
                 // Read aborted (overall timeout) or failed mid-stream.
                 clearTimers();

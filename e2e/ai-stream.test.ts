@@ -239,6 +239,7 @@ describe('drawio ai chat streaming', () => {
             }
             expect(previews[previews.length - 1]).toBe(expected.finalPreview);
             expect(done.hadThinking).toBe(true);
+            expect(done.contentLength).toBe(expected.fullContent.length);
             expect(requestedStream).toBe(true);
             // Thinking row stays on one line with ellipsis (no wrapped,
             // half-cut second line in the narrow bubble).
