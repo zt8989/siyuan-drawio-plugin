@@ -65,6 +65,9 @@ const f = [...document.querySelectorAll('iframe.siyuan-drawio-plugin__custom-tab
 - `route.fetch()` 默认 30s 等完整 body，**长流抓包必超时**且会连带搞挂页面请求；
   录真实流用脚本直调（同款 system prompt 取自 `Editor.aiGlobals.create`），见 `e2e/fixtures/`。
 - `eval` 里的 `[...]` 会被 zsh 当 glob 吃掉，复杂脚本一律写文件走 `run-code --filename=`。
+- `run-code` 注册的路由 CLI 的 `unroute` 卸不掉（报 0 条但仍在拦截冒充返回），
+  必须用同通道 `page.unroute`（再写一个 `--filename` 脚本执行）；探路结束第一件事就是确认路由已清，
+  否则真实请求会被旧 mock 污染（现象：输入"画一朵云"却返回 mock 的 ProbeRect）。
 - 内存配置被改乱时，重载思源页面即从内核恢复（磁盘配置为准）。
 - mock SSE 的 JSON 必须合法：`extractDelta` 会静默丢弃坏块，现象是"有思考、无正文、终态空泡"。
   手写 mock（如把 `}}]}` 写成 `}}}]}'`）先用 node 逐行 `JSON.parse` 校验，见 `e2e/ai-generate.test.ts` 固化前的校验做法。
