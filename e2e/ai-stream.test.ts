@@ -191,19 +191,32 @@ describe('drawio ai chat streaming', () => {
             // assert over the whole sequence, not a single snapshot.
             const eventsPromise = page.evaluate(
                 () =>
-                    new Promise<{ previews: string[]; done: Record<string, unknown> }>((resolve, reject) => {
+                    new Promise<{ previews: string[]; thinkStyle: Record<string, string> | null; done: Record<string, unknown> }>((resolve, reject) => {
                         const fs = [...document.querySelectorAll('iframe.siyuan-drawio-plugin__custom-tab')];
                         const f = (fs.find((x) => (x as HTMLElement).offsetParent !== null) || fs[fs.length - 1]) as HTMLIFrameElement;
                         const previews: string[] = [];
+                        let thinkStyle: Record<string, string> | null = null;
                         const timer = setTimeout(() => reject(new Error('no stream done event')), 25000);
+                        const doc = f.contentDocument!;
                         f.contentWindow!.addEventListener('drawio-ai-stream-thinking', (e) => {
                             previews.push((e as CustomEvent).detail?.preview || '');
+                            // The row was just rendered synchronously before
+                            // the event: capture its single-line ellipsis style.
+                            if (!thinkStyle) {
+                                const row = [...doc.querySelectorAll('div')].find(
+                                    (el) => (el.textContent || '').includes('思考中') && el.children.length === 0,
+                                );
+                                if (row) {
+                                    const cs = f.contentWindow!.getComputedStyle(row);
+                                    thinkStyle = { whiteSpace: cs.whiteSpace, overflow: cs.overflow, textOverflow: cs.textOverflow };
+                                }
+                            }
                         });
                         f.contentWindow!.addEventListener(
                             'drawio-ai-stream-done',
                             (e) => {
                                 clearTimeout(timer);
-                                resolve({ previews, done: ((e as CustomEvent).detail || {}) as Record<string, unknown> });
+                                resolve({ previews, thinkStyle, done: ((e as CustomEvent).detail || {}) as Record<string, unknown> });
                             },
                             { once: true },
                         );
@@ -214,7 +227,7 @@ describe('drawio ai chat streaming', () => {
             // 7) Request went out as SSE stream; thinking UI tracked the
             // real reasoning (every preview is a slice of it, the last one
             // is the final line).
-            const { previews, done } = await withTimeout(eventsPromise, 30000, 'wait stream events');
+            const { previews, thinkStyle, done } = await withTimeout(eventsPromise, 30000, 'wait stream events');
             const expected = fixtureExpectations(SSE_BODY);
             console.log('[e2e-stream] thinking events:', previews.length, 'last preview:', previews[previews.length - 1]);
             expect(expected.fullReasoning.length).toBeGreaterThan(0);
@@ -227,6 +240,12 @@ describe('drawio ai chat streaming', () => {
             expect(previews[previews.length - 1]).toBe(expected.finalPreview);
             expect(done.hadThinking).toBe(true);
             expect(requestedStream).toBe(true);
+            // Thinking row stays on one line with ellipsis (no wrapped,
+            // half-cut second line in the narrow bubble).
+            console.log('[e2e-stream] thinkStyle:', thinkStyle);
+            expect(thinkStyle?.whiteSpace).toBe('nowrap');
+            expect(thinkStyle?.overflow).toBe('hidden');
+            expect(thinkStyle?.textOverflow).toBe('ellipsis');
 
             // 8) Final render replaced the thinking row with the diagram.
             // Locate the response bubble as the .geSidebar sibling following
@@ -259,7 +278,15 @@ describe('drawio ai chat streaming', () => {
                                             sib = sib.nextElementSibling;
                                         }
                                         const t = (resp?.textContent || '') as string;
-                                        if (resp && !t.includes('思考中') && resp.querySelector('svg')) {
+                                        // Rendered diagram, no thinking residue and no raw
+                                        // envelope text (<mxfile>/<diagram> must be unwrapped).
+                                        if (
+                                            resp &&
+                                            !t.includes('思考中') &&
+                                            !t.includes('<mxfile') &&
+                                            !t.includes('<diagram') &&
+                                            resp.querySelector('svg')
+                                        ) {
                                             clearInterval(timer);
                                             resolve({ ok: true, head: t.slice(0, 120) });
                                         } else if (Date.now() - start > 25000) {

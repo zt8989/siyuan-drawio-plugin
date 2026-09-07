@@ -80,7 +80,13 @@ function renderProgress(waiting, reasoning, content) {
             var think = document.createElement('div');
             think.style.color = '#888';
             think.style.fontSize = '12px';
-            think.style.whiteSpace = 'pre-wrap';
+            // Single line with ellipsis: the preview text is already
+            // truncated, the row itself must never wrap into a cut-off
+            // second line inside the narrow chat bubble.
+            think.style.whiteSpace = 'nowrap';
+            think.style.overflow = 'hidden';
+            think.style.textOverflow = 'ellipsis';
+            think.style.maxWidth = '100%';
             think.textContent = thinkingLabel() + ' ' + (preview !== '' ? preview : '') + '...';
             waiting.appendChild(think);
             emit('drawio-ai-stream-thinking', { preview: preview });

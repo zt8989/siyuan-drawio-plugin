@@ -9,6 +9,7 @@ import {
     extractDelta,
     extractClassicContent,
     stripMarkdownFences,
+    unwrapDiagramEnvelope,
     formatThinkingPreview,
     buildChatCompletionsJson,
     extractErrorMessage,
@@ -99,6 +100,20 @@ describe("extractClassicContent", () => {
         expect(extractClassicContent(body)).toBe("graph TD");
         expect(extractClassicContent("data: something")).toBeNull();
         expect(extractClassicContent("")).toBeNull();
+    });
+});
+
+describe("unwrapDiagramEnvelope", () => {
+    const model = '<mxGraphModel dx="800"><root><mxCell id="0"/></root></mxGraphModel>';
+    it("unwraps mxfile/diagram envelope to the bare model", () => {
+        const wrapped = `<mxfile host="app.diagrams.net"><diagram id="w" name="W">${model}</diagram></mxfile>`;
+        expect(unwrapDiagramEnvelope(wrapped)).toBe(model);
+    });
+    it("leaves bare models, mermaid and plain text untouched", () => {
+        expect(unwrapDiagramEnvelope(model)).toBe(model);
+        expect(unwrapDiagramEnvelope("```mermaid\ngraph TD\n```")).toBe("```mermaid\ngraph TD\n```");
+        expect(unwrapDiagramEnvelope("plain answer")).toBe("plain answer");
+        expect(unwrapDiagramEnvelope("<mxfile><diagram></diagram></mxfile>")).toBe("<mxfile><diagram></diagram></mxfile>");
     });
 });
 

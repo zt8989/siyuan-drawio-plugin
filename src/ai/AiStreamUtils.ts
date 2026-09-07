@@ -138,10 +138,24 @@ export function formatThinkingPreview(reasoning: string): string {
     return current.length > THINKING_PREVIEW_MAX_LEN ? current.slice(0, THINKING_PREVIEW_MAX_LEN) : current;
 }
 
+/**
+ * Unwraps an mxfile/diagram envelope to the bare <mxGraphModel> upstream
+ * splits on. Without this, Editor.extractGraphModelFromText keeps the
+ * envelope as textBefore/textAfter and the chat renders raw
+ * `<mxfile>...<diagram>` / `</diagram></mxfile>` around the diagram.
+ * Returns the input untouched when no complete model is present
+ * (mermaid, plain text, truncated streams).
+ */
+export function unwrapDiagramEnvelope(text: string): string {
+    if (typeof text !== "string" || text.indexOf("<mxGraphModel") < 0) return text;
+    const match = text.match(/<mxGraphModel[\s\S]*?<\/mxGraphModel>/);
+    return match ? match[0] : text;
+}
+
 /** Final JSON shaped like a non-stream response so upstream responsePath keeps working. */
 export function buildChatCompletionsJson(content: string, reasoning: string): string {
     return JSON.stringify({
-        choices: [{ message: { content: stripMarkdownFences(content), reasoning_content: reasoning } }],
+        choices: [{ message: { content: unwrapDiagramEnvelope(stripMarkdownFences(content)), reasoning_content: reasoning } }],
     });
 }
 
