@@ -5,33 +5,42 @@
  * Interaction path probed live via playwright-cli (2026-09-07, SiYuan 3.8.2):
  * open tab -> geDialog 创建新绘图 -> 空白框图 template -> 生成 toolbar ->
  * textarea(描述您的绘图) fill + Enter -> thinking row -> final diagram.
- * The chat/completions request is intercepted and answered with synthetic SSE
- * (reasoning_content + mermaid), so no external API key or network is needed.
+ * The chat/completions request is intercepted and answered with a real
+ * dumped stream (e2e/fixtures/deepseek-whale.sse.txt), so no external API
+ * key traffic or cost occurs at test time.
  * A full live run against DeepSeek ("画一个DeepSeek的鲸鱼", ~2.5min thinking)
  * already verified the same path end to end without hitting the 90s timeout.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { chromium, type Browser, type Page, type FrameLocator } from 'playwright';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { splitSseEvents, extractDelta, formatThinkingPreview } from '../src/ai/AiStreamUtils';
 
 const DEFAULT_CDP = process.env.CDP_URL || 'http://127.0.0.1:9222';
 const DEFAULT_PATTERN = process.env.E2E_PATTERN || 'stage/build/app';
 const STEP_TIMEOUT = 10000;
 
-const SSE_BODY = [
-    'data: {"choices":[{"delta":{"reasoning_content":"先画鲸鱼身体"}}]}',
-    '',
-    'data: {"choices":[{"delta":{"reasoning_content":"\\n再画尾巴"}}]}',
-    '',
-    'data: {"choices":[{"delta":{"content":"```mermaid\\n"}}]}',
-    '',
-    'data: {"choices":[{"delta":{"content":"graph TD\\n"}}]}',
-    '',
-    'data: {"choices":[{"delta":{"content":"A[鲸鱼]-->B[DeepSeek]\\n```"}}]}',
-    '',
-    'data: [DONE]',
-    '',
-].join('\n');
+// Real stream dumped from DeepSeek (deepseek-v4-flash, "画一个DeepSeek的鲸鱼"),
+// sampled to keep the repo lean: first/last 30 reasoning-only events, all
+// content events, [DONE]. Raw dump was ~4.9MB of mostly per-event overhead;
+// the fixture preserves real chunk order, shapes and the final diagram.
+const FIXTURE_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'deepseek-whale.sse.txt');
+const SSE_BODY = fs.readFileSync(FIXTURE_PATH, 'utf-8');
+
+function fixtureExpectations(body: string): { fullReasoning: string; finalPreview: string; fullContent: string } {
+    const { events } = splitSseEvents(body);
+    let fullReasoning = '';
+    let fullContent = '';
+    for (const ev of events) {
+        const d = extractDelta(ev);
+        fullReasoning += d.reasoning;
+        fullContent += d.content;
+    }
+    return { fullReasoning, finalPreview: formatThinkingPreview(fullReasoning), fullContent };
+}
 
 function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
     let t: NodeJS.Timeout;
@@ -114,7 +123,7 @@ describe('drawio ai chat streaming', () => {
     });
 
     it(
-        'streams thinking UI then renders the diagram (mocked SSE)',
+        'streams thinking UI then renders the diagram (real dumped SSE)',
         { timeout: 90000 },
         async () => {
             // Prerequisite: the test workspace has a real AI provider
@@ -177,26 +186,46 @@ describe('drawio ai chat streaming', () => {
             await withTimeout(input.waitFor({ state: 'visible', timeout: STEP_TIMEOUT }), STEP_TIMEOUT, 'wait chat input');
             await input.fill('画一个DeepSeek的鲸鱼');
 
-            // 6) Listen for the thinking hook before sending.
-            const thinkingPromise = page.evaluate(
+            // 6) Collect every thinking preview until the stream completes.
+            // Atomic fulfill may resolve in one read or many TCP chunks, so
+            // assert over the whole sequence, not a single snapshot.
+            const eventsPromise = page.evaluate(
                 () =>
-                    new Promise<{ preview?: string }>((resolve) => {
+                    new Promise<{ previews: string[]; done: Record<string, unknown> }>((resolve, reject) => {
                         const fs = [...document.querySelectorAll('iframe.siyuan-drawio-plugin__custom-tab')];
                         const f = (fs.find((x) => (x as HTMLElement).offsetParent !== null) || fs[fs.length - 1]) as HTMLIFrameElement;
+                        const previews: string[] = [];
+                        const timer = setTimeout(() => reject(new Error('no stream done event')), 25000);
+                        f.contentWindow!.addEventListener('drawio-ai-stream-thinking', (e) => {
+                            previews.push((e as CustomEvent).detail?.preview || '');
+                        });
                         f.contentWindow!.addEventListener(
-                            'drawio-ai-stream-thinking',
-                            (e) => resolve((e as CustomEvent).detail || {}),
+                            'drawio-ai-stream-done',
+                            (e) => {
+                                clearTimeout(timer);
+                                resolve({ previews, done: ((e as CustomEvent).detail || {}) as Record<string, unknown> });
+                            },
                             { once: true },
                         );
                     }),
             );
             await input.press('Enter');
 
-            // 7) Request went out as SSE stream and thinking UI ran.
-            const thinking = await withTimeout(thinkingPromise, 25000, 'wait thinking event');
-            console.log('[e2e-stream] thinking preview:', thinking?.preview);
-            // Preview tracks the latest thinking line (newlines refresh it).
-            expect(thinking?.preview).toBe('再画尾巴');
+            // 7) Request went out as SSE stream; thinking UI tracked the
+            // real reasoning (every preview is a slice of it, the last one
+            // is the final line).
+            const { previews, done } = await withTimeout(eventsPromise, 30000, 'wait stream events');
+            const expected = fixtureExpectations(SSE_BODY);
+            console.log('[e2e-stream] thinking events:', previews.length, 'last preview:', previews[previews.length - 1]);
+            expect(expected.fullReasoning.length).toBeGreaterThan(0);
+            expect(expected.finalPreview).not.toBe('');
+            expect(previews.length).toBeGreaterThan(0);
+            for (const p of previews) {
+                expect(p).not.toBe('');
+                expect(expected.fullReasoning.includes(p)).toBe(true);
+            }
+            expect(previews[previews.length - 1]).toBe(expected.finalPreview);
+            expect(done.hadThinking).toBe(true);
             expect(requestedStream).toBe(true);
 
             // 8) Final render replaced the thinking row with the diagram.
