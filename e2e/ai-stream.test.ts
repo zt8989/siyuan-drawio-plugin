@@ -308,6 +308,47 @@ describe('drawio ai chat streaming', () => {
             console.log('[e2e-stream] final:', finalState);
             expect(finalState.ok).toBe(true);
 
+            // 9) Thinking row persists as 思考：<last line>, click expands
+            // to the full reasoning, click again collapses.
+            const expandState = await page.evaluate(() => {
+                const fs = [...document.querySelectorAll('iframe.siyuan-drawio-plugin__custom-tab')];
+                const f = (fs.find((x) => (x as HTMLElement).offsetParent !== null) ||
+                    fs[fs.length - 1]) as HTMLIFrameElement;
+                const d = f.contentDocument!;
+                const row = [...d.querySelectorAll('div')].find((el) =>
+                    (el.textContent || '').startsWith('思考：'),
+                ) as HTMLElement | undefined;
+                if (!row) return { found: false };
+                const collapsedLen = (row.textContent || '').length;
+                row.click();
+                const expandedText = row.textContent || '';
+                const expandedWhiteSpace = f.contentWindow!.getComputedStyle(row).whiteSpace;
+                row.click();
+                const collapsedAgain = row.textContent || '';
+                return {
+                    found: true,
+                    collapsedLen,
+                    expandedLen: expandedText.length,
+                    expandedWhiteSpace,
+                    expandedStartsWithLabel: expandedText.startsWith('思考：'),
+                    collapsedAgain,
+                };
+            });
+            console.log('[e2e-stream] think-row:', JSON.stringify(expandState).slice(0, 300));
+            expect(expandState.found).toBe(true);
+            if (expandState.found) {
+                // Collapsed shows only the last line; expanded holds the whole stream.
+                const expectedFull = fixtureExpectations(SSE_BODY).fullReasoning;
+                expect(expandState.collapsedLen).toBeLessThan(150);
+                expect(expandState.expandedLen).toBe('思考：\n'.length + expectedFull.length);
+                expect(expandState.expandedLen).toBeGreaterThan(expandState.collapsedLen);
+                expect(expandState.expandedWhiteSpace).toBe('pre-wrap');
+                expect(expandState.expandedStartsWithLabel).toBe(true);
+                expect(expandState.collapsedAgain).toBe(
+                    `思考：${fixtureExpectations(SSE_BODY).finalPreview}`,
+                );
+            }
+
             await closeDrawioTabs(page);
         },
     );

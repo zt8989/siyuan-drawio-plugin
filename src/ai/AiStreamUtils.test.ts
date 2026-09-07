@@ -10,6 +10,7 @@ import {
     extractClassicContent,
     stripMarkdownFences,
     unwrapDiagramEnvelope,
+    formatThinkingText,
     formatThinkingPreview,
     buildChatCompletionsJson,
     extractErrorMessage,
@@ -114,6 +115,16 @@ describe("unwrapDiagramEnvelope", () => {
         expect(unwrapDiagramEnvelope("```mermaid\ngraph TD\n```")).toBe("```mermaid\ngraph TD\n```");
         expect(unwrapDiagramEnvelope("plain answer")).toBe("plain answer");
         expect(unwrapDiagramEnvelope("<mxfile><diagram></diagram></mxfile>")).toBe("<mxfile><diagram></diagram></mxfile>");
+    });
+});
+
+describe("formatThinkingText", () => {
+    it("streaming uses 思考中 with trailing dots", () => {
+        expect(formatThinkingText("streaming", "画鲸鱼")).toBe("思考中：画鲸鱼...");
+        expect(formatThinkingText("streaming", "")).toBe("思考中：...");
+    });
+    it("done uses 思考 without trailing dots", () => {
+        expect(formatThinkingText("done", "画鲸鱼")).toBe("思考：画鲸鱼");
     });
 });
 

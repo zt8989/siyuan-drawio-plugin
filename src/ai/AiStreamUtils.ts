@@ -119,6 +119,14 @@ export function extractClassicContent(text: string): string | null {
     }
 }
 
+export type ThinkingState = "streaming" | "done";
+
+/** Row text for the persistent thinking row: streaming shows 思考中 + dots, done shows 思考. */
+export function formatThinkingText(state: ThinkingState, preview: string): string {
+    if (state === "done") return `思考：${preview}`;
+    return `思考中：${preview}...`;
+}
+
 /** Mirrors the existing fence-strip patch: removes ```mermaid / ``` wrappers. */
 export function stripMarkdownFences(text: string): string {
     if (typeof text !== "string" || !text.includes("```")) return text;

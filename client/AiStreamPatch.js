@@ -6,6 +6,7 @@ import {
     extractDelta,
     extractErrorMessage,
     formatThinkingPreview,
+    formatThinkingText,
     isStreamableAiUrl,
     splitSseEvents,
     stripMarkdownFences,
@@ -38,6 +39,126 @@ import {
  */
 
 var lastScrollAt = 0;
+var THINK_ROW_ATTR = 'data-siyuan-ai-think';
+// Full reasoning per row (collapsed preview can't hold it); WeakMap so
+// detached rows never leak.
+var thinkFullTexts = (typeof WeakMap !== 'undefined') ? new WeakMap() : null;
+
+function setThinkCollapsedStyle(row) {
+    // Single line with ellipsis: the preview text is already
+    // truncated, the row itself must never wrap into a cut-off
+    // second line inside the narrow chat bubble.
+    row.style.whiteSpace = 'nowrap';
+    row.style.overflow = 'hidden';
+    row.style.textOverflow = 'ellipsis';
+    row.style.maxWidth = '100%';
+    row.style.maxHeight = '';
+}
+
+function setThinkExpandedStyle(row) {
+    row.style.whiteSpace = 'pre-wrap';
+    row.style.overflow = 'auto';
+    row.style.maxWidth = '100%';
+    row.style.maxHeight = '240px';
+}
+
+function rememberThinkFull(row, full) {
+    try {
+        if (thinkFullTexts) thinkFullTexts.set(row, full);
+        else row.setAttribute('data-siyuan-ai-think-full', full);
+    } catch (e) { /* ignore */ }
+}
+
+function recallThinkFull(row) {
+    try {
+        if (thinkFullTexts) {
+            var v = thinkFullTexts.get(row);
+            if (typeof v === 'string') return v;
+        }
+        return row.getAttribute('data-siyuan-ai-think-full') || '';
+    } catch (e) {
+        return '';
+    }
+}
+
+function paintThinkRow(row, state, preview) {
+    try {
+        row.dataset.thinkState = state;
+        row.textContent = formatThinkingText(state, preview);
+    } catch (e) { /* never break the stream on UI errors */ }
+}
+
+function findThinkRow(waiting) {
+    try {
+        if (waiting == null) return null;
+        var prev = waiting.previousElementSibling;
+        if (prev != null && prev.hasAttribute && prev.hasAttribute(THINK_ROW_ATTR)) return prev;
+    } catch (e) { /* ignore */ }
+    return null;
+}
+
+// The thinking row lives as the waiting bubble's previous sibling so the
+// upstream final render (target.innerHTML = '') can't wipe it; it persists
+// across the exchange and flips 思考中 -> 思考 on completion. Click toggles
+// collapsed preview <-> full reasoning.
+function ensureThinkRow(waiting) {
+    var row = findThinkRow(waiting);
+    if (row != null) {
+        try {
+            row.dataset.expanded = '';
+            setThinkCollapsedStyle(row);
+        } catch (e) { /* ignore */ }
+        return row;
+    }
+    if (waiting == null || waiting.parentNode == null) return null;
+    try {
+        row = document.createElement('div');
+        row.setAttribute(THINK_ROW_ATTR, '1');
+        row.dataset.expanded = '';
+        row.dataset.thinkState = 'streaming';
+        row.style.color = '#888';
+        row.style.fontSize = '12px';
+        row.style.cursor = 'pointer';
+        row.title = '点击展开/收起思考过程';
+        setThinkCollapsedStyle(row);
+        row.addEventListener('click', function () {
+            try {
+                var full = recallThinkFull(row);
+                if (full === '') return;
+                if (row.dataset.expanded === '1') {
+                    row.dataset.expanded = '';
+                    setThinkCollapsedStyle(row);
+                    paintThinkRow(row, row.dataset.thinkState === 'done' ? 'done' : 'streaming', formatThinkingPreview(full));
+                } else {
+                    row.dataset.expanded = '1';
+                    setThinkExpandedStyle(row);
+                    row.textContent = formatThinkingText(row.dataset.thinkState === 'done' ? 'done' : 'streaming', '') + '\n' + full;
+                }
+            } catch (e) { /* ignore */ }
+        });
+        waiting.parentNode.insertBefore(row, waiting);
+        return row;
+    } catch (e) {
+        return null;
+    }
+}
+
+// Finalizes the persistent row: done label, or removal when nothing was
+// ever thought (keeps "no thinking -> no row").
+function finalizeThinkRow(waiting, reasoning) {
+    var row = findThinkRow(waiting);
+    if (row == null) return;
+    try {
+        if (reasoning === '') {
+            if (row.parentNode) row.parentNode.removeChild(row);
+            return;
+        }
+        rememberThinkFull(row, reasoning);
+        row.dataset.expanded = '';
+        setThinkCollapsedStyle(row);
+        paintThinkRow(row, 'done', formatThinkingPreview(reasoning));
+    } catch (e) { /* ignore */ }
+}
 
 function emit(name, detail) {
     // Observability hook for e2e (and debugging): thinking progress and
@@ -45,14 +166,6 @@ function emit(name, detail) {
     try {
         window.dispatchEvent(new CustomEvent(name, { detail: detail || {} }));
     } catch (e) { /* ignore */ }
-}
-
-function thinkingLabel() {
-    try {
-        var v = window.mxResources ? window.mxResources.get('thinking') : null;
-        if (typeof v === 'string' && v !== '' && v.indexOf('thinking') < 0) return v;
-    } catch (e) { /* fall through */ }
-    return '思考中';
 }
 
 function findWaitingBubble() {
@@ -77,18 +190,11 @@ function renderProgress(waiting, reasoning, content) {
         waiting.innerHTML = '';
         if (reasoning !== '') {
             var preview = formatThinkingPreview(reasoning);
-            var think = document.createElement('div');
-            think.style.color = '#888';
-            think.style.fontSize = '12px';
-            // Single line with ellipsis: the preview text is already
-            // truncated, the row itself must never wrap into a cut-off
-            // second line inside the narrow chat bubble.
-            think.style.whiteSpace = 'nowrap';
-            think.style.overflow = 'hidden';
-            think.style.textOverflow = 'ellipsis';
-            think.style.maxWidth = '100%';
-            think.textContent = thinkingLabel() + ' ' + (preview !== '' ? preview : '') + '...';
-            waiting.appendChild(think);
+            var thinkRow = ensureThinkRow(waiting);
+            if (thinkRow != null) {
+                rememberThinkFull(thinkRow, reasoning);
+                paintThinkRow(thinkRow, 'streaming', preview);
+            }
             emit('drawio-ai-stream-thinking', { preview: preview });
         }
         if (content !== '') {
@@ -222,16 +328,19 @@ function runStream(xhr, url, streamBody, originalBody, fetchFn) {
                     return;
                 }
                 completeXhr(xhr, 200, buildChatCompletionsJson(content, reasoning));
+                finalizeThinkRow(waiting, reasoning);
                 emit('drawio-ai-stream-done', { hadThinking: reasoning !== '', contentLength: content.length });
             }, function () {
                 // Read aborted (overall timeout) or failed mid-stream.
                 clearTimers();
                 if (content === '' && reasoning === '') {
+                    finalizeThinkRow(waiting, reasoning);
                     completeXhr(xhr, 504, JSON.stringify({ error: { message: extractErrorMessage(504, '') } }));
                     return;
                 }
                 // Partial content finalizes; upstream truncation-repair shows its partial hint.
                 completeXhr(xhr, 200, buildChatCompletionsJson(content, reasoning));
+                finalizeThinkRow(waiting, reasoning);
                 emit('drawio-ai-stream-done', { hadThinking: reasoning !== '', partial: true });
             });
         };
