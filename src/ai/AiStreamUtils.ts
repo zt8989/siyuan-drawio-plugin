@@ -107,6 +107,27 @@ function readReasoningField(delta: ChatDelta): string {
     return "";
 }
 
+export interface ChatMessage {
+    role: string;
+    content: string;
+}
+
+export interface ChatParams {
+    model: string;
+    messages: ChatMessage[];
+}
+
+/** One-shot model request body (template Generate dialog), mirroring the chat model path. */
+export function buildChatParams(model: string, action: string, prompt: string): ChatParams {
+    return {
+        model,
+        messages: [
+            { role: "system", content: action },
+            { role: "user", content: prompt },
+        ],
+    };
+}
+
 /** Reads a full non-stream JSON body (servers that ignore `stream: true`). Null when not classic shaped. */
 export function extractClassicContent(text: string): string | null {
     try {

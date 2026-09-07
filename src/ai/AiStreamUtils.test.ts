@@ -11,6 +11,7 @@ import {
     stripMarkdownFences,
     unwrapDiagramEnvelope,
     formatThinkingText,
+    buildChatParams,
     formatThinkingPreview,
     buildChatCompletionsJson,
     extractErrorMessage,
@@ -115,6 +116,17 @@ describe("unwrapDiagramEnvelope", () => {
         expect(unwrapDiagramEnvelope("```mermaid\ngraph TD\n```")).toBe("```mermaid\ngraph TD\n```");
         expect(unwrapDiagramEnvelope("plain answer")).toBe("plain answer");
         expect(unwrapDiagramEnvelope("<mxfile><diagram></diagram></mxfile>")).toBe("<mxfile><diagram></diagram></mxfile>");
+    });
+});
+
+describe("buildChatParams", () => {
+    it("builds model + create action + prompt messages", () => {
+        const p = buildChatParams("deepseek-chat", "SYS-CREATE", "画鲸鱼");
+        expect(p.model).toBe("deepseek-chat");
+        expect(p.messages).toEqual([
+            { role: "system", content: "SYS-CREATE" },
+            { role: "user", content: "画鲸鱼" },
+        ]);
     });
 });
 

@@ -47,6 +47,14 @@ const f = [...document.querySelectorAll('iframe.siyuan-drawio-plugin__custom-tab
 4. 流式观测钩子（iframe window 上的 CustomEvent）：
    `drawio-ai-stream-thinking`（`detail.preview`）、`drawio-ai-stream-done`。
 
+## 4b. 模板生成路径（与聊天窗并列的第二条路）
+
+新建绘图模板对话框里的"生成"：先点 `.geTemplate[title="生成"]` 项，
+描述输入框（`textarea[placeholder*="描述"]`）才会可见；填入后点"确定"，
+结果挂为 `title=<描述>` 的模板项；选中它再点"创建"落图。
+注意该按钮上游打的是 draw.io hosted 接口（自托管必 Unauthorized），
+本仓库已用 client 补丁改道到自带模型，探路时断言无 Unauthorized。
+
 ## 5. 坑位清单（已踩过）
 
 - iframe 里**没有** `editorUi` / `App.editorUi` 全局量，走真实 UI，不要依赖 JS 内省
@@ -59,6 +67,7 @@ const f = [...document.querySelectorAll('iframe.siyuan-drawio-plugin__custom-tab
 - `eval` 里的 `[...]` 会被 zsh 当 glob 吃掉，复杂脚本一律写文件走 `run-code --filename=`。
 - 内存配置被改乱时，重载思源页面即从内核恢复（磁盘配置为准）。
 - mock SSE 的 JSON 必须合法：`extractDelta` 会静默丢弃坏块，现象是"有思考、无正文、终态空泡"。
+  手写 mock（如把 `}}]}` 写成 `}}}]}'`）先用 node 逐行 `JSON.parse` 校验，见 `e2e/ai-generate.test.ts` 固化前的校验做法。
 
 ## 6. 固化
 

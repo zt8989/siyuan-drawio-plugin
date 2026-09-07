@@ -4,6 +4,7 @@ import { setup as EditorUiSetup } from "./components/EditorUi"
 import { setup as MenuSetup } from "./components/Menus"
 import { formatFileName, generateSiyuanId } from "./api"
 import { OVERALL_TIMEOUT_MS } from "@/ai/AiStreamUtils"
+import { installAiGeneratePatch } from "./AiGeneratePatch.js"
 /**
  * Copyright (c) 2006-2024, JGraph Ltd
  * Copyright (c) 2006-2024, draw.io AG
@@ -266,6 +267,14 @@ if (window.parent.siyuan) {
             Editor.prototype.generateTimeout = OVERALL_TIMEOUT_MS;
         }
     } catch (e) { /* keep upstream default when Editor is unavailable */ }
+    //#endregion
+
+    //#region AI generate reroute
+    // Template Generate dialog uses the SiYuan BYO model backend instead of
+    // the domain-gated draw.io hosted service (see client/AiGeneratePatch.js).
+    try {
+        installAiGeneratePatch();
+    } catch (e) { /* keep upstream implementation when patching fails */ }
     //#endregion
 
     //#region EditorUi
