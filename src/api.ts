@@ -368,16 +368,37 @@ export async function putFile(path: string, isDir: boolean, file: any) {
     form.append('isDir', isDir.toString());
     form.append('modTime', Date.now().toString());
     form.append('file', file);
+    // Identify the sending frontend so the kernel excludes it from the
+    // plugin-storage-changed broadcast; otherwise SiYuan hot-reloads this
+    // plugin on every save (dropping its <style> and breaking tab iframes).
+    const appId = getAppId();
+    if (appId) {
+        form.append('app', appId);
+    }
     let url = '/api/file/putFile';
     return request(url, form);
 }
 
 export async function removeFile(path: string) {
-    let data = {
+    let data: Record<string, string> = {
         path: path
+    }
+    const appId = getAppId();
+    if (appId) {
+        data.app = appId;
     }
     let url = '/api/file/removeFile';
     return request(url, data);
+}
+
+/** Current frontend session id for kernel broadcast exclusion. */
+function getAppId(): string | null {
+    try {
+        const id = (window as unknown as { siyuan?: { ws?: { app?: { appId?: string } } } })?.siyuan?.ws?.app?.appId;
+        return typeof id === 'string' && id !== '' ? id : null;
+    } catch {
+        return null;
+    }
 }
 
 export async function renameFile(newPath: string, path: string) {

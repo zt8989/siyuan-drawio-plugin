@@ -258,6 +258,27 @@ describe('ai cloud drag keeps chat window', () => {
             console.log('[cloud-drag] canvas groups:', groupsBefore, '->', groupsAfter);
             expect(groupsAfter).toBeGreaterThan(groupsBefore);
 
+            // The autosave putFile must not hot-reload this plugin: watch
+            // for removal of its <style> while the save lands (~3s).
+            const styleWatch = page.evaluate(
+                () =>
+                    new Promise<number>((resolve) => {
+                        let removals = 0;
+                        const obs = new MutationObserver((muts) => {
+                            for (const m of muts) {
+                                m.removedNodes.forEach((nd) => {
+                                    if ((nd as HTMLElement).id === 'pluginsStylesiyuan-drawio-plugin') removals++;
+                                });
+                            }
+                        });
+                        obs.observe(document.head, { childList: true });
+                        setTimeout(() => {
+                            obs.disconnect();
+                            resolve(removals);
+                        }, 9000);
+                    }),
+            );
+
             // Autosave (~3s after drop) used to squeeze the chat window to
             // 0,0 @ ~300x200 via a transient 300x150 iframe; wait past it.
             await page.waitForTimeout(8000);
@@ -268,6 +289,9 @@ describe('ai cloud drag keeps chat window', () => {
             expect(Math.abs(after!.y - before!.y)).toBeLessThanOrEqual(2);
             expect(Math.abs(after!.w - before!.w)).toBeLessThanOrEqual(2);
             expect(Math.abs(after!.h - before!.h)).toBeLessThanOrEqual(2);
+            const styleRemovals = await withTimeout(styleWatch, 15000, 'wait style watch');
+            console.log('[cloud-drag] plugin style removals during autosave:', styleRemovals);
+            expect(styleRemovals).toBe(0);
 
             await closeDrawioTabs(page);
         },

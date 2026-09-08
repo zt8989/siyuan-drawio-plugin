@@ -26,6 +26,15 @@ if (window.parent.siyuan) {
         formData.append("isDir", isDir.toString());
         formData.append("modTime", Date.now().toString());
         formData.append("file", file);
+        // Identify the sending frontend so the kernel excludes it from the
+        // plugin-storage-changed broadcast; without it SiYuan hot-reloads
+        // this plugin on every autosave (dropping its <style> for ~300ms).
+        try {
+            const appId = window.parent?.siyuan?.ws?.app?.appId;
+            if (typeof appId === 'string' && appId !== '') {
+                formData.append("app", appId);
+            }
+        } catch (e) { /* cross-origin or unavailable: kernel notifies all */ }
 
         return await fetch("/api/file/putFile", {
             method: "POST",
