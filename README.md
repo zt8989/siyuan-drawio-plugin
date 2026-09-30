@@ -20,9 +20,13 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-1.0.41
+1.0.42
 
 ## Changelog
+- **v1.0.42**
+  - Fix AI chat window squeezed to top-left after dragging a generated shape to canvas (inline iframe sizing survives plugin hot-reload on autosave)
+  - Stop self-triggered plugin reload on save by sending the frontend app id with putFile/removeFile
+  - Add presentation mode (演示模式) to File menu after Embed
 - **v1.0.40**
   - Fix draw.io editor language not following SiYuan language (BCP 47: zh-CN, etc. now correctly maps to draw.io locale instead of falling back to English)
 - **v1.0.39**

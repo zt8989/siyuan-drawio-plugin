@@ -3,6 +3,8 @@ import { setup as EditorUiSetup } from "./components/EditorUi"
 // import { setup as ThemeSetup } from "./components/Theme"
 import { setup as MenuSetup } from "./components/Menus"
 import { formatFileName, generateSiyuanId } from "./api"
+import { OVERALL_TIMEOUT_MS } from "@/ai/AiStreamUtils"
+import { installAiGeneratePatch } from "./AiGeneratePatch.js"
 /**
  * Copyright (c) 2006-2024, JGraph Ltd
  * Copyright (c) 2006-2024, draw.io AG
@@ -24,6 +26,15 @@ if (window.parent.siyuan) {
         formData.append("isDir", isDir.toString());
         formData.append("modTime", Date.now().toString());
         formData.append("file", file);
+        // Identify the sending frontend so the kernel excludes it from the
+        // plugin-storage-changed broadcast; without it SiYuan hot-reloads
+        // this plugin on every autosave (dropping its <style> for ~300ms).
+        try {
+            const appId = window.parent?.siyuan?.ws?.app?.appId;
+            if (typeof appId === 'string' && appId !== '') {
+                formData.append("app", appId);
+            }
+        } catch (e) { /* cross-origin or unavailable: kernel notifies all */ }
 
         return await fetch("/api/file/putFile", {
             method: "POST",
@@ -253,6 +264,26 @@ if (window.parent.siyuan) {
         electron.sendMessage("openTabByPath", href)
     }
     EditorSetup()
+    //#endregion
+
+    //#region AI streaming timeout
+    // AiStreamPatch streams long chain-of-thought answers with live progress,
+    // so the one-shot 90s budget must not kill an active stream first: the
+    // overall 10min budget (see src/ai/AiStreamUtils OVERALL_TIMEOUT_MS) with
+    // its own first-byte timeout owns AI generation timeouts now.
+    try {
+        if (typeof Editor !== 'undefined' && Editor.prototype != null) {
+            Editor.prototype.generateTimeout = OVERALL_TIMEOUT_MS;
+        }
+    } catch (e) { /* keep upstream default when Editor is unavailable */ }
+    //#endregion
+
+    //#region AI generate reroute
+    // Template Generate dialog uses the SiYuan BYO model backend instead of
+    // the domain-gated draw.io hosted service (see client/AiGeneratePatch.js).
+    try {
+        installAiGeneratePatch();
+    } catch (e) { /* keep upstream implementation when patching fails */ }
     //#endregion
 
     //#region EditorUi

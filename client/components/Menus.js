@@ -78,6 +78,13 @@ export function setup(electron){
             this.addSubmenu('exportAs', menu, parent);
             menu.addSeparator(parent);
             this.addSubmenu('embed', menu, parent);
+            // 演示模式与嵌入同级: upstream registers the presentationMode
+            // action but only surfaces it behind hosted-service gates
+            // (!isElectronApp && isOwnGDriveDomain && serviceName ==
+            // 'draw.io'), so it is unreachable in this self-hosted build.
+            // The overlay itself is fully client-side (chromeless EditorUi
+            // in a backdrop div), so expose it here.
+            this.addMenuItems(menu, ['presentationMode'], parent);
             menu.addSeparator(parent);
             this.addMenuItems(menu, ['newLibrary', 'openLibrary'], parent);
 

@@ -22,7 +22,13 @@ export class TabManager {
 
     getIframeHtml(data: Record<string, unknown> = {}): string {
         const urlObj = qs.stringify(data as Record<string, string>);
-        return `<iframe class="siyuan-drawio-plugin__custom-tab" src="/plugins/siyuan-drawio-plugin/webapp/?${urlObj.toString()}"></iframe>`;
+        // Layout-critical sizing is inline (not only in index.scss): SiYuan
+        // hot-reloads this plugin (dropping its <style>) whenever a file
+        // under the plugin's storage/petal dir changes — i.e. on every
+        // draw.io autosave. Without inline size the iframe lapses to the
+        // 300x150 default for ~300ms, and draw.io's installResizeHandler
+        // permanently clamps oversized windows (e.g. the AI chat) to 0,0.
+        return `<iframe class="siyuan-drawio-plugin__custom-tab" style="width:100%;height:100%;border:none;display:block;" src="/plugins/siyuan-drawio-plugin/webapp/?${urlObj.toString()}"></iframe>`;
     }
 
     showDrawioDialog(title: string, data: Record<string, unknown>): Dialog {

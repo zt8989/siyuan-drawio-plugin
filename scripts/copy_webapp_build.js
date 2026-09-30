@@ -8,6 +8,7 @@ const copyItems = [
     "images/",
     "img/",
     "math/",
+    "math4/",
     "META-INF/",
     "mxgraph/",
     "plugins/",
@@ -95,6 +96,10 @@ ensureDirectoryExists(webappDir);
 copyItems.forEach(item => {
     const srcPath = path.join('drawio/src/main/webapp', item);
     const destPath = path.join(webappDir, item);
+    if (!fs.existsSync(srcPath)) {
+        console.warn(`Skipping missing ${srcPath}`);
+        return;
+    }
     if (item.endsWith('/')) {
         if (item === 'mxgraph/') {
             copyDirectory(srcPath, destPath, ['src']);
