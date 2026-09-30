@@ -7,7 +7,6 @@ const targetDir = process.argv[2] || 'dist';
 const copyItems = [
     "images/",
     "img/",
-    "math/",
     "math4/",
     "META-INF/",
     "mxgraph/",

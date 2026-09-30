@@ -35,7 +35,7 @@ function getLang(){
   window.DRAWIO_BASE_URL = "/plugins/siyuan-drawio-plugin/webapp/"; // Replace with path to base of deployment, e.g. https://www.example.com/folder
   window.DRAWIO_VIEWER_URL = "/plugins/siyuan-drawio-plugin/webapp/js/viewer.min.js"; // Replace your path to the viewer js, e.g. https://www.example.com/js/viewer.min.js
   window.DRAWIO_LIGHTBOX_URL = "/plugins/siyuan-drawio-plugin/webapp"; // Replace with your lightbox URL, eg. https://www.example.com
-  window.DRAW_MATH_URL = 'math/es5';
+  window.DRAW_MATH_URL = window.DRAWIO_BASE_URL + 'math4/es5'; // MathJax v4 lives in math4/ since drawio 29.0.2 (math/ was the MathJax v3 path)
   // AI config: reuse SiYuan provider, controlled by plugin toggle aiEnabled (default true)
   function getAiDrawioConfig() {
       try {
