@@ -23,9 +23,11 @@ cowboy
 ![预览](preview.png)
 
 ## 版本
-1.0.43
+1.0.44
 
 ## 更新日志
+- **v1.0.44**
+  - 将 draw.io 的 AI 接口地址归一化收敛为单一实现（原为三处拷贝），并修复其地址拼接问题：不带 scheme 的裸域名（`api.deepseek.com`）会产出 draw.io 无法请求的相对地址；带 query 或 fragment 的地址会把路径拼到其后（`...?foo=1/v1/chat/completions`）
 - **v1.0.43**
   - 修复「数学排版」导致整个绘图界面失效的问题（issue #66）：`DRAW_MATH_URL` 仍指向 draw.io 自 29.0.2 起已删除的 MathJax v3 路径 `math/es5`（MathJax v4 在 `math4/es5`），404 使画布被永久置为 `visibility: hidden`
 - **v1.0.42**
