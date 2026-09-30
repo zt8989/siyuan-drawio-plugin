@@ -1,6 +1,23 @@
 import { describe, it, expect } from "vitest";
 import { FakeSiyuanAiProvider } from "./SiyuanAiProvider";
 
+/** Build a SiYuan 3.8+ config with a single enabled provider and read back the injected endpoint. */
+async function endpointFor(baseURL: string): Promise<string | undefined> {
+    const p = new FakeSiyuanAiProvider({
+        providers: [
+            {
+                id: "1",
+                enabled: true,
+                apiKey: "k",
+                baseURL,
+                models: [{ id: "m", name: "model", enabled: true }],
+            },
+        ],
+    } as any);
+    const cfg = await p.getAiConfigForDrawio();
+    return (cfg?.aiConfigs as any)?.gpt?.endpoint;
+}
+
 describe("SiyuanAiProvider", () => {
     it("returns null when no provider configured (Clipboard fallback)", async () => {
         const p = new FakeSiyuanAiProvider(null);
@@ -36,7 +53,11 @@ describe("SiyuanAiProvider", () => {
         const cfg = await p.getAiConfigForDrawio();
         expect(cfg?.gptApiKey).toBe("deepseek-key");
         expect(cfg?.aiModels[0].name).toBe("deepseek-v4-flash");
-        expect((cfg?.aiConfigs as any).gpt.endpoint).toBe("https://api.deepseek.com");
+        // SiYuan 3.8 stores a bare host, but draw.io POSTs straight to `endpoint`
+        // (its own default is Editor.gptUrl = "https://api.openai.com/v1/chat/completions"),
+        // so the plugin must hand it a complete chat-completions URL.
+        expect((cfg?.aiConfigs as any).gpt.endpoint).toBe("https://api.deepseek.com/v1/chat/completions");
+        expect(cfg?.gptUrl).toBe((cfg?.aiConfigs as any).gpt.endpoint);
     });
 
     it("picks first enabled provider when multiple", async () => {
@@ -49,5 +70,44 @@ describe("SiyuanAiProvider", () => {
         const cfg = await p.getAiConfigForDrawio();
         expect(cfg?.gptApiKey).toBe("new-key");
         expect(cfg?.aiModels[0].model).toBe("new-model");
+    });
+});
+
+/**
+ * `endpoint` is what draw.io fetches, so it must always be a complete, POSTable URL.
+ * Verified against the live app: SiYuan 3.8 stores "https://api.deepseek.com" and the
+ * injected endpoint is "https://api.deepseek.com/v1/chat/completions"; draw.io's own
+ * default is "https://api.openai.com/v1/chat/completions".
+ */
+describe("SiyuanAiProvider — endpoint normalization (draw.io needs a full POST url)", () => {
+    it("appends /v1/chat/completions to a bare SiYuan 3.8 host", async () => {
+        expect(await endpointFor("https://api.deepseek.com")).toBe("https://api.deepseek.com/v1/chat/completions");
+    });
+
+    it("appends only /chat/completions when the base already ends with /v1", async () => {
+        expect(await endpointFor("https://api.deepseek.com/v1")).toBe("https://api.deepseek.com/v1/chat/completions");
+    });
+
+    it("leaves an already-complete chat/completions url untouched", async () => {
+        expect(await endpointFor("https://api.openai.com/v1/chat/completions")).toBe(
+            "https://api.openai.com/v1/chat/completions",
+        );
+    });
+
+    it("trims trailing slashes before normalizing", async () => {
+        expect(await endpointFor("https://api.deepseek.com/")).toBe("https://api.deepseek.com/v1/chat/completions");
+        expect(await endpointFor("https://api.deepseek.com/v1//")).toBe("https://api.deepseek.com/v1/chat/completions");
+    });
+
+    it("passes through non-OpenAI-compatible shapes unchanged", async () => {
+        const gemini = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+        expect(await endpointFor(gemini)).toBe(gemini);
+
+        const anthropic = "https://api.anthropic.com/v1/messages";
+        expect(await endpointFor(anthropic)).toBe(anthropic);
+    });
+
+    it("falls back to the OpenAI default when no baseURL is stored", async () => {
+        expect(await endpointFor("")).toBe("https://api.openai.com/v1/chat/completions");
     });
 });

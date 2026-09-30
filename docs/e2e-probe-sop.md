@@ -11,8 +11,52 @@ curl -s -m 5 http://127.0.0.1:9222/json/version  # 有输出即就绪
 playwright-cli attach --cdp=http://127.0.0.1:9222
 ```
 
+Windows（Scoop 安装）等价写法：
+
+```powershell
+& "$env:USERPROFILE\scoop\apps\siyuan-note\current\SiYuan.exe" `
+    --remote-debugging-port=9222 --workspace="$env:USERPROFILE\siyuanTest"
+```
+
 - 9222 被占用（如 Chrome）时：先 `lsof -i :9222` 确认归属再处理，不要误杀；或改用其他端口 + `CDP_URL` 环境变量覆盖（e2e 支持）。
 - 主实例在跑时不要杀，用 `--workspace` 指向测试 workspace 另起实例。
+
+### ⚠️ 坑位：`ELECTRON_RUN_AS_NODE` 会让思源以 Node 模式启动，参数全被拒
+
+在注入了 `ELECTRON_RUN_AS_NODE=1` 的环境里启动（DSH / 各类 agent 会话常见，用户和机器注册表里都没有，所以**只在会话内复现**），现象是：
+
+```
+SiYuan.exe: bad option: --remote-debugging-port=9222
+SiYuan.exe: bad option: --workspace=C:\Users\zhouteng\siyuanTest
+```
+
+关键判据：`%USERPROFILE%\.config\siyuan\app.log`（macOS/Linux 为 `~/.config/siyuan/app.log`）里
+**完全没有新增的 `app is packaged [...]` 那一行** —— 说明 Electron 主进程压根没起来，不是思源在报错。
+若把一个**非选项**参数排在前面，报错还会变成 `Cannot find module '<参数>'`。
+
+原因：该变量让 Electron 退回纯 Node 模式，`--*` 参数被 Electron 内嵌的 Node 选项解析器
+（`third_party/electron_node/src/node.cc`，`bad option:` 字符串就在二进制里）拒掉并直接退出。
+
+启动前先清掉：
+
+```powershell
+Remove-Item Env:ELECTRON_RUN_AS_NODE, Env:CHROME_CRASHPAD_PIPE_NAME -ErrorAction SilentlyContinue
+```
+
+注意**每条 shell 命令都是独立新进程**，变量会被重新注入 —— 必须在**同一条命令**里先清再启动
+（`Start-Process` 继承的是当前进程的环境）。清掉后应能看到：
+
+```
+DevTools listening on ws://127.0.0.1:9222/devtools/browser/<id>
+```
+
+并且 `app.log` 会出现（main.js 自己打的，可用来确认参数真的传进去了）：
+
+```
+app is packaged [true], command line args [...\SiYuan.exe, --remote-debugging-port=9222, --workspace=...]
+command line switch [--remote-debugging-port=9222]
+got arg [--workspace=C:\Users\zhouteng\siyuanTest]
+```
 
 ## 1. 新建 drawio 页签
 
