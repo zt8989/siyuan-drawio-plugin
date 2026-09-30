@@ -23,9 +23,11 @@ cowboy
 ![预览](preview.png)
 
 ## 版本
-1.0.42
+1.0.43
 
 ## 更新日志
+- **v1.0.43**
+  - 修复「数学排版」导致整个绘图界面失效的问题（issue #66）：`DRAW_MATH_URL` 仍指向 draw.io 自 29.0.2 起已删除的 MathJax v3 路径 `math/es5`（MathJax v4 在 `math4/es5`），404 使画布被永久置为 `visibility: hidden`
 - **v1.0.42**
   - 修复 AI 生成图形拖到画布后聊天窗被挤到左上角的问题（iframe 内联尺寸，自动保存触发插件热重载时不再收缩）
   - putFile/removeFile 携带前端 app 标识，不再因保存触发本实例插件重载

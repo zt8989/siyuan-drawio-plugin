@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-1.0.42
+1.0.43
 
 ## Changelog
+- **v1.0.43**
+  - Fix 「数学排版」(Mathematical Typesetting) leaving the whole drawing canvas permanently invisible (issue #66): `DRAW_MATH_URL` still pointed at the MathJax v3 path `math/es5`, which draw.io removed in 29.0.2 (MathJax v4 lives in `math4/es5`). The resulting 404 left the graph container at `visibility: hidden` forever
 - **v1.0.42**
   - Fix AI chat window squeezed to top-left after dragging a generated shape to canvas (inline iframe sizing survives plugin hot-reload on autosave)
   - Stop self-triggered plugin reload on save by sending the frontend app id with putFile/removeFile
