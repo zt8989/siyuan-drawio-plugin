@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-1.0.43
+1.0.44
 
 ## Changelog
+- **v1.0.44**
+  - Give the draw.io AI endpoint normalizer a single implementation instead of three copies, and fix the URL building it got wrong: a base URL without a scheme (`api.deepseek.com`) produced a relative URL draw.io cannot fetch, and one carrying a query or fragment had the path appended after it (`...?foo=1/v1/chat/completions`)
 - **v1.0.43**
   - Fix 「数学排版」(Mathematical Typesetting) leaving the whole drawing canvas permanently invisible (issue #66): `DRAW_MATH_URL` still pointed at the MathJax v3 path `math/es5`, which draw.io removed in 29.0.2 (MathJax v4 lives in `math4/es5`). The resulting 404 left the graph container at `visibility: hidden` forever
 - **v1.0.42**
