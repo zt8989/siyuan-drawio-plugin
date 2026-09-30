@@ -1,4 +1,5 @@
 import { fetchSyncPost } from "siyuan";
+import { toFullChatCompletionsUrl, DEFAULT_GPT_URL } from "./drawioAiEndpoint";
 
 /**
  * SiyuanAiProvider — deep module owning SiYuan AI provider -> draw.io AI config translation.
@@ -38,17 +39,6 @@ export interface DrawioAiInjection {
     aiGlobals: Record<string, unknown>;
     aiConfigs: Record<string, unknown>;
     aiModels: Array<{ name: string; model: string; config: string }>;
-}
-
-const DEFAULT_GPT_URL = "https://api.openai.com/v1/chat/completions";
-
-function toFullChatCompletionsUrl(baseUrl: string): string {
-    if (!baseUrl) return DEFAULT_GPT_URL;
-    const trimmed = baseUrl.replace(/\/+$/, "");
-    if (trimmed.includes("chat/completions") || trimmed.includes("generateContent") || trimmed.includes("v1/messages")) return trimmed;
-    if (trimmed.endsWith("/v1")) return `${trimmed}/chat/completions`;
-    // SiYuan 3.8 stores bare host like https://api.deepseek.com -> need /v1/chat/completions
-    return `${trimmed}/v1/chat/completions`;
 }
 
 export class SiyuanAiProvider {

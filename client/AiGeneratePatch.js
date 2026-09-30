@@ -1,4 +1,5 @@
 import { buildChatParams } from '@/ai/AiStreamUtils';
+import { toFullChatCompletionsUrl } from '@/ai/drawioAiEndpoint';
 
 /**
  * AiGeneratePatch — reroutes the template-chooser Generate button from the
@@ -37,26 +38,18 @@ function readByoConfig() {
         if (ai == null) return null;
         var openAI = ai.OpenAI || ai.openAI;
         if (openAI && openAI.APIKey) {
-            return { apiKey: openAI.APIKey, model: openAI.APIModel || 'gpt-4o-mini', baseUrl: openAI.APIBaseURL || 'https://api.openai.com/v1/chat/completions' };
+            return { apiKey: openAI.APIKey, model: openAI.APIModel || 'gpt-4o-mini', baseUrl: openAI.APIBaseURL };
         }
         if (Array.isArray(ai.providers)) {
             var p = ai.providers.find(function (x) { return x.enabled && x.apiKey; }) || ai.providers.find(function (x) { return x.apiKey; });
             if (p && p.apiKey) {
                 var models = p.models || [];
                 var m = models.find(function (x) { return x.enabled; }) || models[0];
-                return { apiKey: p.apiKey, model: (m && m.name) || 'gpt-4o-mini', baseUrl: p.baseURL || 'https://api.openai.com/v1/chat/completions' };
+                return { apiKey: p.apiKey, model: (m && m.name) || 'gpt-4o-mini', baseUrl: p.baseURL };
             }
         }
     } catch (e) { /* fall through to upstream */ }
     return null;
-}
-
-function toFullChatCompletionsUrl(baseUrl) {
-    if (!baseUrl) return 'https://api.openai.com/v1/chat/completions';
-    var t = String(baseUrl).replace(/\/+$/, '');
-    if (t.includes('chat/completions') || t.includes('generateContent') || t.includes('v1/messages')) return t;
-    if (t.endsWith('/v1')) return t + '/chat/completions';
-    return t + '/v1/chat/completions';
 }
 
 function readResponseContent(responseText) {

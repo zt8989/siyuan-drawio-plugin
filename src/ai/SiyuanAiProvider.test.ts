@@ -74,37 +74,21 @@ describe("SiyuanAiProvider", () => {
 });
 
 /**
- * `endpoint` is what draw.io fetches, so it must always be a complete, POSTable URL.
- * Verified against the live app: SiYuan 3.8 stores "https://api.deepseek.com" and the
- * injected endpoint is "https://api.deepseek.com/v1/chat/completions"; draw.io's own
- * default is "https://api.openai.com/v1/chat/completions".
+ * The full normalization contract now lives in `drawioAiEndpoint.test.ts`, which owns
+ * that behaviour. This only asserts the seam: whatever SiYuan stored is handed to the
+ * shared normalizer, so draw.io receives a POSTable URL.
+ * Verified against a live app: SiYuan 3.8 stores "https://api.deepseek.com" and the
+ * injected endpoint is "https://api.deepseek.com/v1/chat/completions".
  */
-describe("SiyuanAiProvider — endpoint normalization (draw.io needs a full POST url)", () => {
-    it("appends /v1/chat/completions to a bare SiYuan 3.8 host", async () => {
+describe("SiyuanAiProvider — endpoint normalization seam", () => {
+    it("normalizes a bare SiYuan 3.8 host through the shared normalizer", async () => {
         expect(await endpointFor("https://api.deepseek.com")).toBe("https://api.deepseek.com/v1/chat/completions");
     });
 
-    it("appends only /chat/completions when the base already ends with /v1", async () => {
-        expect(await endpointFor("https://api.deepseek.com/v1")).toBe("https://api.deepseek.com/v1/chat/completions");
-    });
-
-    it("leaves an already-complete chat/completions url untouched", async () => {
+    it("passes an already-complete endpoint through unchanged", async () => {
         expect(await endpointFor("https://api.openai.com/v1/chat/completions")).toBe(
             "https://api.openai.com/v1/chat/completions",
         );
-    });
-
-    it("trims trailing slashes before normalizing", async () => {
-        expect(await endpointFor("https://api.deepseek.com/")).toBe("https://api.deepseek.com/v1/chat/completions");
-        expect(await endpointFor("https://api.deepseek.com/v1//")).toBe("https://api.deepseek.com/v1/chat/completions");
-    });
-
-    it("passes through non-OpenAI-compatible shapes unchanged", async () => {
-        const gemini = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
-        expect(await endpointFor(gemini)).toBe(gemini);
-
-        const anthropic = "https://api.anthropic.com/v1/messages";
-        expect(await endpointFor(anthropic)).toBe(anthropic);
     });
 
     it("falls back to the OpenAI default when no baseURL is stored", async () => {

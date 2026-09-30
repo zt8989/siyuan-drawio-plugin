@@ -1,6 +1,7 @@
 import { DefaultElectronImpl } from './Electron.js';
 import Storage from './Storage.js';
 import { getDrawioLang } from '@/bridge/DrawioBridge';
+import { toFullChatCompletionsUrl } from '@/ai/drawioAiEndpoint';
 import { installAiStreamPatch } from './AiStreamPatch.js';
 
 // AI chat streaming (SSE + 思考中 UI): installed before the fence patch so
@@ -22,13 +23,6 @@ if(process.env.NODE_ENV === 'development'){
   // Delegate to DrawioBridge single source of truth (locality) — client previously duplicated this logic
 function getLang(){
     return getDrawioLang(parent?.siyuan?.config?.lang)
-  }
-  function toFullChatCompletionsUrl(baseUrl) {
-      if (!baseUrl) return 'https://api.openai.com/v1/chat/completions';
-      const t = baseUrl.replace(/\/+$/, '');
-      if (t.includes('chat/completions') || t.includes('generateContent') || t.includes('v1/messages')) return t;
-      if (t.endsWith('/v1')) return t + '/chat/completions';
-      return t + '/v1/chat/completions';
   }
   window.DRAWIO_PUBLIC_BUILD = true;
   window.PLANT_URL = parent?.siyuan?.config?.editor?.plantUMLServePath.replace("/svg/~1", "") ?? 'https://www.plantuml.com/plantuml';;
@@ -57,7 +51,7 @@ function getLang(){
           const openAI = ai?.OpenAI || ai?.openAI;
           if (openAI?.APIKey) {
               const model = openAI.APIModel || 'gpt-4o-mini';
-              const baseUrl = toFullChatCompletionsUrl(openAI.APIBaseURL || 'https://api.openai.com/v1/chat/completions');
+              const baseUrl = toFullChatCompletionsUrl(openAI.APIBaseURL);
               return {
                   enableAi: true,
                   gptApiKey: openAI.APIKey,
@@ -82,7 +76,7 @@ function getLang(){
               if (p?.apiKey) {
                   const m = p.models?.find(x => x.enabled) || p.models?.[0];
                   const model = m?.name || 'gpt-4o-mini';
-                  const baseUrl = toFullChatCompletionsUrl(p.baseURL || 'https://api.openai.com/v1/chat/completions');
+                  const baseUrl = toFullChatCompletionsUrl(p.baseURL);
                   return {
                       enableAi: true,
                       gptApiKey: p.apiKey,
