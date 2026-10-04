@@ -5,6 +5,7 @@ import { setup as MenuSetup } from "./components/Menus"
 import { formatFileName, generateSiyuanId } from "./api"
 import { OVERALL_TIMEOUT_MS } from "@/ai/AiStreamUtils"
 import { installAiGeneratePatch } from "./AiGeneratePatch.js"
+import { SCRATCHPAD_FILE_NAME, installScratchpadSync, scratchpadPath } from "@/scratchpad/ScratchpadSync"
 /**
  * Copyright (c) 2006-2024, JGraph Ltd
  * Copyright (c) 2006-2024, draw.io AG
@@ -114,6 +115,27 @@ if (window.parent.siyuan) {
         return /(\.png)$/i.test(title)
     }
 
+    //#endregion
+
+    //#region Scratchpad
+    // draw.io keeps the scratchpad (便笺本) in the browser profile — IndexedDB,
+    // falling back to localStorage — so it never reaches /data/ and never rides
+    // SiYuan sync/backup/snapshot. Mirror just that one library into the plugin's
+    // petal directory (issue #45); other libraries and files stay untouched.
+    const scratchpadFilePath = scratchpadPath(PETAL_DIR_PATH); // workspace-relative, for getFile
+    const scratchpadFullPath = "/data/" + scratchpadFilePath; // for putFile
+
+    installScratchpadSync(globalThis.StorageFile, {
+        // getFileContent() prefixes /data itself; putFile takes the full path.
+        read: () => getFileContent({ path: scratchpadFilePath }),
+        write: (xml) => putFileSiyuan(scratchpadFullPath, false,
+            new File([xml], SCRATCHPAD_FILE_NAME, { type: "text/xml" })).then(res => {
+                if (!res || res.code !== 0) {
+                    throw new Error("putFile failed: " + JSON.stringify(res));
+                }
+                return res;
+            }),
+    });
     //#endregion
 
     // #region App 

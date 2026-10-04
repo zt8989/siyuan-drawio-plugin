@@ -55,9 +55,10 @@ export default defineConfig({
             name: 'watch-client-external',
             async buildStart() {
                 if (!isDev) return;
-                // AiStreamPatch imports pure helpers from src/ai: watch them too
+                // The client bundle imports pure helpers from src/ai (AiStreamPatch,
+                // AiGeneratePatch) and src/scratchpad (ScratchpadSync): watch them too
                 // so `pnpm dev` rebuilds the client bundle on util changes.
-                const files = await fg(['client/**/*.{js,html}', 'src/ai/**/*.{ts,js}']);
+                const files = await fg(['client/**/*.{js,html}', 'src/ai/**/*.{ts,js}', 'src/scratchpad/**/*.{ts,js}']);
                 for (const file of files) this.addWatchFile(file);
             },
         },
