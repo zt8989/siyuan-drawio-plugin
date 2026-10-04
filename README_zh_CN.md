@@ -23,9 +23,14 @@ cowboy
 ![预览](preview.png)
 
 ## 版本
-1.0.44
+1.0.45
 
 ## 更新日志
+- **v1.0.45**
+  - 便笺本数据改存到思源 `data` 目录（issue #45），从而纳入云同步、快照与备份。此前 draw.io 把便笺本放在浏览器 IndexedDB / localStorage 里，落在 Electron profile 中，既不同步，换设备或重装后也是空的
+  - 界面本就可用，本次只换存储：「查看 → 便笺本」、面板上的**添加**按钮、右键「添加到便签本」均保持原样
+  - 镜像文件为 `/data/storage/petal/siyuan-drawio-plugin/scratchpad.xml`。读取时优先用镜像，没有镜像（本机首次）或内核取不到时回退到原有浏览器副本，老用户升级不丢数据；写入时保留 draw.io 自身的本地簿记并随后镜像，镜像写失败只记日志、不影响保存
+  - 自定义图形库（文件 → 新建库/打开库）未改动，行为与之前一致
 - **v1.0.44**
   - 将 draw.io 的 AI 接口地址归一化收敛为单一实现（原为三处拷贝），并修复其地址拼接问题：不带 scheme 的裸域名（`api.deepseek.com`）会产出 draw.io 无法请求的相对地址；带 query 或 fragment 的地址会把路径拼到其后（`...?foo=1/v1/chat/completions`）
 - **v1.0.43**

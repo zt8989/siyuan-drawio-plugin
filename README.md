@@ -20,9 +20,13 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-1.0.44
+1.0.45
 
 ## Changelog
+- **v1.0.45**
+  - Store the draw.io scratchpad (便笺本) in SiYuan's data directory instead of the browser profile, so it is covered by cloud sync, snapshots and backups (issue #45). The UI (「查看 → 便笺本」, the palette's **添加** button, the right-click 添加到便签本) was always available and is unchanged; only the storage moved
+  - The scratchpad is mirrored to `/data/storage/petal/siyuan-drawio-plugin/scratchpad.xml`. Reads prefer the mirror and fall back to the previous browser copy, so an existing scratchpad survives the upgrade; writes keep draw.io's own local bookkeeping and mirror afterwards, and a failed mirror write never blocks saving
+  - Custom shape libraries (File → 新建库/打开库) are untouched and behave as before
 - **v1.0.44**
   - Give the draw.io AI endpoint normalizer a single implementation instead of three copies, and fix the URL building it got wrong: a base URL without a scheme (`api.deepseek.com`) produced a relative URL draw.io cannot fetch, and one carrying a query or fragment had the path appended after it (`...?foo=1/v1/chat/completions`)
 - **v1.0.43**
