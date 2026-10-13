@@ -20,6 +20,9 @@ import { createLinkFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback, DrawioConfig } from "./types";
 import { genDrawioHTMLByUrl } from "./asset/renderAssets";
 import { isValidBridgeMessage } from "./bridge/DrawioBridge";
+import { handlePdfBridgeMessage, type PdfExportHost } from "./pdf/pdfExportBridge";
+import { unavailablePdfExporter, type PdfExporter } from "./pdf/PdfExporter";
+import { createElectronPdfExporter } from "./pdf/electronAdapters";
 import { TabManager } from "./tabs/TabManager";
 import { AssetPickerDialog } from "./dialog/AssetPickerDialog";
 import Dock from "./components/dock.svelte";
@@ -33,6 +36,7 @@ export default class DrawioPlugin extends Plugin {
     public assetStore: AssetStore = new SiyuanAssetStore()
     private tabManager!: TabManager
     private assetPicker!: AssetPickerDialog
+    private pdfHost!: PdfExportHost
 
     // Pre-bind methods to ensure same reference for event cleanup
     private boundOnOpenTab = this.onOpenTab.bind(this)
@@ -53,6 +57,7 @@ export default class DrawioPlugin extends Plugin {
         
         const frontEnd = getFrontend();
         this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
+        this.pdfHost = this.createPdfHost(frontEnd);
 
         // Composition root wiring: deep modules behind small interfaces (locality, leverage)
         this.tabManager = new TabManager({
@@ -192,7 +197,7 @@ export default class DrawioPlugin extends Plugin {
         }
     }
 
-    onMessage = (ev: MessageEvent<{ type: string, payload: any, callbackId?: string }>) => {
+    onMessage = async (ev: MessageEvent<{ type: string, payload: any, callbackId?: string }>) => {
         // Only process messages from same origin + valid BridgeMessage (typed seam, test surface)
         if (ev.origin !== window.location.origin) {
             logger.debug('Rejected message from invalid origin:', ev.origin);
@@ -200,6 +205,25 @@ export default class DrawioPlugin extends Plugin {
         }
         if (!isValidBridgeMessage(ev.data)) {
             logger.debug('Rejected invalid bridge message:', ev.data);
+            return;
+        }
+
+        // Local PDF export (issue #75) owns its own message pair and replies through the
+        // existing callback channel; everything else is a plugin UI action.
+        const pdfReply = await handlePdfBridgeMessage(ev.data, this.pdfHost);
+        if (pdfReply) {
+            const [first] = pdfReply.payload;
+            const savedPath = first && (first as { status?: string }).status === "saved" ? (first as { path?: string }).path : undefined;
+            if (savedPath) {
+                const template = (this.i18n as unknown as Record<string, string>).pdfExported || "PDF 已导出至 ${path}";
+                showMessage(template.replace("${path}", savedPath), 6000, "info");
+            }
+            try {
+                ev.source?.postMessage(pdfReply);
+            } catch (e) {
+                // A guest window that went away must not turn into an unhandled rejection.
+                logger.debug("Failed to deliver PDF export reply:", e);
+            }
             return;
         }
         
@@ -249,6 +273,35 @@ export default class DrawioPlugin extends Plugin {
 
     public getDrawioConfig(): DrawioConfig | null {
         return this.drawioConfig;
+    }
+
+    /**
+     * Local PDF export capability + composition (issue #75).
+     * Desktop SiYuan is the only build with a main process that can print a window, so the
+     * mobile/browser hosts report no capability and the editor keeps its previous export path.
+     */
+    private createPdfHost(frontEnd: string): PdfExportHost {
+        const hasNodeRenderer = typeof (window as unknown as { require?: unknown }).require === "function";
+        const desktopLike = frontEnd === "desktop" || frontEnd === "desktop-window" || frontEnd === "window";
+        const pdfExport = !this.isMobile && desktopLike && hasNodeRenderer;
+        // loadURL needs an absolute URL; the export page is served by the kernel alongside the webapp.
+        const exportPageUrl = new URL(`/plugins/${this.name}/webapp/pdf-export.html`, window.location.origin).href;
+        const exporter: PdfExporter = pdfExport
+            ? createElectronPdfExporter({ exportPageUrl })
+            : unavailablePdfExporter();
+
+        logger.debug("pdf export capability:", pdfExport, "frontEnd:", frontEnd);
+        return { exporter, capabilities: { pdfExport } };
+    }
+
+    /** Exposed for diagnostics and end-to-end runs that drive the exporter seam directly. */
+    public getPdfExporter(): PdfExporter {
+        return this.pdfHost.exporter;
+    }
+
+    /** Composition seam: end-to-end runs swap in a recording exporter to observe requests. */
+    public setPdfExporter(exporter: PdfExporter): void {
+        this.pdfHost.exporter = exporter;
     }
 
     public async saveDrawioConfig(config: DrawioConfig) {

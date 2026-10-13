@@ -43,7 +43,7 @@ export default defineConfig({
             closeBundle() {
                 if (entryName !== "PreConfig") return;
                 const webappDir = resolve(__dirname, outputDir, "webapp");
-                ['embed.html', 'embed2.js'].forEach(file => {
+                ['embed.html', 'embed2.js', 'pdf-export.html', 'pdfExportPageBridge.js'].forEach(file => {
                     const src = path.join("client", file);
                     if (!existsSync(src)) { console.log(`[client:${entryName}] Missing: ${src}`); return; }
                     copyFileSync(src, path.join(webappDir, file));

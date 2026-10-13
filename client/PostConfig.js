@@ -5,6 +5,7 @@ import { setup as MenuSetup } from "./components/Menus"
 import { formatFileName, generateSiyuanId } from "./api"
 import { OVERALL_TIMEOUT_MS } from "@/ai/AiStreamUtils"
 import { installAiGeneratePatch } from "./AiGeneratePatch.js"
+import { installPdfExportPatch } from "./PdfExportPatch.js"
 import { SCRATCHPAD_FILE_NAME, installScratchpadSync, scratchpadPath } from "@/scratchpad/ScratchpadSync"
 /**
  * Copyright (c) 2006-2024, JGraph Ltd
@@ -305,6 +306,15 @@ if (window.parent.siyuan) {
     // the domain-gated draw.io hosted service (see client/AiGeneratePatch.js).
     try {
         installAiGeneratePatch();
+    } catch (e) { /* keep upstream implementation when patching fails */ }
+    //#endregion
+
+    //#region PDF export reroute
+    // "导出为 → PDF" renders and prints on this machine through the plugin host instead of
+    // POSTing the diagram to convert.diagrams.net (issue #75, client/PdfExportPatch.js).
+    // Falls back to the upstream implementation when the host reports no local renderer.
+    try {
+        installPdfExportPatch(electron);
     } catch (e) { /* keep upstream implementation when patching fails */ }
     //#endregion
 

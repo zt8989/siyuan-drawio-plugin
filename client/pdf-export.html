@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>drawio PDF export</title>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!--
+      Rendering page for the plugin's local PDF export (issue #75).
+
+      A trimmed copy of the drawio desktop export page: it renders the diagram into this
+      document (mxPrintPreview) and lets Electron printToPDF turn it into a PDF. It is a
+      plugin-owned page only so the bridge below can run *before* upstream export.js reads
+      window.electron; the print CSS and the scripts are the upstream ones.
+    -->
+    <style type="text/css">
+        .MathJax svg { shape-rendering: crispEdges; }
+    </style>
+    <style type="text/css">
+        @media print {
+            body > div {
+                page-break-inside: avoid;
+                page-break-after: always;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="mxgraph/css/common.css" charset="UTF-8" type="text/css">
+    <link rel="stylesheet" href="export-fonts.css" charset="UTF-8" type="text/css">
+    <script src="pdfExportPageBridge.js"></script>
+    <script src="js/export-init.js"></script>
+    <script src="js/app.min.js"></script>
+    <script src="js/extensions.min.js"></script>
+    <script src="js/export.js"></script>
+</head>
+<body style="margin: 0px; overflow: hidden; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+</body>
+</html>

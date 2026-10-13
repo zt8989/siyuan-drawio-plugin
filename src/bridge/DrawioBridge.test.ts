@@ -49,6 +49,14 @@ describe("DrawioBridge — typed message validation (interface is test surface)"
         expect(isValidBridgeMessage(null)).toBe(false);
     });
 
+    it("accepts the local PDF export contract (issue #75)", () => {
+        // A message type missing from the whitelist is dropped by the host before it
+        // ever reaches the exporter, so the capability probe and the export request
+        // must both be registered types.
+        expect(isValidBridgeMessage({ type: BRIDGE_TYPES.GET_CAPABILITIES, callbackId: "c1" })).toBe(true);
+        expect(isValidBridgeMessage({ type: BRIDGE_TYPES.EXPORT_PDF, payload: {}, callbackId: "c2" })).toBe(true);
+    });
+
     it("guest lang param via bridge without CDP (no iframe needed)", () => {
         // Simulate guest PreConfig logic: urlParams['lang'] = getDrawioLang(siyuanLang)
         const siyuanLang = "zh-CN";
