@@ -2,10 +2,9 @@ import {
     ElectronPdfExporter,
     type PdfExportRequest,
     type PdfExporter,
-    type PdfFileWriter,
     type PdfPrintBackend,
-    type PdfSaveDialog,
 } from "./PdfExporter";
+import { SiYuanSaveDialog, writeFileToDisk } from "@/export/SaveTarget";
 
 /**
  * electronAdapters — the Electron-only half of the local PDF export (issue #75).
@@ -168,26 +167,6 @@ export class HiddenWindowPdfBackend implements PdfPrintBackend {
         }
     }
 }
-
-/** SiYuan's main process owns the native save dialog; asking it keeps the plugin dialog-free. */
-export class SiYuanSaveDialog implements PdfSaveDialog {
-    async pick(defaultName: string): Promise<string | null> {
-        const { ipcRenderer } = require("electron");
-        const result = await ipcRenderer.invoke("siyuan-get", {
-            cmd: "showSaveDialog",
-            title: "导出 PDF",
-            defaultPath: defaultName,
-            filters: [{ name: "PDF", extensions: ["pdf"] }],
-        });
-
-        return result?.canceled || !result?.filePath ? null : result.filePath;
-    }
-}
-
-export const writeFileToDisk: PdfFileWriter = (path, bytes) => {
-    const fs = require("fs");
-    fs.writeFileSync(path, bytes);
-};
 
 export type ElectronPdfExportOptions = {
     exportPageUrl: string;

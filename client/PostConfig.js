@@ -6,6 +6,8 @@ import { formatFileName, generateSiyuanId } from "./api"
 import { OVERALL_TIMEOUT_MS } from "@/ai/AiStreamUtils"
 import { installAiGeneratePatch } from "./AiGeneratePatch.js"
 import { installPdfExportPatch } from "./PdfExportPatch.js"
+import { installFileExportPatch } from "./FileExportPatch.js"
+import { createExportCapabilities } from "./ExportCapabilities.js"
 import { SCRATCHPAD_FILE_NAME, installScratchpadSync, scratchpadPath } from "@/scratchpad/ScratchpadSync"
 /**
  * Copyright (c) 2006-2024, JGraph Ltd
@@ -309,12 +311,16 @@ if (window.parent.siyuan) {
     } catch (e) { /* keep upstream implementation when patching fails */ }
     //#endregion
 
-    //#region PDF export reroute
-    // "导出为 → PDF" renders and prints on this machine through the plugin host instead of
-    // POSTing the diagram to convert.diagrams.net (issue #75, client/PdfExportPatch.js).
-    // Falls back to the upstream implementation when the host reports no local renderer.
+    //#region export reroute
+    // Every export the editor renders itself is saved through the plugin host instead of
+    // POSTing to convert.diagrams.net or clicking an <a download> SiYuan drops:
+    //   - PDF (issue #75): host renders it in a hidden window and prints it
+    //   - PNG/JPEG/WebP/SVG/XML/… (issue #76): host writes the bytes the editor produced
+    // Both share one capability probe; without a capable host each patch keeps upstream.
     try {
-        installPdfExportPatch(electron);
+        const capabilities = createExportCapabilities(electron);
+        installPdfExportPatch(electron, capabilities);
+        installFileExportPatch(electron, capabilities);
     } catch (e) { /* keep upstream implementation when patching fails */ }
     //#endregion
 

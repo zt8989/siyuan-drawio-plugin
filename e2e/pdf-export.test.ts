@@ -2,26 +2,32 @@
  * Vitest E2E for the local PDF export (issue #75) via Playwright + CDP.
  * Requires SiYuan running with --remote-debugging-port=9222 (see docs/e2e-probe-sop.md).
  *
- * Probed first against SiYuan 3.8.4 / Electron 44.4.1, then fixed here:
- *  1. The plugin webapp assets are HTTP-cached hard: a plain reload keeps serving the
- *     previous build's PostConfig.js, so the patch looks missing. The suite clears the CDP
- *     cache and reloads when (and only when) the loaded bundle is stale.
+ * Probed first against SiYuan 3.8.x / Electron 44 before being fixed here:
+ *  1. Live draws/assets are HTTP-cached hard — see ensureFreshAssets in the shared helpers.
  *  2. `文件 → 导出为 → PDF...` opens the print dialog; 导出 then reaches the plugin host
- *     through the bridge (probed: exactly one exportPdf request, no new window, no
- *     drawio destination picker).
+ *     through the bridge (probed: exactly one exportPdf request, no new window, no drawio
+ *     destination picker).
  *  3. The host renders the diagram in its export page and prints it with Electron
  *     printToPDF (probed: a two-page diagram produced a two-page A4 PDF with embedded fonts).
+ *
+ * The editor-driving helpers are shared with e2e/file-export.test.ts.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { chromium, type Browser, type Page } from 'playwright';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-
-const DEFAULT_CDP = process.env.CDP_URL || 'http://127.0.0.1:9222';
-const DEFAULT_PATTERN = process.env.E2E_PATTERN || 'stage/build/app';
-const STEP_TIMEOUT = 10000;
+import type { Browser, Page } from 'playwright';
+import {
+    closeDrawioTabs,
+    connectEditorPage,
+    ensureFreshAssets,
+    electronWindowCount,
+    exportViaMenu,
+    isCanvasVisible,
+    openBlankDrawing,
+    waitForSnackbar,
+} from './fixtures/drawioEditor';
 
 const PDF_PATH = path.join(os.tmpdir(), `siyuan-drawio-pdf-e2e-${Date.now()}.pdf`);
 
@@ -35,108 +41,16 @@ const TWO_PAGE_XML =
     '<mxCell id="3" value="第二页 Circle" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1"><mxGeometry x="100" y="100" width="200" height="200" as="geometry"/></mxCell>' +
     '</root></mxGraphModel></diagram></mxfile>';
 
-function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
-    let t: NodeJS.Timeout;
-    const timeout = new Promise<never>((_, reject) => {
-        t = setTimeout(() => reject(new Error(`[timeout ${ms}ms] ${label}`)), ms);
-    });
-    return Promise.race([p, timeout]).finally(() => clearTimeout(t)) as Promise<T>;
-}
-
-async function resolveCdpEndpoint(cdp: string): Promise<string> {
-    if (!cdp.startsWith('http')) return cdp;
-    const res = await withTimeout(fetch(cdp.replace(/\/$/, '') + '/json/version').then((r) => r.json()), 3000, 'json/version');
-    return (res as { webSocketDebuggerUrl?: string }).webSocketDebuggerUrl || cdp;
-}
-
-async function findTargetPage(browser: Browser): Promise<Page | null> {
-    for (const ctx of browser.contexts()) {
-        for (const p of ctx.pages()) {
-            if (p.url().includes(DEFAULT_PATTERN)) return p;
-        }
-    }
-    return null;
-}
-
-/**
- * Plugin webapp assets are cached per build, and a plain reload keeps serving the previous
- * build's PostConfig.js (probed: the patch then looks uninstalled). Clear the cache and
- * reload when the loaded bundle is missing or from another plugin version, so a shared
- * editor session is not disturbed on every run. When iterating on the client patch in dev,
- * force it with E2E_FORCE_RELOAD=1 (the dev bundle keeps the same version).
- */
-async function ensureFreshAssets(page: Page): Promise<void> {
-    const stale = await page.evaluate(async () => {
-        const patch = (window as unknown as { __pdfExportPatch?: { installed?: boolean; bundleVersion?: string } }).__pdfExportPatch;
-        if (!patch || !patch.installed) return true;
-
-        try {
-            const manifest = await fetch('/plugins/siyuan-drawio-plugin/plugin.json', { cache: 'no-store' }).then((r) => r.json());
-            return !!patch.bundleVersion && patch.bundleVersion !== manifest.version;
-        } catch (e) {
-            return false;
-        }
-    });
-
-    if (!stale && process.env.E2E_FORCE_RELOAD !== '1') return;
-
-    const client = await page.context().newCDPSession(page);
-    await client.send('Network.enable');
-    await client.send('Network.clearBrowserCache');
-    await page.reload({ waitUntil: 'load', timeout: 30000 });
-    await page.waitForFunction(() => typeof (window as unknown as { drawioPlugin?: unknown }).drawioPlugin === 'object', null, { timeout: STEP_TIMEOUT });
-    await page.waitForTimeout(1500);
-}
-
-async function closeDrawioTabs(page: Page): Promise<void> {
-    await page.evaluate(() => {
-        [...document.querySelectorAll('li.item')].forEach((tab) => {
-            if ((tab.textContent || '').includes('drawio')) {
-                (tab.querySelector('.item__close') as HTMLElement | null)?.click();
-            }
-        });
-    });
-    await page.waitForTimeout(800);
-}
-
-/** Opens one drawio custom tab and creates a blank drawing in it (SOP steps 1–3). */
-async function openBlankDrawing(page: Page) {
-    await page.evaluate(() => {
-        (window as unknown as { drawioPlugin: { openNewCustomTab: () => void } }).drawioPlugin.openNewCustomTab();
-    });
-
-    const frame = page.frameLocator('iframe.siyuan-drawio-plugin__custom-tab:visible');
-    await frame.locator('.geBigButton').filter({ hasText: /创建新绘图|Create New Diagram/ }).first().click({ timeout: STEP_TIMEOUT });
-    await frame.locator('.geTemplate').filter({ hasText: /空白框图|Blank Diagram/ }).first().dblclick({ timeout: STEP_TIMEOUT });
-    await frame.locator('.geDiagramContainer').waitFor({ state: 'visible', timeout: 20000 });
-
-    return frame;
-}
-
-/** Drives 文件 → 导出为 → PDF... → 导出 in the editor. */
-async function exportViaMenu(frame: ReturnType<Page['frameLocator']>): Promise<void> {
-    await frame.locator('.geMenubar .geItem').filter({ hasText: /文件|File/ }).first().click();
-    const exportAs = frame.locator('td.mxPopupMenuItem').filter({ hasText: /导出为|Export as/ }).first();
-    await exportAs.hover();
-    await frame.locator('tr.mxPopupMenuItem').filter({ hasText: /^PDF\.\.\.$/ }).first().click({ timeout: STEP_TIMEOUT });
-
-    const exportButton = frame.locator('.geDialog .geBtn, .geDialog button').filter({ hasText: /^导出$|^Export$/ }).first();
-    await exportButton.click({ timeout: STEP_TIMEOUT });
-}
-
 let browser: Browser;
 let page: Page;
 let windowsBefore = 0;
 
 describe('local PDF export (issue #75)', () => {
     beforeAll(async () => {
-        browser = await chromium.connectOverCDP(await resolveCdpEndpoint(DEFAULT_CDP));
-        const found = await findTargetPage(browser);
-        if (!found) throw new Error(`no SiYuan page matching "${DEFAULT_PATTERN}" on ${DEFAULT_CDP}`);
-        page = found;
+        ({ browser, page } = await connectEditorPage());
         await ensureFreshAssets(page);
         await closeDrawioTabs(page);
-        windowsBefore = await page.evaluate(() => require('@electron/remote').BrowserWindow.getAllWindows().length);
+        windowsBefore = await electronWindowCount(page);
     }, 60000);
 
     afterAll(async () => {
@@ -171,7 +85,7 @@ describe('local PDF export (issue #75)', () => {
             return reply;
         });
 
-        expect(capability).toEqual({ pdfExport: true });
+        expect(capability).toMatchObject({ pdfExport: true });
     });
 
     it('renders and saves a real multi-page PDF through the host exporter', async () => {
@@ -217,8 +131,8 @@ describe('local PDF export (issue #75)', () => {
         });
 
         const pagesBefore = browser.contexts().flatMap((c) => c.pages()).length;
-        await exportViaMenu(frame);
-        await page.waitForTimeout(3000);
+        await exportViaMenu(frame, 'PDF...');
+        await waitForSnackbar(page, '/tmp/e2e-recording.pdf');
 
         const requests = await page.evaluate(() => (window as unknown as { __pdfRequests: Array<{ request: Record<string, unknown> }> }).__pdfRequests);
         expect(requests).toHaveLength(1);
@@ -230,25 +144,11 @@ describe('local PDF export (issue #75)', () => {
         expect(browser.contexts().flatMap((c) => c.pages()).length).toBe(pagesBefore);
         expect(await frame.locator('.geDialog:visible').count()).toBe(0);
 
-        // The user is told where the file went (the host reports the saved path).
-        await page.waitForFunction(
-            () => [...document.querySelectorAll('.b3-snackbar')].some((n) => (n.textContent || '').includes('/tmp/e2e-recording.pdf')),
-            null,
-            { timeout: 5000 },
-        );
-
         await page.evaluate(() => (window as unknown as { __siyuanPdfRestore?: () => void }).__siyuanPdfRestore?.());
     }, 90000);
 
     it('leaves the editor usable and no window behind', async () => {
-        const canvasVisible = await page.evaluate(() => {
-            const iframe = [...document.querySelectorAll('iframe.siyuan-drawio-plugin__custom-tab')].find((f) => (f as HTMLElement).offsetParent !== null) as HTMLIFrameElement | null;
-            const container = iframe?.contentDocument?.querySelector('.geDiagramContainer') as HTMLElement | null;
-            return container ? container.offsetParent !== null : false;
-        });
-        expect(canvasVisible).toBe(true);
-
-        const windowsAfter = await page.evaluate(() => require('@electron/remote').BrowserWindow.getAllWindows().length);
-        expect(windowsAfter).toBe(windowsBefore);
+        expect(await isCanvasVisible(page)).toBe(true);
+        expect(await electronWindowCount(page)).toBe(windowsBefore);
     }, 30000);
 });

@@ -16,8 +16,9 @@
  * runs unchanged, so no platform gets worse than before.
  */
 
-const PROBE_TIMEOUT_MS = 3000;
-const EXPORT_TIMEOUT_MS = 60000;
+// The native save dialog is part of this round trip: a user reading it for a minute must not
+// be reported as a timeout.
+const EXPORT_TIMEOUT_MS = 300000;
 
 function newRequestId(prefix) {
     return prefix + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
@@ -37,7 +38,7 @@ function parseExtras(extras) {
     }
 }
 
-export function installPdfExportPatch(electron) {
+export function installPdfExportPatch(electron, capabilities) {
     // Diagnostic surface for end-to-end runs and bug reports: which route is active here.
     const diagnosis = { installed: false, reason: "", bundleVersion: process.env.VERSION };
     window.__pdfExportPatch = diagnosis;
@@ -56,49 +57,16 @@ export function installPdfExportPatch(electron) {
         return;
     }
 
-    let capability = null;
-    let probing = null;
     let exporting = false;
 
-    /**
-     * Asks the host once whether local PDF export is available; cached per editor.
-     * A timeout is *not* cached: the host may still have been starting up, and a permanent
-     * "no" would silently send every later export back to the conversion service.
-     */
-    function probe() {
-        if (capability !== null) return Promise.resolve(capability);
-
-        if (!probing) {
-            probing = probeOnce().then((value) => {
-                if (capability === null) probing = null;
-                return value;
-            });
-        }
-
-        return probing;
+    /** Cached host capability (shared with the local-save patch, see ExportCapabilities.js). */
+    function pdfCapability() {
+        const cached = capabilities.cached();
+        return cached ? !!cached.pdfExport : null;
     }
 
-    function probeOnce() {
-        return new Promise((resolve) => {
-            let settled = false;
-            const finish = (value, cache) => {
-                if (settled) return;
-                settled = true;
-                if (cache) capability = value;
-                resolve(value);
-            };
-
-            try {
-                electron.sendMessage('getCapabilities', null, newRequestId('caps'), (caps) => {
-                    finish(!!(caps && caps.pdfExport), true);
-                });
-            } catch (e) {
-                finish(false, true);
-                return;
-            }
-
-            setTimeout(() => finish(false, false), PROBE_TIMEOUT_MS);
-        });
+    function probe() {
+        return capabilities.probe().then((caps) => !!caps.pdfExport);
     }
 
     function currentTitle(editorUi, fallback) {
@@ -243,7 +211,7 @@ export function installPdfExportPatch(electron) {
 
         // Only the host's local renderer replaces the service request; everywhere else
         // (mobile, browser, capability not yet known) upstream runs unchanged.
-        if (format !== 'pdf' || capability !== true) {
+        if (format !== 'pdf' || pdfCapability() !== true) {
             return origCreateDownloadRequest.apply(this, args);
         }
 
@@ -255,7 +223,7 @@ export function installPdfExportPatch(electron) {
     EditorUi.prototype.saveRequest = function (filename, format) {
         // Device mode is forced by the plugin, so the destination picker upstream shows here
         // would be redundant: the host asks for the destination with the native dialog.
-        if (format !== 'pdf' || capability !== true || typeof arguments[2] !== 'function') {
+        if (format !== 'pdf' || pdfCapability() !== true || typeof arguments[2] !== 'function') {
             return origSaveRequest.apply(this, arguments);
         }
 

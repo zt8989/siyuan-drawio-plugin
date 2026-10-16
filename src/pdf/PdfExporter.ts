@@ -1,4 +1,5 @@
 import { DrawioAsset } from "@/asset/DrawioAsset";
+import type { ExportFileWriter, ExportSaveDialog } from "@/export/SaveTarget";
 
 /**
  * PdfExporter — deep module owning local PDF export (desktop SiYuan).
@@ -61,12 +62,8 @@ export interface PdfPrintBackend {
     destroy(): void;
 }
 
-/** Asks the user where to put the PDF. Resolves null when the dialog is dismissed. */
-export interface PdfSaveDialog {
-    pick(defaultName: string): Promise<string | null>;
-}
-
-export type PdfFileWriter = (path: string, bytes: Uint8Array) => void;
+export type PdfSaveDialog = ExportSaveDialog;
+export type PdfFileWriter = ExportFileWriter;
 
 /** Rendering a diagram is a few seconds of real work; anything longer is a dead renderer. */
 export const PDF_EXPORT_TIMEOUT_MS = 30_000;
@@ -118,7 +115,7 @@ export class ElectronPdfExporter implements PdfExporter {
 
     private async exportNow(request: PdfExportRequest, options: PdfExportOptions): Promise<PdfExportResult> {
         assertRenderable(request);
-        const target = options.targetPath ?? (await this.deps.saveDialog.pick(suggestPdfName(request.title)));
+        const target = options.targetPath ?? (await this.deps.saveDialog.pick(suggestPdfName(request.title), "application/pdf"));
         if (target == null) {
             return { status: "canceled" };
         }
