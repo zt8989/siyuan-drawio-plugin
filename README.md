@@ -20,9 +20,13 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-1.0.45
+1.0.46
 
 ## Changelog
+- **v1.0.46**
+  - Desktop exports now save through SiYuan instead of silently failing or opening the conversion service: `文件 → 导出为 → PNG…/JPEG…/SVG…/XML…` (and the advanced dialog's png/jpg) open the native save dialog and write the bytes the editor rendered (issue #76). PDF exports locally through a hidden window and `printToPDF` (issue #75)
+  - Cancel ends quietly, success shows a toast with the saved path, failure shows a readable error; no extra window and no draw.io destination picker
+  - Mobile and browser keep the previous behaviour (the capability probe reports no local save)
 - **v1.0.45**
   - Store the draw.io scratchpad (便笺本) in SiYuan's data directory instead of the browser profile, so it is covered by cloud sync, snapshots and backups (issue #45). The UI (「查看 → 便笺本」, the palette's **添加** button, the right-click 添加到便签本) was always available and is unchanged; only the storage moved
   - The scratchpad is mirrored to `/data/storage/petal/siyuan-drawio-plugin/scratchpad.xml`. Reads prefer the mirror and fall back to the previous browser copy, so an existing scratchpad survives the upgrade; writes keep draw.io's own local bookkeeping and mirror afterwards, and a failed mirror write never blocks saving
