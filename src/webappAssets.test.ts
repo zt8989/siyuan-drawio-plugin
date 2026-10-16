@@ -81,3 +81,57 @@ describe("drawio webapp asset paths referenced by client/PreConfig.js", () => {
         ).toContain(mathTopLevel);
     });
 });
+/**
+ * Regression guard for issue #75 — the local PDF export page.
+ *
+ * The hidden export window loads `client/pdf-export.html`, which is not an upstream drawio page:
+ * it exists so the page can inject the `window.electron` bridge *before* upstream `export.js`
+ * runs. Two ways it can silently break in a release: a referenced upstream asset is not shipped,
+ * or the page itself is not copied into the built webapp. Both are asserted here.
+ */
+describe("local PDF export page (issue #75)", () => {
+    const exportPagePath = path.join(repoRoot, "client", "pdf-export.html");
+    const exportBridge = "pdfExportPageBridge.js";
+    const exportPage = fs.readFileSync(exportPagePath, "utf8");
+    const referencedAssets = [...exportPage.matchAll(/(?:src|href)="([^"]+)"/g)]
+        .map((m) => m[1])
+        .filter((p) => !/^(https?:)?\/\//.test(p));
+
+    it("loads the bridge before the upstream export script that needs window.electron", () => {
+        const bridgeAt = exportPage.indexOf(exportBridge);
+        const exportJsAt = exportPage.indexOf("js/export.js");
+
+        expect(bridgeAt, "pdf-export.html must load its bridge").toBeGreaterThan(-1);
+        expect(exportJsAt, "pdf-export.html must load the upstream export.js").toBeGreaterThan(-1);
+        expect(bridgeAt).toBeLessThan(exportJsAt);
+    });
+
+    it("keeps the upstream print CSS that paginates the PDF", () => {
+        expect(exportPage).toMatch(/@media\s+print/);
+        expect(exportPage).toMatch(/page-break-after:\s*always/);
+    });
+
+    it("references only assets the drawio webapp actually ships", () => {
+        expect(referencedAssets.length).toBeGreaterThan(3);
+
+        for (const asset of referencedAssets) {
+            const isBridge = asset === exportBridge;
+            const target = isBridge ? path.join(repoRoot, "client", asset) : path.join(webappSrcDir, asset);
+            expect(fs.existsSync(target), `${asset} referenced by pdf-export.html is missing (${target})`).toBe(true);
+        }
+    });
+
+    it("copies the export page and its bridge into the built webapp (dev and dist)", () => {
+        const clientConfig = fs.readFileSync(path.join(repoRoot, "vite.client.config.ts"), "utf8");
+        const bundleScript = fs.readFileSync(path.join(repoRoot, "scripts", "copy_and_bundle_build.js"), "utf8");
+
+        for (const channel of [
+            { name: "vite.client.config.ts", text: clientConfig },
+            { name: "scripts/copy_and_bundle_build.js", text: bundleScript },
+        ]) {
+            for (const file of ["pdf-export.html", exportBridge]) {
+                expect(channel.text, `${file} must be copied by ${channel.name}`).toContain(file);
+            }
+        }
+    });
+});

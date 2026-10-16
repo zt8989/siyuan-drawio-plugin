@@ -51,5 +51,6 @@
     "saveGroup": "保存设置",
     "aiGroup": "AI 设置",
     "aiEnableTitle": "启用 AI 生成",
-    "aiEnableDesc": "开启后可在 Draw.io 中使用 Generate（AI 生成图表）功能，模型选择由 Draw.io 原生下拉提供，密钥复用思源的 AI 配置"
+    "aiEnableDesc": "开启后可在 Draw.io 中使用 Generate（AI 生成图表）功能，模型选择由 Draw.io 原生下拉提供，密钥复用思源的 AI 配置",
+    "exportedTo": "已导出至 ${path}"
 }

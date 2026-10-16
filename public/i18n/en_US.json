@@ -51,5 +51,6 @@
     "saveGroup": "Save Settings",
     "aiGroup": "AI Settings",
     "aiEnableTitle": "Enable AI Generate",
-    "aiEnableDesc": "When enabled, you can use Generate (AI diagram) in Draw.io. Model is selected in Draw.io, API key is reused from Siyuan AI config"
+    "aiEnableDesc": "When enabled, you can use Generate (AI diagram) in Draw.io. Model is selected in Draw.io, API key is reused from Siyuan AI config",
+    "exportedTo": "Exported to ${path}"
 }

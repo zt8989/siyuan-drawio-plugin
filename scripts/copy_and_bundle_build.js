@@ -21,6 +21,9 @@ const filesToCopy = [
     // Do not move/wrap here – just ensure embed files are copied (client config also does, but keep for safety).
     { src: path.join("client", 'embed.html'), dest: webappDir, type: "copy" },
     { src: path.join("client", 'embed2.js'), dest: webappDir, type: "copy" },
+    // Local PDF export page + its window.electron bridge (issue #75)
+    { src: path.join("client", 'pdf-export.html'), dest: webappDir, type: "copy" },
+    { src: path.join("client", 'pdfExportPageBridge.js'), dest: webappDir, type: "copy" },
 ];
 
 // Create destination directories if they don't exist
