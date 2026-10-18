@@ -1,6 +1,7 @@
 import { BRIDGE_TYPES } from "@/bridge/DrawioBridge";
 import type { BridgeMessage } from "@/bridge/DrawioBridge";
 import type { PdfExportOptions, PdfExportRequest, PdfExporter } from "@/pdf/PdfExporter";
+import type { DiagramPrinter, PrintResult } from "@/print/DiagramPrinter";
 import type { FileExportOptions, FileExportRequest, FileExporter } from "./FileExporter";
 
 /**
@@ -12,17 +13,20 @@ import type { FileExportOptions, FileExportRequest, FileExporter } from "./FileE
  * failure becomes an error reply instead of a rejection. Callers (the plugin's message
  * handler) only post the reply back to the guest window.
  *
- * Two channels share one contract: PDF renders in a hidden window (issue #75), everything the
- * editor renders itself (PNG/JPEG/WebP/SVG/XML, issue #76) is written straight to disk.
+ * One contract, three channels: PDF renders in a hidden window (issue #75), everything the
+ * editor renders itself (PNG/JPEG/WebP/SVG/XML, issue #76) is written straight to disk, and
+ * printing reuses the same renderer but sends the pages to a printer instead of a file.
  */
 
-export type ExportCapabilities = { pdfExport: boolean; fileExport: boolean };
+export type ExportCapabilities = { pdfExport: boolean; fileExport: boolean; print: boolean };
 
 export interface ExportHost {
     /** The PdfExporter seam: real adapter in production, recording adapter in tests. */
     pdfExporter: PdfExporter;
     /** The FileExporter seam: real adapter in production, recording adapter in tests. */
     fileExporter: FileExporter;
+    /** The DiagramPrinter seam behind 文件 → 打印. */
+    diagramPrinter: DiagramPrinter;
     capabilities: ExportCapabilities;
 }
 
@@ -74,17 +78,17 @@ export function toPdfExport(payload: unknown): { request: PdfExportRequest; opti
     const p = (payload ?? {}) as Record<string, unknown>;
 
     if (p.format != null && p.format !== "pdf") {
-        throw new Error("PDF 导出请求不合法：format 必须是 pdf");
+        throw new Error("绘图渲染请求不合法：format 必须是 pdf");
     }
 
     const xml = asString(p.xml);
     if (!xml) {
-        throw new Error("PDF 导出请求不合法：缺少绘图 xml");
+        throw new Error("绘图渲染请求不合法：缺少绘图 xml");
     }
 
     const title = asString(p.title) ?? (asString(p.filename) ? titleFromFilename(asString(p.filename) as string) : "");
     if (!title) {
-        throw new Error("PDF 导出请求不合法：缺少绘图 title");
+        throw new Error("绘图渲染请求不合法：缺少绘图 title");
     }
 
     const request: PdfExportRequest = {
@@ -147,6 +151,10 @@ function messageOf(error: unknown): string {
     return message ? message : String(error);
 }
 
+function printReply(callbackId: string, result: PrintResult): ExportBridgeReply {
+    return reply(callbackId, [{ status: result.status }]);
+}
+
 export async function handleExportBridgeMessage(msg: BridgeMessage, host: ExportHost): Promise<ExportBridgeReply | null> {
     const callbackId = msg?.callbackId;
     if (!callbackId) {
@@ -158,6 +166,7 @@ export async function handleExportBridgeMessage(msg: BridgeMessage, host: Export
             {
                 pdfExport: !!host.capabilities?.pdfExport,
                 fileExport: !!host.capabilities?.fileExport,
+                print: !!host.capabilities?.print,
             },
         ]);
     }
@@ -183,6 +192,22 @@ export async function handleExportBridgeMessage(msg: BridgeMessage, host: Export
         try {
             const { request, options } = toFileExport(msg.payload);
             return resultReply(callbackId, await host.fileExporter.exportFile(request, options));
+        } catch (error) {
+            return reply(callbackId, [{ status: "error", message: messageOf(error) }]);
+        }
+    }
+
+    if (msg.type === BRIDGE_TYPES.PRINT_DIAGRAM) {
+        if (!host.capabilities?.print) {
+            return reply(callbackId, [{ status: "error", message: "本机打印仅在桌面端思源可用" }]);
+        }
+
+        try {
+            // Printing speaks the same render vocabulary as the PDF export; only the
+            // destination differs (a printer instead of a file).
+            const { request } = toPdfExport(msg.payload);
+            const preview = (msg.payload as { preview?: unknown } | null)?.preview === true;
+            return printReply(callbackId, await host.diagramPrinter.print(request, { preview }));
         } catch (error) {
             return reply(callbackId, [{ status: "error", message: messageOf(error) }]);
         }

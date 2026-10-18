@@ -1,10 +1,10 @@
 /**
  * ExportCapabilities — one capability probe shared by the export patches (issues #75, #76).
  *
- * The plugin host answers `getCapabilities` with `{pdfExport, fileExport}`; both the PDF patch
- * and the local-save patch need the same answer, so the probe lives here instead of in each of
- * them. A timeout is *not* cached: a permanent "no" would silently send every later export back
- * to the broken upstream path (conversion service / dropped download).
+ * The plugin host answers `getCapabilities` with `{pdfExport, fileExport, print}`; the PDF patch,
+ * the local-save patch and the print patch need the same answer, so the probe lives here
+ * instead of in each of them. A timeout is *not* cached: a permanent "no" would silently send
+ * every later export back to the broken upstream path (conversion service / dropped download).
  */
 
 const PROBE_TIMEOUT_MS = 3000;
@@ -26,14 +26,18 @@ export function createExportCapabilities(electron) {
 
             try {
                 electron.sendMessage('getCapabilities', null, 'caps-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), (caps) => {
-                    finish({ pdfExport: !!(caps && caps.pdfExport), fileExport: !!(caps && caps.fileExport) }, true);
+                    finish({
+                        pdfExport: !!(caps && caps.pdfExport),
+                        fileExport: !!(caps && caps.fileExport),
+                        print: !!(caps && caps.print),
+                    }, true);
                 });
             } catch (e) {
-                finish({ pdfExport: false, fileExport: false }, true);
+                finish({ pdfExport: false, fileExport: false, print: false }, true);
                 return;
             }
 
-            setTimeout(() => finish({ pdfExport: false, fileExport: false }, false), PROBE_TIMEOUT_MS);
+            setTimeout(() => finish({ pdfExport: false, fileExport: false, print: false }, false), PROBE_TIMEOUT_MS);
         });
     }
 

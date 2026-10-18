@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { handleExportBridgeMessage, type ExportHost } from "./exportBridge";
 import { FakePdfExporter, type PdfExporter } from "@/pdf/PdfExporter";
 import { ElectronFileExporter, FakeFileExporter, type FileExporter } from "./FileExporter";
+import { FakeDiagramPrinter, type DiagramPrinter } from "@/print/DiagramPrinter";
 import { BRIDGE_TYPES } from "@/bridge/DrawioBridge";
 
 /**
@@ -12,8 +13,15 @@ import { BRIDGE_TYPES } from "@/bridge/DrawioBridge";
  * never escapes as an unhandled rejection.
  */
 
-function host(pdfExporter: PdfExporter = new FakePdfExporter(), pdfExport = true, fileExporter: FileExporter = new FakeFileExporter(), fileExport = pdfExport): ExportHost {
-    return { pdfExporter, fileExporter, capabilities: { pdfExport, fileExport } };
+function host(
+    pdfExporter: PdfExporter = new FakePdfExporter(),
+    pdfExport = true,
+    fileExporter: FileExporter = new FakeFileExporter(),
+    fileExport = pdfExport,
+    diagramPrinter: DiagramPrinter = new FakeDiagramPrinter(),
+    print = pdfExport,
+): ExportHost {
+    return { pdfExporter, fileExporter, diagramPrinter, capabilities: { pdfExport, fileExport, print } };
 }
 
 const drawioPayload = {
@@ -37,7 +45,7 @@ describe("exportBridge — capability probe feeds the guest patches", () => {
         expect(reply).toEqual({
             type: BRIDGE_TYPES.CALLBACK,
             callbackId: "cb-1",
-            payload: [{ pdfExport: true, fileExport: true }],
+            payload: [{ pdfExport: true, fileExport: true, print: true }],
         });
     });
 
@@ -47,7 +55,7 @@ describe("exportBridge — capability probe feeds the guest patches", () => {
             host(new FakePdfExporter(), false),
         );
 
-        expect(reply?.payload).toEqual([{ pdfExport: false, fileExport: false }]);
+        expect(reply?.payload).toEqual([{ pdfExport: false, fileExport: false, print: false }]);
     });
 });
 
@@ -273,5 +281,93 @@ describe("exportBridge — locally rendered exports reach the file channel (issu
         );
 
         expect(reply?.payload).toEqual([{ status: "error", message: expect.stringMatching(/data|内容/i) }]);
+    });
+});
+
+describe("exportBridge — 打印 reaches the printer channel", () => {
+    it("forwards the print-dialog parameters and returns the printed status", async () => {
+        const printer = new FakeDiagramPrinter({ status: "printed" });
+
+        const reply = await handleExportBridgeMessage(
+            {
+                type: BRIDGE_TYPES.PRINT_DIAGRAM,
+                payload: { ...drawioPayload, allPages: undefined, from: 0, to: 1, pageMargin: 10, crop: "1", fit: "1" },
+                callbackId: "cb-print-1",
+            },
+            host(new FakePdfExporter(), true, new FakeFileExporter(), true, printer),
+        );
+
+        expect(printer.calls).toHaveLength(1);
+        expect(printer.calls[0].request).toMatchObject({
+            format: "pdf",
+            xml: drawioPayload.xml,
+            title: drawioPayload.title,
+            from: 0,
+            to: 1,
+            pageMargin: 10,
+            crop: true,
+            fit: true,
+        });
+        // 打印 (not 预览) unless the guest asks for the preview explicitly.
+        expect(printer.calls[0].options).toEqual({ preview: false });
+        expect(reply).toEqual({
+            type: BRIDGE_TYPES.CALLBACK,
+            callbackId: "cb-print-1",
+            payload: [{ status: "printed" }],
+        });
+    });
+
+    it("keeps the preview flag the print dialog sends for 预览", async () => {
+        const printer = new FakeDiagramPrinter({ status: "previewed" });
+
+        const reply = await handleExportBridgeMessage(
+            { type: BRIDGE_TYPES.PRINT_DIAGRAM, payload: { ...drawioPayload, preview: true }, callbackId: "cb-print-2" },
+            host(new FakePdfExporter(), true, new FakeFileExporter(), true, printer),
+        );
+
+        expect(printer.calls[0].options).toEqual({ preview: true });
+        expect(reply?.payload).toEqual([{ status: "previewed" }]);
+    });
+
+    it("reports a dismissed print dialog as canceled", async () => {
+        const reply = await handleExportBridgeMessage(
+            { type: BRIDGE_TYPES.PRINT_DIAGRAM, payload: drawioPayload, callbackId: "cb-print-3" },
+            host(new FakePdfExporter(), true, new FakeFileExporter(), true, new FakeDiagramPrinter({ status: "canceled" })),
+        );
+
+        expect(reply?.payload).toEqual([{ status: "canceled" }]);
+    });
+
+    it("turns a print failure into an error reply instead of a rejection", async () => {
+        const reply = await handleExportBridgeMessage(
+            { type: BRIDGE_TYPES.PRINT_DIAGRAM, payload: drawioPayload, callbackId: "cb-print-4" },
+            host(new FakePdfExporter(), true, new FakeFileExporter(), true, new FakeDiagramPrinter({ error: "没有可用的打印机" })),
+        );
+
+        expect(reply?.payload).toEqual([{ status: "error", message: "没有可用的打印机" }]);
+    });
+
+    it("refuses to print when the platform has no local renderer", async () => {
+        const printer = new FakeDiagramPrinter();
+
+        const reply = await handleExportBridgeMessage(
+            { type: BRIDGE_TYPES.PRINT_DIAGRAM, payload: drawioPayload, callbackId: "cb-print-5" },
+            host(new FakePdfExporter(), false, new FakeFileExporter(), false, printer, false),
+        );
+
+        expect(printer.calls).toHaveLength(0);
+        expect(reply?.payload).toEqual([{ status: "error", message: expect.stringContaining("桌面") }]);
+    });
+
+    it("rejects an unrenderable print request before reaching the printer", async () => {
+        const printer = new FakeDiagramPrinter();
+
+        const reply = await handleExportBridgeMessage(
+            { type: BRIDGE_TYPES.PRINT_DIAGRAM, payload: { format: "pdf" }, callbackId: "cb-print-6" },
+            host(new FakePdfExporter(), true, new FakeFileExporter(), true, printer),
+        );
+
+        expect(printer.calls).toHaveLength(0);
+        expect(reply?.payload).toEqual([{ status: "error", message: expect.stringMatching(/xml|title/i) }]);
     });
 });

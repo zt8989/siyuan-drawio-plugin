@@ -10,6 +10,7 @@ import {
     GET_CAPABILITIES,
     EXPORT_PDF,
     EXPORT_FILE,
+    PRINT_DIAGRAM,
 } from "@/constants";
 
 /**
@@ -51,6 +52,7 @@ export const BRIDGE_TYPES = {
     GET_CAPABILITIES,
     EXPORT_PDF,
     EXPORT_FILE,
+    PRINT_DIAGRAM,
 } as const;
 
 export type BridgeMessageType = (typeof BRIDGE_TYPES)[keyof typeof BRIDGE_TYPES];
@@ -67,6 +69,7 @@ export type BridgeMessage =
     | { type: typeof GET_CAPABILITIES; payload?: unknown; callbackId?: string }
     | { type: typeof EXPORT_PDF; payload: unknown; callbackId?: string }
     | { type: typeof EXPORT_FILE; payload: unknown; callbackId?: string }
+    | { type: typeof PRINT_DIAGRAM; payload: unknown; callbackId?: string }
     | { type: string; payload?: unknown; callbackId?: string }; // fallback for unknown, for validation
 
 const VALID_TYPES = new Set<string>(Object.values(BRIDGE_TYPES));

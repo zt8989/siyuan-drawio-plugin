@@ -39,6 +39,8 @@ export const SET_ITEM = PREFIX + "setItem"
 export const GET_CAPABILITIES = PREFIX + "getCapabilities"
 export const EXPORT_PDF = PREFIX + "exportPdf"
 export const EXPORT_FILE = PREFIX + "exportFile"
+// Local print channel (文件 → 打印): the host renders and sends the pages to a printer.
+export const PRINT_DIAGRAM = PREFIX + "printDiagram"
 export const DRAWIO_CONFIG = '.drawio-config'
 export const DRAWIO_CONFIG_KEYS = [DRAWIO_CONFIG]
 export const DRAWIO_EXTENSION = '.drawio'

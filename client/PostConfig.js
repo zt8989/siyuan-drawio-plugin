@@ -7,6 +7,7 @@ import { OVERALL_TIMEOUT_MS } from "@/ai/AiStreamUtils"
 import { installAiGeneratePatch } from "./AiGeneratePatch.js"
 import { installPdfExportPatch } from "./PdfExportPatch.js"
 import { installFileExportPatch } from "./FileExportPatch.js"
+import { installPrintPatch } from "./PrintPatch.js"
 import { createExportCapabilities } from "./ExportCapabilities.js"
 import { SCRATCHPAD_FILE_NAME, installScratchpadSync, scratchpadPath } from "@/scratchpad/ScratchpadSync"
 /**
@@ -316,11 +317,13 @@ if (window.parent.siyuan) {
     // POSTing to convert.diagrams.net or clicking an <a download> SiYuan drops:
     //   - PDF (issue #75): host renders it in a hidden window and prints it
     //   - PNG/JPEG/WebP/SVG/XML/… (issue #76): host writes the bytes the editor produced
-    // Both share one capability probe; without a capable host each patch keeps upstream.
+    //   - 打印 (Ctrl+P): host renders the pages and opens the system print dialog
+    // All share one capability probe; without a capable host each patch keeps upstream.
     try {
         const capabilities = createExportCapabilities(electron);
         installPdfExportPatch(electron, capabilities);
         installFileExportPatch(electron, capabilities);
+        installPrintPatch(electron, capabilities);
     } catch (e) { /* keep upstream implementation when patching fails */ }
     //#endregion
 

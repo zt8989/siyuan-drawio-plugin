@@ -23,6 +23,8 @@ import { isValidBridgeMessage } from "./bridge/DrawioBridge";
 import { handleExportBridgeMessage, type ExportHost } from "./export/exportBridge";
 import { unavailablePdfExporter, type PdfExporter } from "./pdf/PdfExporter";
 import { createElectronPdfExporter } from "./pdf/electronAdapters";
+import { unavailableDiagramPrinter, type DiagramPrinter } from "./print/DiagramPrinter";
+import { createElectronDiagramPrinter } from "./print/electronAdapters";
 import { createElectronFileExporter, unavailableFileExporter, type FileExporter } from "./export/FileExporter";
 import { TabManager } from "./tabs/TabManager";
 import { AssetPickerDialog } from "./dialog/AssetPickerDialog";
@@ -291,9 +293,15 @@ export default class DrawioPlugin extends Plugin {
 
         const pdfExporter: PdfExporter = capable ? createElectronPdfExporter({ exportPageUrl }) : unavailablePdfExporter();
         const fileExporter: FileExporter = capable ? createElectronFileExporter() : unavailableFileExporter();
+        const diagramPrinter: DiagramPrinter = capable ? createElectronDiagramPrinter({ exportPageUrl }) : unavailableDiagramPrinter();
 
         logger.debug("local export capability:", capable, "frontEnd:", frontEnd);
-        return { pdfExporter, fileExporter, capabilities: { pdfExport: capable, fileExport: capable } };
+        return {
+            pdfExporter,
+            fileExporter,
+            diagramPrinter,
+            capabilities: { pdfExport: capable, fileExport: capable, print: capable },
+        };
     }
 
     /** Exposed for diagnostics and end-to-end runs that drive the exporter seams directly. */
@@ -314,6 +322,16 @@ export default class DrawioPlugin extends Plugin {
     /** Composition seam: end-to-end runs swap in a recording exporter to observe requests. */
     public setFileExporter(exporter: FileExporter): void {
         this.exportHost.fileExporter = exporter;
+    }
+
+    /** Exposed for diagnostics and end-to-end runs that drive the exporter seams directly. */
+    public getDiagramPrinter(): DiagramPrinter {
+        return this.exportHost.diagramPrinter;
+    }
+
+    /** Composition seam: end-to-end runs swap in a recording printer to observe requests. */
+    public setDiagramPrinter(printer: DiagramPrinter): void {
+        this.exportHost.diagramPrinter = printer;
     }
 
     public async saveDrawioConfig(config: DrawioConfig) {

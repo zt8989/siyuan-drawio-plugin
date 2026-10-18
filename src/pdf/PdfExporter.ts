@@ -74,15 +74,16 @@ export function suggestPdfName(title: string): string {
     return `${hName || title}.pdf`;
 }
 
-function assertRenderable(request: PdfExportRequest): void {
+/** Shared by every channel that renders through the export page (PDF export, printing). */
+export function assertRenderableRequest(request: PdfExportRequest): void {
     if (request?.format !== "pdf") {
-        throw new Error("PDF 导出请求不合法：format 必须是 pdf");
+        throw new Error("绘图渲染请求不合法：format 必须是 pdf");
     }
     if (!request.xml) {
-        throw new Error("PDF 导出请求不合法：缺少绘图 xml");
+        throw new Error("绘图渲染请求不合法：缺少绘图 xml");
     }
     if (!request.title) {
-        throw new Error("PDF 导出请求不合法：缺少绘图 title");
+        throw new Error("绘图渲染请求不合法：缺少绘图 title");
     }
 }
 
@@ -114,7 +115,7 @@ export class ElectronPdfExporter implements PdfExporter {
     }
 
     private async exportNow(request: PdfExportRequest, options: PdfExportOptions): Promise<PdfExportResult> {
-        assertRenderable(request);
+        assertRenderableRequest(request);
         const target = options.targetPath ?? (await this.deps.saveDialog.pick(suggestPdfName(request.title), "application/pdf"));
         if (target == null) {
             return { status: "canceled" };
