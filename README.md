@@ -20,9 +20,11 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-1.0.46
+1.0.47
 
 ## Changelog
+- **v1.0.47**
+  - `文件 → 打印…` (Ctrl+P) prints again on the desktop: SiYuan refuses the preview window draw.io opens upstream, so the dialog used to end in 更新预览出错. The plugin host now renders the pages itself and hands them to the system print dialog; 预览 still shows the pages, 取消 leaves nothing behind
 - **v1.0.46**
   - Desktop exports now save through SiYuan instead of silently failing or opening the conversion service: `文件 → 导出为 → PNG…/JPEG…/SVG…/XML…` (and the advanced dialog's png/jpg) open the native save dialog and write the bytes the editor rendered (issue #76). PDF exports locally through a hidden window and `printToPDF` (issue #75)
   - Cancel ends quietly, success shows a toast with the saved path, failure shows a readable error; no extra window and no draw.io destination picker
