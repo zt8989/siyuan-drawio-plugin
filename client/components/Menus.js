@@ -1,5 +1,17 @@
+import { insertSiyuanEmbed, insertSiyuanReference, refreshSiyuanEmbeds } from "../SiyuanComponents"
+
 function loadFile(app, url) {
     app.loadFile("U" + encodeURIComponent(url), true)
+}
+
+// 菜单文案来自插件 i18n（public/i18n/*.json），缺失时退回中文默认值
+function pluginText(key, fallback) {
+    try {
+        const i18n = window.parent && window.parent.drawioPlugin && window.parent.drawioPlugin.i18n
+        return (i18n && i18n[key]) || fallback
+    } catch (e) {
+        return fallback
+    }
 }
 
 export function setup(electron){
@@ -20,6 +32,22 @@ export function setup(electron){
         //     var file = editorUi.getCurrentFile();
         //     electron.sendMessage("copyLink", file.getTitle())
         // }),)
+
+        // 思源笔记组件：嵌入 / 引用 / 刷新（宿主负责选笔记、读正文与跳转）
+        editorUi.actions.put("insertSiyuanEmbed", new Action(pluginText("siyuanEmbed", "嵌入思源笔记…"), function() {
+            insertSiyuanEmbed(editorUi, electron)
+        }))
+        editorUi.actions.put("insertSiyuanReference", new Action(pluginText("siyuanReference", "引用思源笔记…"), function() {
+            insertSiyuanReference(editorUi, electron)
+        }))
+        editorUi.actions.put("refreshSiyuanEmbeds", new Action(pluginText("siyuanRefreshEmbeds", "刷新嵌入内容"), function() {
+            refreshSiyuanEmbeds(editorUi, electron)
+        }))
+
+        this.put('siyuanComponents', new Menu(mxUtils.bind(this, function(menu, parent)
+        {
+            this.addMenuItems(menu, ['insertSiyuanEmbed', 'insertSiyuanReference', '-', 'refreshSiyuanEmbeds'], parent);
+        })));
 
         editorUi.actions.put("open",  new Action(mxResources.get('open'), function() {
             electron.sendMessage("open", null, "open" + (new Date).getTime(), (url, name) => {
@@ -75,6 +103,7 @@ export function setup(electron){
             this.addMenuItems(menu, ['new', 'open', 'copyLink'], parent);
             this.addSubmenu('openRecent', menu, parent);
             this.addMenuItems(menu, ['-', /*'synchronize', '-'*/, 'save', 'saveAs', '-', 'import'], parent);
+            this.addSubmenu('siyuanComponents', menu, parent, pluginText("siyuanGroup", "思源笔记"));
             this.addSubmenu('exportAs', menu, parent);
             menu.addSeparator(parent);
             this.addSubmenu('embed', menu, parent);

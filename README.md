@@ -13,6 +13,31 @@ In edit mode, type `/drawio`, select and insert it into the note.
 ![Insert drawio in command mode](asset/preview-1.png)
 ![Select or create a new drawio](asset/preview-2.png)
 
+### SiYuan note components
+
+Open the entry from the top toolbar (the SiYuan note icon):
+embed a note or heading, reference it, or refresh embedded cards.
+
+![Insert SiYuan note from the top toolbar](asset/siyuan-note-toolbar.png)
+
+Or use the File menu: `File → SiYuan notes → …`.
+
+![Insert SiYuan note from the File menu](asset/siyuan-note-menu.png)
+
+### SiYuan note components on the canvas
+
+Inside the draw.io editor, `File → SiYuan notes` (or the SiYuan note icon in the top toolbar) inserts two components:
+
+- **Embed SiYuan note…**: search and pick a note or a heading (search results carry an `H1`–`H6` badge); a preview follows the cursor and a click places it. Picking a heading embeds only that section, up to the next heading of the same or higher level. The body renders as Markdown (headings, lists, bold, code blocks, tables, quotes) and is clipped to the card; images and link targets are dropped.
+- **Reference SiYuan note…**: placed the same way; the card links back to the note/heading.
+- A single click on either card only selects it; the link hint appears below (block ID + edit/delete), and clicking the block ID jumps back to SiYuan.
+- The hint's edit action reopens the note/heading picker and replaces the card's source (embed body and link update together); delete removes the whole card.
+- The top toolbar icon opens the same three actions: embed / reference / refresh
+- Press `Esc`, right-click, or click outside the canvas to cancel placement.
+- **Refresh embedded notes**: re-reads the latest body for the selected (or all) embed cards.
+
+Card metadata is stored with the drawing file (`siyuanType` / `siyuanId` / `siyuanTitle` / `siyuanPath` attributes), so no extra plugin storage is involved.
+
 ## Author
 cowboy
 
@@ -20,9 +45,14 @@ cowboy
 ![Preview](preview.png)
 
 ## Version
-1.0.47
+1.0.48
 
 ## Changelog
+- **v1.0.48**
+  - Add SiYuan note components to the draw.io canvas: insert from the top toolbar icon or `File → SiYuan notes`, and refresh embedded cards
+  - Embed by heading: the picker lists heading blocks directly and embeds only that section; the body renders as Markdown (headings, lists, code blocks, tables, quotes), with images and link targets dropped
+  - The picked card preview follows the cursor and is placed with a click; a single click only selects, the link hint below shows the block ID with edit/delete, and clicking the block ID jumps back to SiYuan
+  - "Edit" in the hint reopens the note/heading picker to replace the source; "Delete component" removes the whole card
 - **v1.0.47**
   - `文件 → 打印…` (Ctrl+P) prints again on the desktop: SiYuan refuses the preview window draw.io opens upstream, so the dialog used to end in 更新预览出错. The plugin host now renders the pages itself and hands them to the system print dialog; 预览 still shows the pages, 取消 leaves nothing behind
 - **v1.0.46**

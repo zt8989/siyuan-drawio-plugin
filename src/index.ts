@@ -14,7 +14,7 @@ import "@/index.scss";
 
 
 import { getIframeFromEventSource } from "./utils";
-import { CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, DRAWIO_CONFIG_KEYS, NEW_TYPE, OPEN_TAB_BY_PATH, OPEN_TYPE, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD, DRAWIO_EXTENSION, drawioAssetsPath } from "./constants";
+import { CALLBAK_TYPE, COPY_LINK, DOCK_TYPE, DRAWIO_CONFIG, DRAWIO_CONFIG_KEYS, GET_SIYUAN_NOTES, NEW_TYPE, OPEN_SIYUAN_BLOCK, OPEN_TAB_BY_PATH, OPEN_TYPE, PICK_SIYUAN_NOTE, SHOW_MESSAGE, TAB_TYPE, UPDATE_TITLE, ICON_STANDARD, DRAWIO_EXTENSION, drawioAssetsPath } from "./constants";
 import { SiyuanAssetStore, type AssetStore } from "./asset/AssetStore";
 import { createLinkFromTitle, getTitleFromPath } from "./link";
 import { ShowDialogCallback, DrawioConfig } from "./types";
@@ -28,6 +28,9 @@ import { createElectronDiagramPrinter } from "./print/electronAdapters";
 import { createElectronFileExporter, unavailableFileExporter, type FileExporter } from "./export/FileExporter";
 import { TabManager } from "./tabs/TabManager";
 import { AssetPickerDialog } from "./dialog/AssetPickerDialog";
+import { SiyuanNotePicker } from "./dialog/SiyuanNotePicker";
+import { SiyuanApiNoteSource, type SiyuanNoteSource } from "./siyuan/SiyuanNotes";
+import { openSiyuanBlock } from "./siyuan/openBlock";
 import Dock from "./components/dock.svelte";
 import DrawioSettings from "./components/drawio-settings.svelte";
 
@@ -39,6 +42,8 @@ export default class DrawioPlugin extends Plugin {
     public assetStore: AssetStore = new SiyuanAssetStore()
     private tabManager!: TabManager
     private assetPicker!: AssetPickerDialog
+    private noteSource: SiyuanNoteSource = new SiyuanApiNoteSource()
+    private notePicker!: SiyuanNotePicker
     private exportHost!: ExportHost
 
     // Pre-bind methods to ensure same reference for event cleanup
@@ -75,6 +80,14 @@ export default class DrawioPlugin extends Plugin {
             assetStore: this.assetStore,
             isMobile: this.isMobile,
             i18n: this.i18n as unknown as { selectDrawio: string; create: string; exitSearch: string; emptyContent: string },
+        });
+        this.notePicker = new SiyuanNotePicker({
+            source: this.noteSource,
+            isMobile: this.isMobile,
+            i18n: {
+                emptyContent: (this.i18n as unknown as Record<string, string>).emptyContent || "未找到相关内容",
+                searchPlaceholder: (this.i18n as unknown as Record<string, string>).searchSiyuanNote || "搜索思源笔记",
+            },
         });
 
         // 图标的制作参见帮助文档
@@ -258,11 +271,71 @@ export default class DrawioPlugin extends Plugin {
             case OPEN_TAB_BY_PATH:
                 this.openCustomTabByPath(ev.data.payload)
                 break
+            case PICK_SIYUAN_NOTE:
+                this.pickSiyuanNote((ev.data.payload as { mode?: string } | undefined)?.mode, ev)
+                break
+            case GET_SIYUAN_NOTES:
+                this.readSiyuanNotes((ev.data.payload as { ids?: unknown } | undefined)?.ids, ev)
+                break
+            case OPEN_SIYUAN_BLOCK:
+                openSiyuanBlock(((ev.data.payload as { id?: string } | undefined)?.id) || "")
+                break
+            case SHOW_MESSAGE:
+                this.showGuestMessage(ev.data.payload)
+                break
             // case SET_ITEM:
             //     this.setStorageItem(ev.data.payload)
             //     break
         } 
         logger.debug(ev)
+    }
+
+    private replyToGuest(ev: MessageEvent<{ callbackId?: string }>, payload: unknown[]): void {
+        const callbackId = ev.data.callbackId;
+        if (!callbackId || !ev.source) {
+            return;
+        }
+        ev.source.postMessage({ type: CALLBAK_TYPE, callbackId, payload });
+    }
+
+    private pickSiyuanNote(mode: string | undefined, ev: MessageEvent): void {
+        const isEmbed = mode !== "reference";
+        const i18n = this.i18n as unknown as Record<string, string>;
+        const title = isEmbed
+            ? i18n.siyuanEmbed || "嵌入思源笔记"
+            : i18n.siyuanReference || "引用思源笔记";
+        this.notePicker.open(title, (note) => {
+            if (!note) {
+                this.replyToGuest(ev, [null]);
+                return;
+            }
+            if (!isEmbed) {
+                this.replyToGuest(ev, [note]);
+                return;
+            }
+            this.noteSource.read(note.id).then((content) => {
+                this.replyToGuest(ev, [content]);
+            }).catch((error: unknown) => {
+                logger.debug("Failed to read SiYuan note:", error);
+                this.replyToGuest(ev, [{ error: String((error as Error)?.message || error) }]);
+            });
+        });
+    }
+
+    private readSiyuanNotes(ids: unknown, ev: MessageEvent): void {
+        const list = Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string" && id !== "") : [];
+        Promise.all(list.map((id) => this.noteSource.read(id).catch(() => ({ id, error: true })))).then((notes) => {
+            this.replyToGuest(ev, [notes]);
+        });
+    }
+
+    private showGuestMessage(payload: unknown): void {
+        const message = typeof payload === "string" ? payload : (payload as { message?: string })?.message;
+        if (!message) {
+            return;
+        }
+        const type = typeof payload === "object" && payload !== null ? (payload as { type?: string }).type : undefined;
+        showMessage(message, 5000, type === "error" ? "error" : "info");
     }
 
     setStorageItem({ key, value }: any) {

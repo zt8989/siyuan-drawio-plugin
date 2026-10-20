@@ -52,5 +52,15 @@
     "aiGroup": "AI 设置",
     "aiEnableTitle": "启用 AI 生成",
     "aiEnableDesc": "开启后可在 Draw.io 中使用 Generate（AI 生成图表）功能，模型选择由 Draw.io 原生下拉提供，密钥复用思源的 AI 配置",
-    "exportedTo": "已导出至 ${path}"
+    "exportedTo": "已导出至 ${path}",
+    "siyuanEmbed": "嵌入思源笔记…",
+    "siyuanReference": "引用思源笔记…",
+    "siyuanRefreshEmbeds": "刷新嵌入内容",
+    "siyuanEmbedFailed": "读取思源笔记失败",
+    "siyuanNoEmbed": "没有可刷新的嵌入内容",
+    "siyuanRefreshed": "已刷新 ${count} 个嵌入",
+    "searchSiyuanNote": "搜索思源笔记",
+    "siyuanGroup": "思源笔记",
+    "siyuanPlaceHint": "点击画布放置，Esc 取消",
+    "siyuanDeleteCard": "删除组件"
 }

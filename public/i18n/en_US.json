@@ -52,5 +52,15 @@
     "aiGroup": "AI Settings",
     "aiEnableTitle": "Enable AI Generate",
     "aiEnableDesc": "When enabled, you can use Generate (AI diagram) in Draw.io. Model is selected in Draw.io, API key is reused from Siyuan AI config",
-    "exportedTo": "Exported to ${path}"
+    "exportedTo": "Exported to ${path}",
+    "siyuanEmbed": "Embed SiYuan note…",
+    "siyuanReference": "Reference SiYuan note…",
+    "siyuanRefreshEmbeds": "Refresh embedded notes",
+    "siyuanEmbedFailed": "Failed to read the SiYuan note",
+    "siyuanNoEmbed": "No embedded notes to refresh",
+    "siyuanRefreshed": "Refreshed ${count} embedded notes",
+    "searchSiyuanNote": "Search SiYuan notes",
+    "siyuanGroup": "SiYuan notes",
+    "siyuanPlaceHint": "Click the canvas to place, Esc to cancel",
+    "siyuanDeleteCard": "Delete component"
 }

@@ -10,6 +10,7 @@ import { installFileExportPatch } from "./FileExportPatch.js"
 import { installPrintPatch } from "./PrintPatch.js"
 import { createExportCapabilities } from "./ExportCapabilities.js"
 import { SCRATCHPAD_FILE_NAME, installScratchpadSync, scratchpadPath } from "@/scratchpad/ScratchpadSync"
+import { installSiyuanComponents } from "./SiyuanComponents"
 /**
  * Copyright (c) 2006-2024, JGraph Ltd
  * Copyright (c) 2006-2024, draw.io AG
@@ -266,6 +267,11 @@ if (window.parent.siyuan) {
 
     //#region Menus
     MenuSetup(electron)
+    //#endregion
+
+    //#region SiYuan note components
+    // 文件 → 思源笔记：嵌入 / 引用卡片，以及 siyuan://blocks/<id> 的点击跳转。
+    installSiyuanComponents(electron)
     //#endregion
 
     //#region Editor

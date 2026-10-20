@@ -41,6 +41,10 @@ export const EXPORT_PDF = PREFIX + "exportPdf"
 export const EXPORT_FILE = PREFIX + "exportFile"
 // Local print channel (文件 → 打印): the host renders and sends the pages to a printer.
 export const PRINT_DIAGRAM = PREFIX + "printDiagram"
+// 思源笔记组件（文件菜单 → 思源笔记）：选择、读取与跳转都由宿主完成。
+export const PICK_SIYUAN_NOTE = PREFIX + "pickSiyuanNote"
+export const GET_SIYUAN_NOTES = PREFIX + "getSiyuanNotes"
+export const OPEN_SIYUAN_BLOCK = PREFIX + "openSiyuanBlock"
 export const DRAWIO_CONFIG = '.drawio-config'
 export const DRAWIO_CONFIG_KEYS = [DRAWIO_CONFIG]
 export const DRAWIO_EXTENSION = '.drawio'

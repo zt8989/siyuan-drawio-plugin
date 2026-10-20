@@ -20,6 +20,12 @@
 
 **DockModule / AssetPickerDialog / TabManager** — UI deep modules composed by `DrawioPlugin` (thin composition root). Each has narrow interface: `dock.refresh(assets)`, `picker.open({assets, onSelect})`, `tabs.open(path)`.
 
+**SiyuanNote / SiyuanNoteSource** — A SiYuan document or heading referenced by a canvas component. `SiyuanNoteSource` is the deep module behind the picker: `search(keyword)` (SQL over `type IN ('d','h')`) and `read(id)` (`exportMdContent` for docs; heading section from the block tree for `type='h'`) → plain text + Lute-rendered card HTML, truncated. Hides SQL literals, title-from-hpath, section boundaries, markdown stripping.
+
+**HeadingSection** — The blocks under a heading, up to the next heading of the same or higher level, restored from `blocks.parent_id/sort` (`src/siyuan/headingSection.ts`). Used when an embed picks a heading instead of a whole document.
+
+**SiyuanNoteComponent** — A draw.io vertex carrying `siyuanType` (`embed` | `reference`), `siyuanId`, `siyuanTitle`, `siyuanPath` in its `UserObject`. Embedded cards hold a text snapshot refreshed through `GET_SIYUAN_NOTES`; reference cards hold `link=siyuan://blocks/<id>` and jump back through `OPEN_SIYUAN_BLOCK`.
+
 ## Excluded (not domain)
 
 Generic Siyuan concepts (`Notebook`, `Block`, `Protyle`) remain in `siyuan` SDK, not redefined here.
